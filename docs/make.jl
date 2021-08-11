@@ -1,5 +1,6 @@
 using TensND
 using Documenter
+using SymPy
 
 DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using TensND); recursive=true)
 

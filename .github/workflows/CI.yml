@@ -48,9 +48,9 @@ jobs:
             using Pkg
             Pkg = Base.require(Base.PkgId(Base.UUID(0x44cfe95a1eb252eab672e2afdf69b78f), "Pkg"))
             Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()
             ENV["PYTHON"] = ""
-            Pkg.build("PyCall")'
+            Pkg.build("PyCall")
+            Pkg.instantiate()'
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
