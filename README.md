@@ -64,7 +64,7 @@ The use of [`SymPy.jl`](https://github.com/JuliaPy/SymPy.jl) requires some adapt
         end
         ```
 
-- Concerning *documentation*, two actions are required:
+- Concerning *documentation*, three actions are required:
 
     1. Add [`SymPy.jl`](https://github.com/JuliaPy/SymPy.jl) to the `Project.toml` file located in the folder `docs`
 
@@ -79,17 +79,21 @@ The use of [`SymPy.jl`](https://github.com/JuliaPy/SymPy.jl) requires some adapt
         (docs) pkg> activate . # to activate the environment TensND
         ```
 
+    1. Add `using SymPy` at the beginning of `docs/make.jl`
+
     1. Modify the file `CI.yml` located in `.github/workflows`.
 
-       In `jobs: docs: steps:`, add the following lines
+       In `jobs: docs: steps:`, change the run of precompilation in
 
         ```yml
         - run: |
             julia --project=docs -e '
-              using Pkg
-              Pkg = Base.require(Base.PkgId(Base.UUID(0x44cfe95a1eb252eab672e2afdf69b78f), "Pkg"))
-              ENV["PYTHON"] = ""
-              Pkg.build("PyCall")'
+                using Pkg
+                Pkg = Base.require(Base.PkgId(Base.UUID(0x44cfe95a1eb252eab672e2afdf69b78f), "Pkg"))
+                Pkg.develop(PackageSpec(path=pwd()))
+                ENV["PYTHON"] = ""
+                Pkg.build("PyCall")
+                Pkg.instantiate()'
         ```
 
         and complete with `using SymPy` in
