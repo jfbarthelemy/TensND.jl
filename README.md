@@ -86,10 +86,10 @@ The use of [`SymPy.jl`](https://github.com/JuliaPy/SymPy.jl) requires some adapt
         ```yml
         - run: |
             julia --project=docs -e '
-            using Pkg
-            Pkg = Base.require(Base.PkgId(Base.UUID(0x44cfe95a1eb252eab672e2afdf69b78f), "Pkg"))
-            ENV["PYTHON"] = ""
-            Pkg.build("PyCall")'
+              using Pkg
+              Pkg = Base.require(Base.PkgId(Base.UUID(0x44cfe95a1eb252eab672e2afdf69b78f), "Pkg"))
+              ENV["PYTHON"] = ""
+              Pkg.build("PyCall")'
         ```
 
         and complete with `using SymPy` in
@@ -97,9 +97,9 @@ The use of [`SymPy.jl`](https://github.com/JuliaPy/SymPy.jl) requires some adapt
         ```yml
         - run: |
             julia --project=docs -e '
-                using Documenter: DocMeta, doctest
-                using SymPy # **line to add**
-                using TensND
-                DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using TensND); recursive=true)
-                doctest(TensND)'
+              using Documenter: DocMeta, doctest
+              using SymPy # **line to add**
+              using TensND
+              DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using TensND); recursive=true)
+              doctest(TensND)'
         ```
