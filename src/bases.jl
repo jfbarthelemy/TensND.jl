@@ -4,9 +4,9 @@ abstract type AbstractBasis{dim, T <: Number} end
 """
     Basis{dim, T<:Number}(v, var = :cov)
 
-Basis defined from a square matrix `v` where columns define either
+Basis built from a square matrix `v` where columns correspond either to
 - primal vectors ie `eᵢ=v[:,i]` if `var = :cov` as by default
-- dual vector ie `eⁱ=v[:,i]` if `var = :cont`.
+- dual vectors ie `eⁱ=v[:,i]` if `var = :cont`.
 
 The attributes of this object are
 - `Basis.e`: square matrix defining the primal basis `eᵢ=e[:,i]`
