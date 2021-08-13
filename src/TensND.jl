@@ -1,8 +1,10 @@
 module TensND
 
-using LinearAlgebra, SymPy, Tensors, OMEinsum
-import LinearAlgebra: normalize
+import Base.@pure
 import Base: eltype
+import LinearAlgebra: normalize
+
+using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 
 export AbstractBasis, Basis, CanonicalBasis
 export eltype
