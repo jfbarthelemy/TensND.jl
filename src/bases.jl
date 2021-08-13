@@ -23,7 +23,9 @@ julia> using LinearAlgebra, SymPy
 
 julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
 Basis{3, Sym}(Sym[1 0 0; 0 1 0; 0 1 1], Sym[1 0 0; 0 1 -1; 0 0 1], Sym[1 0 0; 0 2 1; 0 1 1], Sym[1 0 0; 0 1 -1; 0 -1 2])
+```
 
+```julia
 julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = Basis(θ, ϕ, ψ) ; display(b.e)
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
@@ -40,18 +42,18 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
         dim = size(v, 1)
         @assert dim == size(v, 2) "v should be a square matrix"
         e = Tensor{2,dim}(v)
-        g = SymmetricTensor{2, dim}(simplify.(e'⋅e))
+        g = SymmetricTensor{2,dim}(simplify.(e' ⋅ e))
         G = inv(g)
-        E = e⋅G'
+        E = e ⋅ G'
         new{dim,T}(e, E, g, G)
     end
     function Basis(v::AbstractArray{T,2}, ::Val{:cont}) where {T}
         dim = size(v, 1)
         @assert dim == size(v, 2) "v should be a square matrix"
         E = Tensor{2,dim}(v)
-        G = SymmetricTensor{2, dim}(simplify.(E'⋅E))
+        G = SymmetricTensor{2,dim}(simplify.(E' ⋅ E))
         g = inv(G)
-        e = E⋅g'
+        e = E ⋅ g'
         new{dim,T}(e, E, g, G)
     end
     Basis(v::AbstractArray{T,2}, var) where {T} = Basis(v, Val(var))

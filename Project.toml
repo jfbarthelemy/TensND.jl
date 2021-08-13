@@ -9,6 +9,7 @@ OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
 Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
+TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
 OMEinsum = "0.4"
@@ -18,7 +19,6 @@ julia = "1.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [targets]
 test = ["Test"]
