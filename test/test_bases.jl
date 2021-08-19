@@ -9,6 +9,8 @@
             @test basis(bv, :cont) == bv.E == T[1 0 0; 0 1 -1; 0 0 1]
             @test metric(bv) == bv.g == T[1 0 0; 0 2 1; 0 1 1]
             @test metric(bv, :cont) == bv.G == T[1 0 0; 0 1 -1; 0 -1 2]
+            @test simplify.(bv.E' ⋅ bv.e) == I
+            @test simplify.(bv.G' ⋅ bv.g) == I
             @test !isorthogonal(bv)
 
             bw = Basis(bv.E, :cont)
@@ -17,6 +19,8 @@
             @test basis(bw, :cont) == bw.E == bv.E == T[1 0 0; 0 1 -1; 0 0 1]
             @test metric(bw) == bw.g == bv.g == T[1 0 0; 0 2 1; 0 1 1]
             @test metric(bw, :cont) == bw.G == bv.G == T[1 0 0; 0 1 -1; 0 -1 2]
+            @test simplify.(bv.E' ⋅ bv.e) == I
+            @test simplify.(bv.G' ⋅ bv.g) == I
             @test !isorthogonal(bw)
 
             nb = normal_basis(v)
@@ -25,9 +29,25 @@
                 θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true)
                 br = Basis(θ, ϕ, ψ)
                 @test metric(br) == I
+                @test br.e == br.E
             else
                 @test basis(nb) ≈ nb.e ≈ T[1 0 0; 0 sq2/2 0; 0 sq2/2 1]
             end
+
+            if T ≠ Sym
+                v = rand(T, 3, 3)
+                while det(v) ≈ 0
+                    v = rand(T, 3, 3)
+                end
+                @test eltype(bv) == T
+                @test basis(bv) == bv.e
+                @test basis(bv, :cont) == bv.E
+                @test metric(bv) == bv.g
+                @test metric(bv, :cont) == bv.G
+                @test bv.E' ⋅ bv.e == I
+                @test bv.G' ⋅ bv.g == I
+            end
+
         end
     end
 end

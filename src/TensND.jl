@@ -11,8 +11,11 @@ export eltype
 export basis, metric
 export normal_basis, normalize, isorthogonal
 export fϵ, ϵ
+export Tensnd, components
+
 
 include("bases.jl")
 include("special_tens.jl")
+include("tensnd_struct.jl")
 
 end # module

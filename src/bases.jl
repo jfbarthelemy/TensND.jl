@@ -1,4 +1,8 @@
-abstract type AbstractBasis{dim,T<:Number} end
+abstract type AbstractBasis{dim,T<:Number} <: AbstractArray{T, 2} end
+
+@pure Base.size(::AbstractBasis{dim}) where {dim} = (dim, dim)
+
+Base.getindex(b::AbstractBasis,i::Int, j::Int) = getindex(b.e,i,j)
 
 
 """
@@ -22,7 +26,16 @@ The attributes of this object are
 julia> using LinearAlgebra, SymPy
 
 julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
-Basis{3, Sym}(Sym[1 0 0; 0 1 0; 0 1 1], Sym[1 0 0; 0 1 -1; 0 0 1], Sym[1 0 0; 0 2 1; 0 1 1], Sym[1 0 0; 0 1 -1; 0 -1 2])
+3×3 Basis{3, Sym}:
+ 1  0  0
+ 0  1  0
+ 0  1  1
+
+julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v, :cont)
+3×3 Basis{3, Sym}:
+ 1  0   0
+ 0  1  -1
+ 0  0   1
 ```
 
 ```julia
@@ -62,7 +75,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
 end
 
 """
-    CanonicalBasis{dim, T}()
+    CanonicalBasis{dim, T}
 
 Canonical basis of dimension `dim` (default: 3) and type `T` (default: Sym)
 
@@ -77,10 +90,15 @@ The attributes of this object are
 julia> using LinearAlgebra, SymPy
 
 julia> b = CanonicalBasis()
-CanonicalBasis{3, Sym}(Sym[1 0 0; 0 1 0; 0 0 1], Sym[1 0 0; 0 1 0; 0 0 1], Sym[1 0 0; 0 1 0; 0 0 1], Sym[1 0 0; 0 1 0; 0 0 1])
+3×3 CanonicalBasis{3, Sym}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
 
 julia> b = CanonicalBasis{2, Float64}()
-CanonicalBasis{2, Float64}([1.0 0.0; 0.0 1.0], [1.0 0.0; 0.0 1.0], [1.0 0.0; 0.0 1.0], [1.0 0.0; 0.0 1.0])
+2×2 CanonicalBasis{2, Float64}:
+ 1.0  0.0
+ 0.0  1.0
 ```
 """
 struct CanonicalBasis{dim,T} <: AbstractBasis{dim,T}
