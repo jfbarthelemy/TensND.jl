@@ -107,8 +107,8 @@ struct CanonicalBasis{dim,T} <: AbstractBasis{dim,T}
     g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
     G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`   
     function CanonicalBasis{dim,T}() where {dim,T}
-        e = E = Matrix(one(T) * I, dim, dim)
-        g = G = Symmetric(Matrix(one(T) * I, dim, dim))
+        e = E = one(Tensor{2,dim,T})
+        g = G = one(SymmetricTensor{2,dim,T})
         new{dim,T}(e, E, g, G)
     end
     CanonicalBasis() = CanonicalBasis{3,Sym}()
@@ -116,15 +116,21 @@ end
 
 @pure Base.eltype(::AbstractBasis{dim,T}) where {dim,T} = T
 
+getdim(::AbstractBasis{dim,T}) where {dim,T} = dim
+
 """
     basis(b::AbstractBasis, var = :cov)
 
 Returns the primal (if `var = :cov`) or primal (if `var = :cont`) basis
 """
-basis(b::AbstractBasis, ::Val{:cov}) = b.e
-basis(b::AbstractBasis, ::Val{:cont}) = b.E
-basis(b::AbstractBasis, var) = basis(b, Val(var))
-basis(b::AbstractBasis) = basis(b, :cov)
+vecbasis(b::AbstractBasis, ::Val{:cov}) = b.e
+vecbasis(b::AbstractBasis, ::Val{:cont}) = b.E
+vecbasis(b::AbstractBasis, var) = vecbasis(b, Val(var))
+vecbasis(b::AbstractBasis) = vecbasis(b, :cov)
+
+invvar(::Val{:cov}) = :cont
+invvar(::Val{:cont}) = :cov
+invvar(var) = invvar(Val(var))
 
 """
     metric(b::AbstractBasis, var = :cov)
@@ -156,7 +162,7 @@ end
 
 Builds a normalized basis from the input basis `b` by calling `normal_basis`
 """
-LinearAlgebra.normalize(b::AbstractBasis, var = cov) = normal_basis(basis(b, var), var)
+LinearAlgebra.normalize(b::AbstractBasis, var = cov) = normal_basis(vecbasis(b, var), var)
 
 """
     isorthogonal(b::AbstractBasis)
@@ -175,4 +181,22 @@ function isorthogonal(b::AbstractBasis)
         next = iterate(b.g, state)
     end
     return ortho
+end
+
+#####################
+# Display Functions #
+#####################
+for OP in (:show, :print, :display)
+    @eval begin
+        function Base.$OP(b::AbstractBasis)
+            println("basis:")
+            $OP(b.e)
+            println("\ndual basis:")
+            $OP(b.E)
+            println("\ncovariant metric tensor:")
+            $OP(b.g)
+            println("\ncontravariant metric tensor:")
+            $OP(b.G)
+        end
+    end
 end

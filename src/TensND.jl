@@ -8,7 +8,7 @@ using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 
 export AbstractBasis, Basis, CanonicalBasis
 export eltype
-export basis, metric
+export vecbasis, metric
 export normal_basis, normalize, isorthogonal
 export fϵ, ϵ
 export Tensnd, components
