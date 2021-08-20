@@ -20,6 +20,7 @@ end
 reset_timer!()
 
 include("test_bases.jl")
+include("test_tensnd.jl")
 
 print_timer()
 println()

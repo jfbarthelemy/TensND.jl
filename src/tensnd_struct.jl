@@ -111,8 +111,8 @@ function components(
         return components(t, var)
     else
         bb = Dict()
-        for v1 in (:cov, :cont), v2 in (:cov, :cont)
-            if v1 in t.var && v2 in var
+        for v1 ∈ (:cov, :cont), v2 ∈ (:cov, :cont)
+            if v1 ∈ t.var && v2 ∈ var
                 bb[v1, v2] = simplify.(vecbasis(t.basis, invvar(v1))' ⋅ vecbasis(basis, v2))
             end
         end
@@ -120,7 +120,7 @@ function components(
         coef = zeros(T, ntuple(_ -> dim, 2 * order)...)
         for tind ∈ CartesianIndices(m), ind ∈ CartesianIndices(m)
             coef[Tuple(tind)..., Tuple(ind)...] =
-                simplify(prod([bb[t.var[i], var[i]][tind[i], ind[i]] for i = 1:order]))
+                simplify(prod([bb[t.var[i], var[i]][tind[i], ind[i]] for i ∈ 1:order]))
         end
         ec1 = ntuple(i -> i, order)
         ec2 = ntuple(i -> i, 2 * order)
