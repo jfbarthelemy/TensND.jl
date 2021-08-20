@@ -87,7 +87,7 @@ The attributes of this object are
 
 # Examples
 ```jldoctest
-julia> using LinearAlgebra, SymPy
+julia> using SymPy
 
 julia> b = CanonicalBasis()
 3×3 CanonicalBasis{3, Sym}:
@@ -186,7 +186,7 @@ end
 #####################
 # Display Functions #
 #####################
-for OP in (:show, :print, :display)
+for OP in (:show, :print)
     @eval begin
         function Base.$OP(b::AbstractBasis)
             println("basis:")
