@@ -151,7 +151,9 @@ julia> components(TT, (:cov,:cov), b)
  t₂₂ + t₂₃ + t₃₂ + t₃₃  t₂₁ + t₂₃ + t₃₁ + t₃₃  t₂₁ + t₂₂ + t₃₁ + t₃₂
  t₁₂ + t₁₃ + t₃₂ + t₃₃  t₁₁ + t₁₃ + t₃₁ + t₃₃  t₁₁ + t₁₂ + t₃₁ + t₃₂
  t₁₂ + t₁₃ + t₂₂ + t₂₃  t₁₁ + t₁₃ + t₂₁ + t₂₃  t₁₁ + t₁₂ + t₂₁ + t₂₂
+```
 
+```julia
 julia> components(TT, (:cont,:cov), b)
 3×3 Matrix{Sym}:
  -t12/2 - t13/2 + t22/2 + t23/2 + t32/2 + t33/2  -t11/2 - t13/2 + t21/2 + t23/2 + t31/2 + t33/2  -t11/2 - t12/2 + t21/2 + t22/2 + t31/2 + t32/2
