@@ -90,7 +90,7 @@ end
 
 """
     components(::Tensnd{order,dim,T}, ::NTuple{order,Symbol})
-    components(::Tensnd{order,dim,T},::NTuple{order,Symbol},::AbstractBasis{dim,T})
+    components(::Tensnd{order,dim,T}, ::NTuple{order,Symbol}, ::AbstractBasis{dim,T})
 
 Extracts the components of a tensor for new variances and/or in a new basis
 
@@ -110,7 +110,7 @@ julia> V = Tensor{1,3}(i->symbols("v\$i",real=true))
  v₂
  v₃
 
-julia> TV = Tensnd(V)
+julia> TV = Tensnd(V) # TV = Tensnd(V, (:cont,), CanonicalBasis())
 3-element Tensnd{1, 3, Sym}:
  v₁
  v₂
