@@ -221,7 +221,7 @@ function components(
             if c ≠ I
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
-                m = einsum(EinCode((ec1, ec2), ec3), (m, c))
+                m = simplify.(einsum(EinCode((ec1, ec2), ec3), (m, c)))
             end
         end
         return m
