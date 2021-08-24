@@ -33,4 +33,19 @@
         t12+t13+t22+t23-t32-t33 t11+t13+t21+t23-t31-t33 t11+t12+t21+t22-t31-t32
     ] / 2
 
+    E, ν = symbols("E ν", real = true)
+    λ = E * ν / ((1 + ν) * (1 - 2ν))
+    μ = E / (2 * (1 + ν))
+    C = 3λ * tensJ4() + 2μ * tensId4()
+    S = inv(C)
+    @test simplify.(tomandel(S.data)) == Sym[
+        1/E -ν/E -ν/E 0 0 0
+        -ν/E 1/E -ν/E 0 0 0
+        -ν/E -ν/E 1/E 0 0 0
+        0 0 0 (1+ν)/E 0 0
+        0 0 0 0 (1+ν)/E 0
+        0 0 0 0 0 (1+ν)/E
+    ]
+
+
 end

@@ -39,7 +39,6 @@ julia> components(T,(:cont,:cov),b)
  0  1  0
  0  0  1
 ```
-
 """
 struct Tensnd{order,dim,T} <: AbstractTensnd{order,dim,T}
     data::AbstractArray{T,order}
@@ -49,22 +48,38 @@ struct Tensnd{order,dim,T} <: AbstractTensnd{order,dim,T}
         data::AbstractArray{T,order},
         var::NTuple{order,Symbol} = ntuple(_ -> :cont, order),
         basis::AbstractBasis{dim,T} = CanonicalBasis{3,T}(),
-    ) where {order,dim,T} = new{order,dim,T}(data, var, basis)
+    ) where {order,dim,T} = new{order,dim,T}(tensor_or_array(data, Val(dim)), var, basis)
     Tensnd(
         data::AbstractTensor{order,dim,T},
         var::NTuple{order,Symbol} = ntuple(_ -> :cont, order),
         basis::AbstractBasis{dim,T} = CanonicalBasis{dim,T}(),
-    ) where {order,dim,T} = new{order,dim,T}(data, var, basis)
+    ) where {order,dim,T} = new{order,dim,T}(tensor_or_array(data, Val(dim)), var, basis)
 end
+
+# This function aims at storing the table of components in the `Tensor` type whenever possible
+for dim ∈ (1, 2, 3)
+    @eval tensor_or_array(tab::Array{T,1}, ::Val{$dim}) where {T} = Vec{$dim}(tab)
+end
+for order ∈ (2, 4), dim ∈ (1, 2, 3)
+    @eval function tensor_or_array(tab::Array{T,$order}, ::Val{$dim}) where {T}
+        newtab = Tensor{$order,$dim}(tab)
+        if Tensors.issymmetric(newtab)
+            newtab = convert(SymmetricTensor{$order,$dim}, newtab)
+        end
+        return newtab
+    end
+end
+tensor_or_array(tab::Tensors.AllTensors, ::Val{dim}) where {dim} = tab
+tensor_or_array(tab::AbstractArray, ::Val{dim}) where {dim} = tab
 
 ##############################
 # Utility/Accessor Functions #
 ##############################
-get_data(t::AbstractTensnd) = t.data
+getdata(t::AbstractTensnd) = t.data
 
-get_var(t::AbstractTensnd) = t.var
+getvar(t::AbstractTensnd) = t.var
 
-get_basis(t::AbstractTensnd) = t.basis
+getbasis(t::AbstractTensnd) = t.basis
 
 #####################
 # Display Functions #
@@ -83,6 +98,9 @@ for OP in (:show, :print)
         end
     end
 end
+
+# Base.display(U::FourthOrderTensor) = display(tomandel(U))
+
 
 ########################
 # Component extraction #
@@ -159,7 +177,10 @@ julia> components(TT, (:cont,:cov), b)
   t12/2 + t13/2 + t22/2 + t23/2 - t32/2 - t33/2   t11/2 + t13/2 + t21/2 + t23/2 - t31/2 - t33/2   t11/2 + t12/2 + t21/2 + t22/2 - t31/2 - t32/2
 ```
 """
-function components(t::Tensnd{order,dim,T}, var::NTuple{order,Symbol}) where {order,dim,T}
+function components(
+    t::Tensnd{order,dim,T},
+    var::NTuple{order,Symbol},
+) where {order,dim,T<:Number}
     if var == t.var
         return t.data
     else
@@ -171,7 +192,7 @@ function components(t::Tensnd{order,dim,T}, var::NTuple{order,Symbol}) where {or
                 g_or_G = metric(t.basis, var[i])
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
-                m = simplify(einsum(EinCode((ec1, ec2), ec3), (m, g_or_G)))
+                m = simplify.(einsum(EinCode((ec1, ec2), ec3), (m, g_or_G)))
             end
         end
         return m
@@ -181,8 +202,8 @@ end
 function components(
     t::Tensnd{order,dim,T},
     var::NTuple{order,Symbol},
-    basis::AbstractBasis{dim,T},
-) where {order,dim,T}
+    basis::AbstractBasis{dim,T2},
+) where {order,dim,T<:Number,T2<:Number}
     if basis == t.basis
         return components(t, var)
     else
@@ -193,15 +214,100 @@ function components(
             end
         end
         m = Array(t.data)
-        coef = zeros(T, ntuple(_ -> dim, 2 * order)...)
-        for tind ∈ CartesianIndices(m), ind ∈ CartesianIndices(m)
-            coef[Tuple(tind)..., Tuple(ind)...] =
-                simplify(prod([bb[t.var[i], var[i]][tind[i], ind[i]] for i ∈ 1:order]))
-        end
         ec1 = ntuple(i -> i, order)
-        ec2 = ntuple(i -> i, 2 * order)
-        ec3 = ntuple(i -> i + order, order)
-        m = simplify.(einsum(EinCode((ec1, ec2), ec3), (m, coef)))
+        newcp = order + 1
+        for i ∈ 1:order
+            c = bb[t.var[i], var[i]]
+            if c ≠ I
+                ec2 = (i, newcp)
+                ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
+                m = einsum(EinCode((ec1, ec2), ec3), (m, c))
+            end
+        end
         return m
     end
 end
+
+##############
+# Operations #
+##############
+
+function same_basis(
+    t1::Tensnd{order1,dim,T1},
+    t2::Tensnd{order2,dim,T2},
+) where {order1,order2,dim,T1,T2}
+    if t1.basis == t2.basis
+        return t1, t2
+    else
+        newdata = simplify.(components(t2, t2.var, t1.basis))
+        t3 = Tensnd(newdata, t2.var, t1.basis)
+        return t1, t3
+    end
+end
+
+function same_basis_same_var(
+    t1::Tensnd{order,dim,T1},
+    t2::Tensnd{order,dim,T2},
+) where {order,dim,T1,T2}
+    if t1.basis == t2.basis && t1.var == t2.var
+        return t1, t2
+    else
+        newdata = simplify.(components(t2, t1.var, t1.basis))
+        t3 = Tensnd(newdata, t1.var, t1.basis)
+        return t1, t3
+    end
+end
+
+for OP in (:(==), :(!=))
+    @eval function Base.$OP(
+        t1::Tensnd{order,dim,T1},
+        t2::Tensnd{order,dim,T2},
+    ) where {order,dim,T1,T2}
+        nt1, nt2 = same_basis_same_var(t1, t2)
+        return $OP(nt1.data, nt2.data)
+    end
+end
+
+
+function Base.:+(t1::Tensnd{order,dim,T1}, t2::Tensnd{order,dim,T2}) where {order,dim,T1,T2}
+    nt1, nt2 = same_basis_same_var(t1, t2)
+    return Tensnd(nt1.data + nt2.data, nt1.var, nt1.basis)
+end
+
+function Base.:-(t1::Tensnd{order,dim,T1}, t2::Tensnd{order,dim,T2}) where {order,dim,T1,T2}
+    nt1, nt2 = same_basis_same_var(t1, t2)
+    return Tensnd(nt1.data - nt2.data, nt1.var, nt1.basis)
+end
+
+function Base.:*(α::T1, t::Tensnd{order,dim,T2}) where {order,dim,T1<:Number,T2}
+    return Tensnd(α * t.data, t.var, t.basis)
+end
+
+function Base.:*(t::Tensnd{order,dim,T2}, α::T1) where {order,dim,T1<:Number,T2}
+    return Tensnd(α * t.data, t.var, t.basis)
+end
+
+function Base.:/(t::Tensnd{order,dim,T2}, α::T1) where {order,dim,T1<:Number,T2}
+    return Tensnd(t.data / α, t.var, t.basis)
+end
+
+function Base.inv(t::Tensnd{order,dim,T}) where {order,dim,T<:Number}
+    var = ntuple(i -> invvar(t.var[i]), order)
+    return Tensnd(inv(t.data), var, t.basis)
+end
+
+Tensors.tomandel(t::Tensnd{4,dim,T}) where {dim,T<:Number} = tomandel(t.data)
+
+function Tensors.tomandel(t::Tensnd{4,dim,T}, b::AbstractBasis{dim,T}) where {dim,T<:Number}
+    if t.basis == b
+        return tomandel(t)
+    else
+        newt = tensor_or_array(components(t, t.var, b), Val(dim))
+        return tomandel(newt)
+    end
+end
+
+
+
+
+
