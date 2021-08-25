@@ -1,19 +1,23 @@
-abstract type AbstractBasis{dim,T<:Number} <: AbstractArray{T, 2} end
+abstract type AbstractBasis{dim,T<:Number} <: AbstractArray{T,2} end
+abstract type OrthonormalBasis{dim,T<:Number} <: AbstractBasis{dim,T} end
 
 @pure Base.size(::AbstractBasis{dim}) where {dim} = (dim, dim)
 
-Base.getindex(b::AbstractBasis,i::Int, j::Int) = getindex(b.e,i,j)
+Base.getindex(b::AbstractBasis, i::Int, j::Int) = getindex(b.e, i, j)
 
 
 """
-    Basis{dim, T<:Number}(v, var = :cov)
-    Basis(θ::Number, ϕ::Number, ψ::Number)
+    Basis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
+    Basis{dim, T<:Number}()
+    Basis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
 
 Basis built from a square matrix `v` where columns correspond either to
-- primal vectors ie `eᵢ=v[:,i]` if `var = :cov` as by default
-- dual vectors ie `eⁱ=v[:,i]` if `var = :cont`.
+- primal vectors ie `eᵢ=v[:,i]` if `var=:cov` as by default
+- dual vectors ie `eⁱ=v[:,i]` if `var=:cont`.
 
-Basis can also be built from Euler angles `(θ, ϕ, ψ)`
+Basis without any argument refers to the canonical basis in `Rᵈⁱᵐ` (by default `dim=3` and `T=Sym`)
+
+Basis can also be built from Euler angles `θ` in 2D and `(θ, ϕ, ψ)` in 3D
 
 The attributes of this object are
 - `Basis.e`: square matrix defining the primal basis `eᵢ=e[:,i]`
@@ -50,12 +54,26 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
     e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
     E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
     g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`   
+    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
+    function Basis(
+        e::AbstractArray{T,2},
+        E::AbstractArray{T,2},
+        g::AbstractArray{T,2},
+        G::AbstractArray{T,2},
+    ) where {T}
+        dim = size(v, 1)
+        @assert dim == size(v, 2) "v should be a square matrix"
+        e = Tensor{2,dim}(e)
+        g = SymmetricTensor{2,dim}(g)
+        G = SymmetricTensor{2,dim}(G)
+        E = Tensor{2,dim}(E)
+        new{dim,T}(e, E, g, G)
+    end
     function Basis(v::AbstractArray{T,2}, ::Val{:cov}) where {T}
         dim = size(v, 1)
         @assert dim == size(v, 2) "v should be a square matrix"
         e = Tensor{2,dim}(v)
-        g = SymmetricTensor{2,dim}(simplify.(e' ⋅ e))
+        g = SymmetricTensor{2,dim}(e' ⋅ e)
         G = inv(g)
         E = e ⋅ G'
         new{dim,T}(e, E, g, G)
@@ -64,14 +82,17 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
         dim = size(v, 1)
         @assert dim == size(v, 2) "v should be a square matrix"
         E = Tensor{2,dim}(v)
-        G = SymmetricTensor{2,dim}(simplify.(E' ⋅ E))
+        G = SymmetricTensor{2,dim}(E' ⋅ E)
         g = inv(G)
         e = E ⋅ g'
         new{dim,T}(e, E, g, G)
     end
     Basis(v::AbstractArray{T,2}, var) where {T} = Basis(v, Val(var))
     Basis(v::AbstractArray{T,2}) where {T} = Basis(v, :cov)
-    Basis(θ::Number, ϕ::Number, ψ::Number) = Basis(RotZYZ(ϕ, θ, ψ))
+    Basis(θ::T, ϕ::T, ψ::T) where {T} = RotatedBasis(θ, ϕ, ψ)
+    Basis(θ::T) where {T} = RotatedBasis(θ)
+    Basis{dim,T}() where {dim,T} = CanonicalBasis{dim,T}()
+    Basis() = CanonicalBasis()
 end
 
 """
@@ -101,7 +122,7 @@ julia> b = CanonicalBasis{2, Float64}()
  0.0  1.0
 ```
 """
-struct CanonicalBasis{dim,T} <: AbstractBasis{dim,T}
+struct CanonicalBasis{dim,T} <: OrthonormalBasis{dim,T}
     e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
     E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
     g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
@@ -112,6 +133,40 @@ struct CanonicalBasis{dim,T} <: AbstractBasis{dim,T}
         new{dim,T}(e, E, g, G)
     end
     CanonicalBasis() = CanonicalBasis{3,Sym}()
+end
+
+"""
+    RotatedBasis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
+    RotatedBasis(θ::T<:Number)
+
+Orthonormal basis of dimension `dim` (default: 3) and type `T` (default: Sym) built from Euler angles `θ` in 2D and `(θ, ϕ, ψ)` in 3D
+
+# Examples
+```julia
+julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = OrthogonalBasis(θ, ϕ, ψ) ; display(b.e)
+3×3 Tensor{2, 3, Sym, 9}:
+ -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
+  sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
+                        -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
+```
+"""
+struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
+    e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
+    E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
+    g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
+    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`   
+    function RotatedBasis(θ::T, ϕ::T, ψ::T) where {T<:Number}
+        dim = 3
+        e = E = Tensor{2,dim,T}(RotZYZ(ϕ, θ, ψ))
+        g = G = one(SymmetricTensor{2,dim,T})
+        new{dim,T}(e, E, g, G)
+    end
+    function RotatedBasis(θ::T) where {T<:Number}
+        dim = 2
+        e = E = Tensor{2,dim,T}((cos(θ), sin(θ), -sin(θ), cos(θ)))
+        g = G = one(SymmetricTensor{2,dim,T})
+        new{dim,T}(e, E, g, G)
+    end
 end
 
 @pure Base.eltype(::AbstractBasis{dim,T}) where {dim,T} = T

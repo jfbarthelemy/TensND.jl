@@ -3,30 +3,28 @@
     v = Sym[0 1 1; 1 0 1; 1 1 0]
     b = Basis(v)
     bn = normal_basis(b)
-    # V = Tensor{1,3}(i -> symbols("v$i", real = true))
-    # for i ∈ 1:3
-    #     @eval $(Symbol("v$i")) = V[$i]
-    # end
     for i ∈ 1:3
         @eval $(Symbol("v$i")) = symbols($"v$i", real = true)
     end
     V = Tensor{1,3}(i -> eval(Symbol("v$i")))
     TV = Tensnd(V) # TV = Tensnd(V, (:cont,), CanonicalBasis())
-    @test components(TV, (:cont,), b) == Sym[(-v1+v2+v3)/2, (v1-v2+v3)/2, (v1+v2-v3)/2]
-    @test components(TV, (:cov,), b) == Sym[v2+v3, v1+v3, v1+v2]
-    @test components(TV, (:cov,), bn) == Sym[sq2*(v2+v3)/2, sq2*(v1+v3)/2, sq2*(v1+v2)/2]
+    @test simplify.(components(TV, (:cont,), b)) ==
+          Sym[(-v1+v2+v3)/2, (v1-v2+v3)/2, (v1+v2-v3)/2]
+    @test simplify.(components(TV, (:cov,), b)) == Sym[v2+v3, v1+v3, v1+v2]
+    @test simplify.(components(TV, (:cov,), bn)) ==
+          Sym[sq2*(v2+v3)/2, sq2*(v1+v3)/2, sq2*(v1+v2)/2]
 
     for i ∈ 1:3, j ∈ 1:3
         @eval $(Symbol("t$i$j")) = symbols($"t$i$j", real = true)
     end
     T = Tensor{2,3}((i, j) -> eval(Symbol("t$i$j")))
     TT = Tensnd(T)
-    @test components(TT, (:cov, :cov), b) == Sym[
+    @test simplify.(components(TT, (:cov, :cov), b)) == Sym[
         t22+t23+t32+t33 t21+t23+t31+t33 t21+t22+t31+t32
         t12+t13+t32+t33 t11+t13+t31+t33 t11+t12+t31+t32
         t12+t13+t22+t23 t11+t13+t21+t23 t11+t12+t21+t22
     ]
-    @test components(TT, (:cont, :cov), b) ==
+    @test simplify.(components(TT, (:cont, :cov), b)) ==
           Sym[
         -t12-t13+t22+t23+t32+t33 -t11-t13+t21+t23+t31+t33 -t11-t12+t21+t22+t31+t32
         t12+t13-t22-t23+t32+t33 t11+t13-t21-t23+t31+t33 t11+t12-t21-t22+t31+t32

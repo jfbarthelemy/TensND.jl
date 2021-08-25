@@ -1,16 +1,25 @@
-abstract type AbstractTensnd{order,dim,T<:Number} <: AbstractArray{T,order} end
+abstract type AbstractTensnd{
+    order,
+    dim,
+    TA<:Number,
+    TB<:Number,
+    A<:AbstractArray,
+    B<:AbstractBasis,
+} <: AbstractArray{TA,order} end
 
 Base.size(t::AbstractTensnd) = size(t.data)
 
 Base.getindex(t::AbstractTensnd, ind...) = getindex(t.data, ind...)
 
-@pure Base.eltype(::AbstractTensnd{order,dim,T}) where {order,dim,T} = T
-getdim(::AbstractTensnd{order,dim,T}) where {order,dim,T} = dim
-getorder(::AbstractTensnd{order,dim,T}) where {order,dim,T} = order
+@pure Base.eltype(::AbstractTensnd{order,dim,TA,TB,A,B}) where {order,dim,TA,TB,A,B} = TA
+getdim(::AbstractTensnd{order,dim,TA,TB,A,B}) where {order,dim,TA,TB,A,B} = dim
+getorder(::AbstractTensnd{order,dim,TA,TB,A,B}) where {order,dim,TA,TB,A,B} = order
+getdatatype(::AbstractTensnd{order,dim,TA,TB,A,B}) where {order,dim,TA,TB,A,B} = A
+getbasistype(::AbstractTensnd{order,dim,TA,TB,A,B}) where {order,dim,TA,TB,A,B} = B
 
 
 """
-    Tensnd{order,dim,T<:Number}
+    Tensnd{order,dim,TA<:Number,TB<:Number,A<:AbstractArray,B<:AbstractBasis}
 
 Tensor type of any order defined by
 - a multiarray of components (of any type heriting from `AbstractArray`, e.g. `Tensor` or `SymmetricTensor`)
@@ -40,20 +49,26 @@ julia> components(T,(:cont,:cov),b)
  0  0  1
 ```
 """
-struct Tensnd{order,dim,T} <: AbstractTensnd{order,dim,T}
-    data::AbstractArray{T,order}
+struct Tensnd{order,dim,TA,TB,A,B} <: AbstractTensnd{order,dim,TA,TB,A,B}
+    data::A
     var::NTuple{order,Symbol}
-    basis::AbstractBasis{dim,T}
-    Tensnd(
-        data::AbstractArray{T,order},
+    basis::B
+    function Tensnd(
+        data::AbstractArray{TA,order},
         var::NTuple{order,Symbol} = ntuple(_ -> :cont, order),
-        basis::AbstractBasis{dim,T} = CanonicalBasis{3,T}(),
-    ) where {order,dim,T} = new{order,dim,T}(tensor_or_array(data, Val(dim)), var, basis)
-    Tensnd(
-        data::AbstractTensor{order,dim,T},
+        basis::AbstractBasis{dim,TB} = Basis{3,TA}(),
+    ) where {order,dim,TA,TB}
+        newdata = tensor_or_array(data, Val(dim))
+        new{order,dim,TA,TB,typeof(newdata),typeof(basis)}(newdata, var, basis)
+    end
+    function Tensnd(
+        data::AbstractTensor{order,dim,TA},
         var::NTuple{order,Symbol} = ntuple(_ -> :cont, order),
-        basis::AbstractBasis{dim,T} = CanonicalBasis{dim,T}(),
-    ) where {order,dim,T} = new{order,dim,T}(tensor_or_array(data, Val(dim)), var, basis)
+        basis::AbstractBasis{dim,TB} = Basis{dim,TA}(),
+        ) where {order,dim,TA,TB}
+        newdata = tensor_or_array(data, Val(dim))
+        new{order,dim,TA,TB,typeof(newdata),typeof(basis)}(newdata, var, basis)
+    end
 end
 
 # This function aims at storing the table of components in the `Tensor` type whenever possible
@@ -65,6 +80,9 @@ for order ∈ (2, 4), dim ∈ (1, 2, 3)
         newtab = Tensor{$order,$dim}(tab)
         if Tensors.issymmetric(newtab)
             newtab = convert(SymmetricTensor{$order,$dim}, newtab)
+        end
+        if T == Sym
+            newtab = sympy.trigsimp.(newtab)
         end
         return newtab
     end
@@ -192,7 +210,10 @@ function components(
                 g_or_G = metric(t.basis, var[i])
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
-                m = simplify.(einsum(EinCode((ec1, ec2), ec3), (m, g_or_G)))
+                m = einsum(EinCode((ec1, ec2), ec3), (m, g_or_G))
+                if T == Sym
+                    m = sympy.trigsimp.(m)
+                end
             end
         end
         return m
@@ -210,7 +231,7 @@ function components(
         bb = Dict()
         for v1 ∈ (:cov, :cont), v2 ∈ (:cov, :cont)
             if v1 ∈ t.var && v2 ∈ var
-                bb[v1, v2] = simplify.(vecbasis(t.basis, invvar(v1))' ⋅ vecbasis(basis, v2))
+                bb[v1, v2] = vecbasis(t.basis, invvar(v1))' ⋅ vecbasis(basis, v2)
             end
         end
         m = Array(t.data)
@@ -221,7 +242,10 @@ function components(
             if c ≠ I
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
-                m = simplify.(einsum(EinCode((ec1, ec2), ec3), (m, c)))
+                m = einsum(EinCode((ec1, ec2), ec3), (m, c))
+                if T == Sym
+                    m = sympy.trigsimp.(m)
+                end
             end
         end
         return m
@@ -239,7 +263,7 @@ function same_basis(
     if t1.basis == t2.basis
         return t1, t2
     else
-        newdata = simplify.(components(t2, t2.var, t1.basis))
+        newdata = components(t2, t2.var, t1.basis)
         t3 = Tensnd(newdata, t2.var, t1.basis)
         return t1, t3
     end
@@ -252,7 +276,7 @@ function same_basis_same_var(
     if t1.basis == t2.basis && t1.var == t2.var
         return t1, t2
     else
-        newdata = simplify.(components(t2, t1.var, t1.basis))
+        newdata = components(t2, t1.var, t1.basis)
         t3 = Tensnd(newdata, t1.var, t1.basis)
         return t1, t3
     end
@@ -307,6 +331,9 @@ function Tensors.tomandel(t::Tensnd{4,dim,T}, b::AbstractBasis{dim,T}) where {di
     end
 end
 
+const KM = tomandel
+
+# frommandel(TT::Type{<:SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...)
 
 
 
