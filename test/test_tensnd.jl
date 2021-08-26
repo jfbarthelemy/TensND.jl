@@ -36,7 +36,7 @@
     μ = E / (2 * (1 + ν))
     C = 3λ * tensJ4() + 2μ * tensId4()
     S = inv(C)
-    @test simplify.(tomandel(S.data)) == Sym[
+    @test simplify.(KM(S)) == Sym[
         1/E -ν/E -ν/E 0 0 0
         -ν/E 1/E -ν/E 0 0 0
         -ν/E -ν/E 1/E 0 0 0
@@ -44,6 +44,7 @@
         0 0 0 0 (1+ν)/E 0
         0 0 0 0 0 (1+ν)/E
     ]
+    @test invKM(KM(S)) == S
 
 
 end

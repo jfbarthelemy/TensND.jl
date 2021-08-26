@@ -37,7 +37,7 @@ julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
  0  1  1
 
 julia> T = Tensnd(b.g,(:cov,:cov),b)
-3×3 Tensnd{2, 3, Sym}:
+3×3 Tensnd{2, 3, Sym, Sym, SymmetricTensor{2, 3, Sym, 6}, Basis{3, Sym}}:
  1  0  0
  0  2  1
  0  1  1
@@ -58,37 +58,36 @@ struct Tensnd{order,dim,TA,TB,A,B} <: AbstractTensnd{order,dim,TA,TB,A,B}
         var::NTuple{order,Symbol} = ntuple(_ -> :cont, order),
         basis::AbstractBasis{dim,TB} = Basis{3,TA}(),
     ) where {order,dim,TA,TB}
-        newdata = tensor_or_array(data, Val(dim))
+        newdata = tensor_or_array(data)
         new{order,dim,TA,TB,typeof(newdata),typeof(basis)}(newdata, var, basis)
     end
     function Tensnd(
         data::AbstractTensor{order,dim,TA},
         var::NTuple{order,Symbol} = ntuple(_ -> :cont, order),
         basis::AbstractBasis{dim,TB} = Basis{dim,TA}(),
-        ) where {order,dim,TA,TB}
-        newdata = tensor_or_array(data, Val(dim))
+    ) where {order,dim,TA,TB}
+        newdata = tensor_or_array(data)
         new{order,dim,TA,TB,typeof(newdata),typeof(basis)}(newdata, var, basis)
     end
 end
 
 # This function aims at storing the table of components in the `Tensor` type whenever possible
-for dim ∈ (1, 2, 3)
-    @eval tensor_or_array(tab::Array{T,1}, ::Val{$dim}) where {T} = Vec{$dim}(tab)
-end
-for order ∈ (2, 4), dim ∈ (1, 2, 3)
-    @eval function tensor_or_array(tab::Array{T,$order}, ::Val{$dim}) where {T}
-        newtab = Tensor{$order,$dim}(tab)
+tensor_or_array(tab::Array{T,1}) where {T} = Vec{size(tab)[1]}(tab)
+for order ∈ (2, 4)
+    @eval function tensor_or_array(tab::Array{T,$order}) where {T}
+        dim = size(tab)[1]
+        newtab = Tensor{$order,dim}(tab)
         if Tensors.issymmetric(newtab)
-            newtab = convert(SymmetricTensor{$order,$dim}, newtab)
+            newtab = convert(SymmetricTensor{$order,dim}, newtab)
         end
         if T == Sym
-            newtab = sympy.trigsimp.(newtab)
+            newtab = Tensors.get_base(typeof(newtab))(sympy.trigsimp.(newtab))
         end
         return newtab
     end
 end
-tensor_or_array(tab::Tensors.AllTensors, ::Val{dim}) where {dim} = tab
-tensor_or_array(tab::AbstractArray, ::Val{dim}) where {dim} = tab
+tensor_or_array(tab::Tensors.AllTensors) = tab
+tensor_or_array(tab::AbstractArray) = tab
 
 ##############################
 # Utility/Accessor Functions #
@@ -147,7 +146,7 @@ julia> V = Tensor{1,3}(i->symbols("v\$i",real=true))
  v₃
 
 julia> TV = Tensnd(V) # TV = Tensnd(V, (:cont,), CanonicalBasis())
-3-element Tensnd{1, 3, Sym}:
+3-element Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}:
  v₁
  v₂
  v₃
@@ -177,7 +176,7 @@ julia> T = Tensor{2,3}((i,j)->symbols("t\$i\$j",real=true))
  t₃₁  t₃₂  t₃₃
 
 julia> TT = Tensnd(T)
-3×3 Tensnd{2, 3, Sym}:
+3×3 Tensnd{2, 3, Sym, Sym, Tensor{2, 3, Sym, 9}, CanonicalBasis{3, Sym}}:
  t₁₁  t₁₂  t₁₃
  t₂₁  t₂₂  t₂₃
  t₃₁  t₃₂  t₃₃
@@ -292,7 +291,6 @@ for OP in (:(==), :(!=))
     end
 end
 
-
 function Base.:+(t1::Tensnd{order,dim,T1}, t2::Tensnd{order,dim,T2}) where {order,dim,T1,T2}
     nt1, nt2 = same_basis_same_var(t1, t2)
     return Tensnd(nt1.data + nt2.data, nt1.var, nt1.basis)
@@ -320,21 +318,62 @@ function Base.inv(t::Tensnd{order,dim,T}) where {order,dim,T<:Number}
     return Tensnd(inv(t.data), var, t.basis)
 end
 
-Tensors.tomandel(t::Tensnd{4,dim,T}) where {dim,T<:Number} = tomandel(t.data)
+KM(t::Tensors.AllTensors; kwargs...) = tomandel(t; kwargs...)
 
-function Tensors.tomandel(t::Tensnd{4,dim,T}, b::AbstractBasis{dim,T}) where {dim,T<:Number}
+KM(t::Tensnd{4,dim,T}; kwargs...) where {dim,T<:Number} = tomandel(t.data; kwargs...)
+
+function KM(t::Tensnd{4,dim,T}, b::AbstractBasis{dim,T}; kwargs...) where {dim,T<:Number}
     if t.basis == b
-        return tomandel(t)
+        return tomandel(t; kwargs...)
     else
-        newt = tensor_or_array(components(t, t.var, b), Val(dim))
-        return tomandel(newt)
+        newt = tensor_or_array(components(t, t.var, b))
+        return tomandel(newt; kwargs...)
     end
 end
 
-const KM = tomandel
+KM(t::Array{T,order}; kwargs...) where {T<:Number, order} = KM(Tensnd(t); kwargs...)
 
-# frommandel(TT::Type{<:SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...)
+KM(t::Array{T,order}, b::AbstractBasis{dim,T}; kwargs...) where {T<:Number, order, dim} = KM(Tensnd(t),b; kwargs...)
 
+invKM(TT::Type{<:Tensors.AllTensors}, v::AbstractVecOrMat; kwargs...) =
+    Tensnd(frommandel(TT, v; kwargs...))
 
+const select_type_KM = Dict(
+    (6, 6) => SymmetricTensor{4,3},
+    (9, 9) => Tensor{4,3},
+    (3, 3) => SymmetricTensor{4,2},
+    (4, 4) => Tensor{4,2},
+    (6,) => SymmetricTensor{2,3},
+    (9,) => Tensor{2,3},
+    (3,) => SymmetricTensor{2,2},
+    (4,) => Tensor{2,2},
+)
 
+invKM(v::AbstractVecOrMat; kwargs...) = invKM(select_type_KM[size(v)], v; kwargs...)
+
+function Tensors.otimes(t1::AbstractArray{T,order1}, t2::AbstractArray{T,order2}) where {T,order1,order2}
+    ec1 = ntuple(i -> i, order1)
+    ec2 = ntuple(i -> order1 + i, order2)
+    ec3 = ntuple(i -> i, order1 + order2)
+    return einsum(EinCode((ec1, ec2), ec3), (t1, t2))
+end
+
+function Tensors.otimes(t1::Tensnd{order1,dim}, t2::Tensnd{order2,dim}) where {order1,order2,dim}
+    T1, T2 = same_basis(t1, t2)
+    data = otimes(T1.data, T2.data)
+    println(data)
+    var = (T1.var..., T2.var...)
+    return Tensnd(data, var, T1.basis)
+end
+
+# function Tensors.dot(t1::Tensnd{order1,dim}, t2::Tensnd{order2,dim}) where {order1,order2,dim}
+#     T1, T2 = same_basis(t1, t2)
+#     var = T2.var
+#     var[1] = invvar(T1.var[end])
+#     T2 = Tensnd(components(T2, var, T2.basis), var, T2.basis)
+
+#     data = dot(T1.data, T2.data)
+#     var = (T1.var[begin:end-1]..., T2.var[begin+1:end]...)
+#     return Tensnd(data, var, T1.basis)
+# end
 

@@ -7,7 +7,7 @@ Base.getindex(b::AbstractBasis, i::Int, j::Int) = getindex(b.e, i, j)
 
 
 """
-    Basis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
+    Basis(v::AbstractArray{T,2}, ::Val{:cov})
     Basis{dim, T<:Number}()
     Basis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
 
@@ -15,9 +15,9 @@ Basis built from a square matrix `v` where columns correspond either to
 - primal vectors ie `eᵢ=v[:,i]` if `var=:cov` as by default
 - dual vectors ie `eⁱ=v[:,i]` if `var=:cont`.
 
-Basis without any argument refers to the canonical basis in `Rᵈⁱᵐ` (by default `dim=3` and `T=Sym`)
+Basis without any argument refers to the canonical basis (`CanonicalBasis`) in `Rᵈⁱᵐ` (by default `dim=3` and `T=Sym`)
 
-Basis can also be built from Euler angles `θ` in 2D and `(θ, ϕ, ψ)` in 3D
+Basis can also be built from Euler angles (`RotatedBasis`) `θ` in 2D and `(θ, ϕ, ψ)` in 3D
 
 The attributes of this object are
 - `Basis.e`: square matrix defining the primal basis `eᵢ=e[:,i]`
@@ -143,7 +143,7 @@ Orthonormal basis of dimension `dim` (default: 3) and type `T` (default: Sym) bu
 
 # Examples
 ```julia
-julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = OrthogonalBasis(θ, ϕ, ψ) ; display(b.e)
+julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = RotatedBasis(θ, ϕ, ψ) ; display(b.e)
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
   sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
@@ -174,7 +174,7 @@ end
 getdim(::AbstractBasis{dim,T}) where {dim,T} = dim
 
 """
-    basis(b::AbstractBasis, var = :cov)
+    vecbasis(b::AbstractBasis, var = :cov)
 
 Returns the primal (if `var = :cov`) or primal (if `var = :cont`) basis
 """
