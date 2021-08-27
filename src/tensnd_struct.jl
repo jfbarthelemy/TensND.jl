@@ -147,11 +147,11 @@ julia> TV = Tensnd(V) # TV = Tensnd(V, (:cont,), CanonicalBasis())
  v₂
  v₃
 
-julia> components(TV, (:cont,), b)
+julia> factor.(components(TV, (:cont,), b))
 3-element Vector{Sym}:
- -v1/2 + v2/2 + v3/2
-  v1/2 - v2/2 + v3/2
-  v1/2 + v2/2 - v3/2
+ -(v1 - v2 - v3)/2
+  (v1 - v2 + v3)/2
+  (v1 + v2 - v3)/2
 
 julia> components(TV, (:cov,), b)
 3-element Vector{Sym}:
@@ -316,11 +316,11 @@ end
 
 KM(t::Tensors.AllTensors; kwargs...) = tomandel(t; kwargs...)
 
-KM(t::Tensnd{4,dim,T}; kwargs...) where {dim,T<:Number} = tomandel(t.data; kwargs...)
+KM(t::Tensnd{order,dim,T}; kwargs...) where {order,dim,T<:Number} = tomandel(t.data; kwargs...)
 
-function KM(t::Tensnd{4,dim,T}, b::AbstractBasis{dim,T}; kwargs...) where {dim,T<:Number}
+function KM(t::Tensnd{order,dim,T}, b::AbstractBasis{dim,T}; kwargs...) where {order,dim,T<:Number}
     if t.basis == b
-        return tomandel(t; kwargs...)
+        return KM(t; kwargs...)
     else
         newt = tensor_or_array(components(t, t.var, b))
         return tomandel(newt; kwargs...)
