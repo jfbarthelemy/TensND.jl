@@ -128,7 +128,7 @@ end
 Extracts the components of a tensor for new variances and/or in a new basis
 
 # Examples
-```jldoctest
+```julia
 julia> v = Sym[0 1 1; 1 0 1; 1 1 0] ; b = Basis(v)
 3×3 Basis{3, Sym}:
  0  1  1
