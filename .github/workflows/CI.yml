@@ -54,9 +54,14 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using SymPy
             using TensND
-            DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations, TensND); recursive=true)
+            docmeta = quote
+                import Pkg; Pkg.add("Tensors")
+                import Pkg; Pkg.add("OMEinsum")
+                import Pkg; Pkg.add("Rotations")
+                using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations, TensND
+            end
+            DocMeta.setdocmeta!(TensND, :DocTestSetup, docmeta; recursive=true)
             doctest(TensND)'
       - run: julia --project=docs docs/make.jl
         env:
