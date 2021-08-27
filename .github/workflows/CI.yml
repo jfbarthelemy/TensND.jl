@@ -51,12 +51,12 @@ jobs:
             ENV["PYTHON"] = ""
             Pkg.build("PyCall")
             Pkg.instantiate()'
-      - run: |
-          julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
-            DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations); recursive=true)
-            doctest(TensND)'
+      # - run: |
+      #     julia --project=docs -e '
+      #       using Documenter: DocMeta, doctest
+      #       using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
+      #       DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations); recursive=true)
+      #       doctest(TensND)'
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
