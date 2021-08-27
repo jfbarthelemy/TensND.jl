@@ -1,6 +1,7 @@
 using Documenter, TensND
+using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 
-DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using TensND); recursive = true)
+DocMeta.setdocmeta!(TensND, :DocTestSetup, :(using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations); recursive = true)
 
 makedocs(;
     modules = [TensND],
