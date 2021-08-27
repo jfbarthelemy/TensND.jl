@@ -23,7 +23,7 @@
             @test simplify.(bv.G' ⋅ bv.g) == I
             @test !isorthogonal(bw)
 
-            nb = normal_basis(v)
+            nb = normalize(bv)
             if T == Sym
                 @test vecbasis(nb) == nb.e == T[1 0 0; 0 sq2/2 0; 0 sq2/2 1]
                 θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true)

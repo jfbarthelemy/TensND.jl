@@ -27,8 +27,6 @@ The attributes of this object are
 
 # Examples
 ```jldoctest
-julia> using LinearAlgebra, SymPy
-
 julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
 3×3 Basis{3, Sym}:
  1  0  0
@@ -40,9 +38,7 @@ julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v, :cont)
  1  0   0
  0  1  -1
  0  0   1
-```
 
-```julia
 julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = Basis(θ, ϕ, ψ) ; display(b.e)
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
@@ -108,8 +104,6 @@ The attributes of this object are
 
 # Examples
 ```jldoctest
-julia> using SymPy
-
 julia> b = CanonicalBasis()
 3×3 CanonicalBasis{3, Sym}:
  1  0  0
@@ -142,7 +136,7 @@ end
 Orthonormal basis of dimension `dim` (default: 3) and type `T` (default: Sym) built from Euler angles `θ` in 2D and `(θ, ϕ, ψ)` in 3D
 
 # Examples
-```julia
+```jldoctest
 julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = RotatedBasis(θ, ϕ, ψ) ; display(b.e)
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
@@ -217,7 +211,7 @@ end
 
 Builds a normalized basis from the input basis `b` by calling `normal_basis`
 """
-LinearAlgebra.normalize(b::AbstractBasis, var = cov) = normal_basis(vecbasis(b, var), var)
+LinearAlgebra.normalize(b::AbstractBasis, var = :cov) = normal_basis(vecbasis(b, var), var)
 
 """
     isorthogonal(b::AbstractBasis)

@@ -3,7 +3,6 @@ module TensND
 import Base.@pure
 import Base: eltype
 import LinearAlgebra: normalize, dot
-import Tensors: otimes
 
 using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 

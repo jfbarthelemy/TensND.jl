@@ -28,8 +28,6 @@ Tensor type of any order defined by
 
 # Examples
 ```jldoctest
-julia> using SymPy
-
 julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
 3×3 Basis{3, Sym}:
  1  0  0
@@ -130,9 +128,7 @@ end
 Extracts the components of a tensor for new variances and/or in a new basis
 
 # Examples
-```julia
-julia> using SymPy
-
+```jldoctest
 julia> v = Sym[0 1 1; 1 0 1; 1 1 0] ; b = Basis(v)
 3×3 Basis{3, Sym}:
  0  1  1
