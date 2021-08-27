@@ -38,7 +38,9 @@ julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v, :cont)
  1  0   0
  0  1  -1
  0  0   1
+```
 
+```julia
 julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = Basis(θ, ϕ, ψ) ; display(b.e)
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
@@ -136,7 +138,7 @@ end
 Orthonormal basis of dimension `dim` (default: 3) and type `T` (default: Sym) built from Euler angles `θ` in 2D and `(θ, ϕ, ψ)` in 3D
 
 # Examples
-```jldoctest
+```julia
 julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = RotatedBasis(θ, ϕ, ψ) ; display(b.e)
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)

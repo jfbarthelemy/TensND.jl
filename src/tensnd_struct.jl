@@ -159,7 +159,7 @@ julia> components(TV, (:cov,), b)
  v₁ + v₃
  v₁ + v₂
 
-julia> components(TV, (:cov,), normal_basis(b))
+julia> simplify.(components(TV, (:cov,), normal_basis(b)))
 3-element Vector{Sym}:
  sqrt(2)*(v2 + v3)/2
  sqrt(2)*(v1 + v3)/2
@@ -183,11 +183,11 @@ julia> components(TT, (:cov,:cov), b)
  t₁₂ + t₁₃ + t₃₂ + t₃₃  t₁₁ + t₁₃ + t₃₁ + t₃₃  t₁₁ + t₁₂ + t₃₁ + t₃₂
  t₁₂ + t₁₃ + t₂₂ + t₂₃  t₁₁ + t₁₃ + t₂₁ + t₂₃  t₁₁ + t₁₂ + t₂₁ + t₂₂
 
-julia> components(TT, (:cont,:cov), b)
+julia> factor.(components(TT, (:cont,:cov), b))
 3×3 Matrix{Sym}:
- -t12/2 - t13/2 + t22/2 + t23/2 + t32/2 + t33/2  -t11/2 - t13/2 + t21/2 + t23/2 + t31/2 + t33/2  -t11/2 - t12/2 + t21/2 + t22/2 + t31/2 + t32/2
-  t12/2 + t13/2 - t22/2 - t23/2 + t32/2 + t33/2   t11/2 + t13/2 - t21/2 - t23/2 + t31/2 + t33/2   t11/2 + t12/2 - t21/2 - t22/2 + t31/2 + t32/2
-  t12/2 + t13/2 + t22/2 + t23/2 - t32/2 - t33/2   t11/2 + t13/2 + t21/2 + t23/2 - t31/2 - t33/2   t11/2 + t12/2 + t21/2 + t22/2 - t31/2 - t32/2
+ -(t12 + t13 - t22 - t23 - t32 - t33)/2  …  -(t11 + t12 - t21 - t22 - t31 - t32)/2
+  (t12 + t13 - t22 - t23 + t32 + t33)/2      (t11 + t12 - t21 - t22 + t31 + t32)/2
+  (t12 + t13 + t22 + t23 - t32 - t33)/2      (t11 + t12 + t21 + t22 - t31 - t32)/2
 ```
 """
 function components(
