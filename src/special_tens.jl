@@ -2,7 +2,7 @@
     fϵ(T, i::Int, j::Int, k::Int)
     fϵ(i::Int, j::Int, k::Int) = fϵ(Int, i::Int, j::Int, k::Int)
 
-Function giving Levi-Civita symbol `ϵᵢⱼₖ=(i-j)(j-k)(k-i)/2`
+Function giving Levi-Civita symbol `ϵᵢⱼₖ = (i-j) (j-k) (k-i) / 2`
 """
 fϵ(i::Int, j::Int, k::Int, ::Type{<:T} = Int) where {T} = T(T((i-j)*(j-k)*(k-i))/T(2))
 
