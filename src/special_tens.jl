@@ -26,7 +26,7 @@ function tensJ4(T::Type{<:Number} = Sym, dim = 3)
     return Tensnd(δ⊗δ/dim, (:cont, :cont, :cont, :cont), CanonicalBasis{dim,T}())
 end
 
-tensK4(T::Type{<:Number} = Sym, dim = 3) = Tensnd(tensId4(T, dim) - tensJ4(T, dim), (:cont, :cont, :cont, :cont), CanonicalBasis{dim,T}())
+tensK4(T::Type{<:Number} = Sym, dim = 3) = tensId4s(T, dim) - tensJ4(T, dim)
 
 const 𝟏 = tensId2
 const 𝟙 = tensId4
