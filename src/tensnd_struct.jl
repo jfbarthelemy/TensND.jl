@@ -297,17 +297,9 @@ function Base.:-(t1::Tensnd{order,dim,T1}, t2::Tensnd{order,dim,T2}) where {orde
     return Tensnd(nt1.data - nt2.data, nt1.var, nt1.basis)
 end
 
-function Base.:*(α::T1, t::Tensnd{order,dim,T2}) where {order,dim,T1<:Number,T2}
-    return Tensnd(α * t.data, t.var, t.basis)
-end
-
-function Base.:*(t::Tensnd{order,dim,T2}, α::T1) where {order,dim,T1<:Number,T2}
-    return Tensnd(α * t.data, t.var, t.basis)
-end
-
-function Base.:/(t::Tensnd{order,dim,T2}, α::T1) where {order,dim,T1<:Number,T2}
-    return Tensnd(t.data / α, t.var, t.basis)
-end
+Base.:*(α::T1, t::Tensnd{order,dim,T2}) where {order,dim,T1<:Number,T2} = Tensnd(α * t.data, t.var, t.basis)
+Base.:*(t::Tensnd{order,dim,T2}, α::T1) where {order,dim,T1<:Number,T2} = Tensnd(α * t.data, t.var, t.basis)
+Base.:/(t::Tensnd{order,dim,T2}, α::T1) where {order,dim,T1<:Number,T2} = Tensnd(t.data / α, t.var, t.basis)
 
 function Base.inv(t::Tensnd{order,dim,T}) where {order,dim,T<:Number}
     var = ntuple(i -> invvar(t.var[i]), order)
@@ -362,14 +354,15 @@ function Tensors.otimes(t1::Tensnd{order1,dim}, t2::Tensnd{order2,dim}) where {o
     return Tensnd(data, var, T1.basis)
 end
 
-# function Tensors.dot(t1::Tensnd{order1,dim}, t2::Tensnd{order2,dim}) where {order1,order2,dim}
-#     T1, T2 = same_basis(t1, t2)
-#     var = T2.var
-#     var[1] = invvar(T1.var[end])
-#     T2 = Tensnd(components(T2, var, T2.basis), var, T2.basis)
-
-#     data = dot(T1.data, T2.data)
-#     var = (T1.var[begin:end-1]..., T2.var[begin+1:end]...)
-#     return Tensnd(data, var, T1.basis)
-# end
+function LinearAlgebra.dot(t1::Tensnd{order1,dim}, t2::Tensnd{order2,dim}) where {order1,order2,dim}
+    T1, T2 = same_basis(t1, t2)
+    var = (invvar(T1.var[end]), T2.var[begin+1:end]...)
+    T2 = Tensnd(components(T2, var, T2.basis), var, T2.basis)
+    ec1 = ntuple(i -> i, order1)
+    ec2 = ntuple(i -> order1 - 1 + i, order2)
+    ec3 = (ec1[begin:end-1]..., ec2[begin+1:end]...)
+    data = einsum(EinCode((ec1, ec2), ec3), (T1, T2))
+    var = (T1.var[begin:end-1]..., T2.var[begin+1:end]...)
+    return Tensnd(data, var, T1.basis)
+end
 
