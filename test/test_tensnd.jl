@@ -35,9 +35,9 @@
     E, ν = symbols("E ν", real = true)
     λ = E * ν / ((1 + ν) * (1 - 2ν))
     μ = E / (2 * (1 + ν))
-    C = 3λ * tensJ4() + 2μ * tensId4()
-    S = inv(C)
-    @test simplify.(KM(S)) == [
+    ℂ = 3λ * 𝕁() + 2μ * 𝕀()
+    𝕊 = inv(ℂ)
+    @test simplify.(KM(𝕊)) == [
         1/E -ν/E -ν/E 0 0 0
         -ν/E 1/E -ν/E 0 0 0
         -ν/E -ν/E 1/E 0 0 0
@@ -45,10 +45,10 @@
         0 0 0 0 (1+ν)/E 0
         0 0 0 0 0 (1+ν)/E
     ]
-    @test invKM(KM(S)) == S
+    @test invKM(KM(𝕊)) == 𝕊
     # Acoustic tensor
     n = Tensnd(Sym[0, 0, 1])
-    K = factor.(n ⋅ C ⋅ n)
+    K = factor.(n ⋅ ℂ ⋅ n)
     Eᵒᵉᵈᵒ = E * (1 - ν) / ((1 + ν) * (1 - 2ν))
     @test K == simplify.([μ 0 0; 0 μ 0; 0 0 Eᵒᵉᵈᵒ])
 

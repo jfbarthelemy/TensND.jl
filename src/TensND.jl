@@ -14,7 +14,8 @@ export Tensnd, components
 export KM, invKM
 
 export fϵ, ϵ
-export tensId2, tensId4, tensJ4, tensK4
+export tensId2, tensId4, tensId4s, tensJ4, tensK4
+export 𝟏, 𝟙, 𝕀, 𝕁, 𝕂
 
 include("bases.jl")
 include("tensnd_struct.jl")
