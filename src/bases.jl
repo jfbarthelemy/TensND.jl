@@ -220,15 +220,27 @@ LinearAlgebra.normalize(b::AbstractBasis, var = :cov) = normal_basis(vecbasis(b,
 
 Checks whether the basis `b` is orthogonal
 """
-function isorthogonal(b::AbstractBasis)
+function isorthogonal(b::AbstractBasis{dim,T}) where {dim,T}
     ortho = true
     next = iterate(b.g)
-    T = eltype(b)
     while ortho && next !== nothing
         (gij, state) = next
         i = state[end][1]
         j = state[end][2]
-        ortho = i == j || gij == T(0)
+        ortho = i == j || gij ≈ T(0)
+        next = iterate(b.g, state)
+    end
+    return ortho
+end
+
+function isorthogonal(b::AbstractBasis{dim,Sym}) where {dim}
+    ortho = true
+    next = iterate(b.g)
+    while ortho && next !== nothing
+        (gij, state) = next
+        i = state[end][1]
+        j = state[end][2]
+        ortho = i == j || gij == Sym(0)
         next = iterate(b.g, state)
     end
     return ortho

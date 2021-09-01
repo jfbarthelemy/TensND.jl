@@ -11,7 +11,7 @@ fϵ(i::Int, j::Int, k::Int, ::Type{<:T} = Int) where {T} = T(T((i-j)*(j-k)*(k-i)
 
 Levi-Civita symbol `ϵᵢⱼₖ=(i-j)(j-k)(k-i)/2`
 """
-global const ϵ = [fϵ(i,j,k) for i=1:3, j=1:3, k=1:3]
+const ϵ = [fϵ(i,j,k) for i=1:3, j=1:3, k=1:3]
 
 
 
