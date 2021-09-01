@@ -56,7 +56,7 @@
     end
     𝛆 = Tensnd(SymmetricTensor{2,3}((i, j) -> eval(Symbol("ε$i$j"))))
     𝛔 = ℂ ⊡ 𝛆
-    𝛔2 = λ * tr(𝛆) * 𝟏() + 2μ * 𝛆
-    @test factor.(𝛔) == factor.(𝛔2)
+    @test factor.(𝛔) == factor.(λ * tr(𝛆) * 𝟏() + 2μ * 𝛆)
+    @test factor(simplify(𝛔 ⊡ 𝛆)) == factor(simplify(λ * tr(𝛆)^2 + 2μ * 𝛆 ⊡ 𝛆))
 
 end
