@@ -367,7 +367,7 @@ function Tensors.otimes(
     ec3 = ntuple(i -> i, order1 + order2)
     return einsum(
         EinCode((ec1, ec2), ec3),
-        (AbstractArray{T,order1}(t1), AbstractArray{T,order2}(t2)),
+        (AbstractArray{T}(t1), AbstractArray{T}(t2)),
     )
 end
 
@@ -377,12 +377,11 @@ function Tensors.otimes(
 ) where {order1,order2,dim}
     T1, T2 = same_basis(t1, t2)
     data = otimes(T1.data, T2.data)
-    println(data)
     var = (T1.var..., T2.var...)
     return Tensnd(data, var, T1.basis)
 end
 
-function LinearAlgebra.dot(
+function scontract(
     t1::AbstractArray{T,order1},
     t2::AbstractArray{T,order2},
 ) where {T,order1,order2}
@@ -391,9 +390,21 @@ function LinearAlgebra.dot(
     ec3 = (ec1[begin:end-1]..., ec2[begin+1:end]...)
     return einsum(
         EinCode((ec1, ec2), ec3),
-        (AbstractArray{T,order1}(t1), AbstractArray{T,order2}(t2)),
+        (AbstractArray{T}(t1), AbstractArray{T}(t2)),
     )
 end
+
+function scontract(
+    t1::AbstractArray{T,1},
+    t2::AbstractArray{T,1},
+) where {T}
+    return dot(AbstractArray{T}(t1), AbstractArray{T}(t2))
+end
+
+for TT1 ∈ (Vec, SecondOrderTensor), TT2 ∈ (Vec, SecondOrderTensor)
+    @eval scontract(S1::$TT1, S2::$TT2) = dot(S1,S2)
+end
+
 
 function LinearAlgebra.dot(
     t1::Tensnd{order1,dim},
@@ -402,9 +413,19 @@ function LinearAlgebra.dot(
     T1, T2 = same_basis(t1, t2)
     var = (invvar(T1.var[end]), T2.var[begin+1:end]...)
     T2 = Tensnd(components(T2, var, T2.basis), var, T2.basis)
-    data = dot(T1.data, T2.data)
+    data = scontract(T1.data, T2.data)
     var = (T1.var[begin:end-1]..., T2.var[begin+1:end]...)
     return Tensnd(data, var, T1.basis)
+end
+
+function LinearAlgebra.dot(
+    t1::Tensnd{1,dim},
+    t2::Tensnd{1,dim},
+) where {dim}
+    T1, T2 = same_basis(t1, t2)
+    var = (invvar(T1.var[end]), T2.var[begin+1:end]...)
+    T2 = Tensnd(components(T2, var, T2.basis), var, T2.basis)
+    return scontract(T1.data, T2.data)
 end
 
 function Tensors.dcontract(
@@ -417,8 +438,15 @@ function Tensors.dcontract(
     ec3 = ntuple(i -> i, order1 + order2 - 4)
     return einsum(
         EinCode((ec1, ec2), ec3),
-        (AbstractArray{T,order1}(t1), AbstractArray{T,order2}(t2)),
+        (AbstractArray{T}(t1), AbstractArray{T}(t2)),
     )
+end
+
+function Tensors.dcontract(
+    t1::AbstractArray{T,2},
+    t2::AbstractArray{T,2},
+) where {T}
+    return dot(AbstractArray{T}(t1), AbstractArray{T}(t2))
 end
 
 function Tensors.dcontract(
@@ -428,8 +456,18 @@ function Tensors.dcontract(
     T1, T2 = same_basis(t1, t2)
     var = (invvar(T1.var[end-1]), invvar(T1.var[end]), T2.var[begin+2:end]...)
     T2 = Tensnd(components(T2, var, T2.basis), var, T2.basis)
-    data = dcontract(T1.data, T2.data)
+    data = Tensors.dcontract(T1.data, T2.data)
     var = (T1.var[begin:end-2]..., T2.var[begin+2:end]...)
     return Tensnd(data, var, T1.basis)
+end
+
+function Tensors.dcontract(
+    t1::Tensnd{2,dim},
+    t2::Tensnd{2,dim},
+) where {order1,order2,dim}
+    T1, T2 = same_basis(t1, t2)
+    var = (invvar(T1.var[end-1]), invvar(T1.var[end]), T2.var[begin+2:end]...)
+    T2 = Tensnd(components(T2, var, T2.basis), var, T2.basis)
+    return Tensors.dcontract(T1.data, T2.data)
 end
 

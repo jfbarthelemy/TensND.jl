@@ -240,7 +240,7 @@ function isorthogonal(b::AbstractBasis{dim,Sym}) where {dim}
         (gij, state) = next
         i = state[end][1]
         j = state[end][2]
-        ortho = i == j || gij == Sym(0)
+        ortho = i == j || factor(simplify(gij)) == Sym(0)
         next = iterate(b.g, state)
     end
     return ortho
