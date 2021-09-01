@@ -246,6 +246,8 @@ function isorthogonal(b::AbstractBasis{dim,Sym}) where {dim}
     return ortho
 end
 
+isorthogonal(b::OrthonormalBasis) = true
+
 #####################
 # Display Functions #
 #####################
