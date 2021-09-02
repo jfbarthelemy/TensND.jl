@@ -6,12 +6,11 @@
     for i ∈ 1:3
         @eval $(Symbol("v$i")) = symbols($"v$i", real = true)
     end
-    V = Tensor{1,3}(i -> eval(Symbol("v$i")))
-    TV = Tensnd(V) # TV = Tensnd(V, (:cont,), CanonicalBasis())
-    @test simplify.(components(TV, (:cont,), b)) ==
+    V = Tensnd(Tensor{1,3}(i -> eval(Symbol("v$i"))))
+    @test simplify.(components(V, (:cont,), b)) ==
           [(-v1 + v2 + v3) / 2, (v1 - v2 + v3) / 2, (v1 + v2 - v3) / 2]
-    @test simplify.(components(TV, (:cov,), b)) == [v2 + v3, v1 + v3, v1 + v2]
-    @test simplify.(components(TV, (:cov,), bn)) ==
+    @test simplify.(components(V, (:cov,), b)) == [v2 + v3, v1 + v3, v1 + v2]
+    @test simplify.(components(V, (:cov,), bn)) ==
           [sq2 * (v2 + v3) / 2, sq2 * (v1 + v3) / 2, sq2 * (v1 + v2) / 2]
 
     for i ∈ 1:3, j ∈ 1:3
@@ -47,9 +46,9 @@
     @test invKM(KM(𝕊)) == 𝕊
     # Acoustic tensor
     n = Tensnd(Sym[0, 0, 1])
-    K = factor.(n ⋅ ℂ ⋅ n)
     Eᵒᵉᵈᵒ = E * (1 - ν) / ((1 + ν) * (1 - 2ν))
-    @test K == simplify.([μ 0 0; 0 μ 0; 0 0 Eᵒᵉᵈᵒ])
+    Kref = simplify.([μ 0 0; 0 μ 0; 0 0 Eᵒᵉᵈᵒ])
+    @test factor.(n ⋅ ℂ ⋅ n) == factor.(dotdot(n,ℂ,n)) == Kref
     # Hooke law
     for i ∈ 1:3, j ∈ 1:3
         @eval $(Symbol("ε$i$j")) = symbols($"ε$i$j", real = true)
@@ -58,5 +57,6 @@
     𝛔 = ℂ ⊡ 𝛆
     @test factor.(𝛔) == factor.(λ * tr(𝛆) * 𝟏() + 2μ * 𝛆)
     @test factor(simplify(𝛔 ⊡ 𝛆)) == factor(simplify(λ * tr(𝛆)^2 + 2μ * 𝛆 ⊡ 𝛆))
+
 
 end

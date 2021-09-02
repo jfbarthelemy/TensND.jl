@@ -7,9 +7,10 @@ import LinearAlgebra: normalize, dot
 using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 
 export AbstractBasis, Basis, CanonicalBasis, RotatedBasis
+export angles
 export eltype
 export vecbasis, metric
-export normal_basis, normalize, isorthogonal
+export normal_basis, normalize, isorthogonal, isorthonormal
 export Tensnd, components
 export KM, invKM
 

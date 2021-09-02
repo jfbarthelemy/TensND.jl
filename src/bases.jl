@@ -150,24 +150,45 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
     E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
     g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`   
+    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
+    angles::NamedTuple
     function RotatedBasis(θ::T, ϕ::T, ψ::T) where {T<:Number}
         dim = 3
-        e = E = Tensor{2,dim,T}(RotZYZ(ϕ, θ, ψ))
+        R = RotZYZ(ϕ, θ, ψ)
+        e = E = Tensor{2,dim,T}(R)
         g = G = one(SymmetricTensor{2,dim,T})
-        new{dim,T}(e, E, g, G)
+        new{dim,T}(e, E, g, G, angles(R))
     end
     function RotatedBasis(θ::T) where {T<:Number}
         dim = 2
         e = E = Tensor{2,dim,T}((cos(θ), sin(θ), -sin(θ), cos(θ)))
         g = G = one(SymmetricTensor{2,dim,T})
-        new{dim,T}(e, E, g, G)
+        new{dim,T}(e, E, g, G, angles(e))
+    end
+    function RotatedBasis(θ::Sym)
+        dim = 2
+        e = E = Tensor{2,dim,Sym}((cos(θ), sin(θ), -sin(θ), cos(θ)))
+        g = G = one(SymmetricTensor{2,dim,Sym})
+        new{dim,Sym}(e, E, g, G, (θ = θ,))
     end
 end
 
+angles(M::AbstractArray{T,2}, ::Val{2}) where {T} = (θ = atan(M[2,1] - M[1,2], M[1,1] + M[2,2]),)
+function angles(M::AbstractArray{T,2}, ::Val{3}) where {T}
+    R = RotZYZ(M)
+    return (θ = R.theta2, ϕ = R.theta1, ψ = R.theta3)
+end
+angles(M::AbstractArray{T,2}) where {T} = angles(M, Val(size(M)[1]))
+angles(b::RotatedBasis) = b.angles
+
+angles(v::AbstractArray{T,1}, ::Val{2}) where {T} = (θ = atan(v[2], v[1]))
+angles(v::AbstractArray{T,1}, ::Val{3}) where {T} = (θ = atan(√(v[1]^2+v[2]^2), v[3]), ϕ = atan(v[2], v[1]))
+angles(v::AbstractArray{T,1}) where {T} = angles(v, Val(size(v)[1]))
+
+
 @pure Base.eltype(::AbstractBasis{dim,T}) where {dim,T} = T
 
-getdim(::AbstractBasis{dim,T}) where {dim,T} = dim
+@pure getdim(::AbstractBasis{dim}) where {dim} = dim
 
 """
     vecbasis(b::AbstractBasis, var = :cov)
@@ -247,6 +268,39 @@ function isorthogonal(b::AbstractBasis{dim,Sym}) where {dim}
 end
 
 isorthogonal(b::OrthonormalBasis) = true
+
+"""
+    isorthonormal(b::AbstractBasis)
+
+Checks whether the basis `b` is orthonormal
+"""
+function isorthonormal(b::AbstractBasis{dim,T}) where {dim,T}
+    ortho = true
+    next = iterate(b.g)
+    while ortho && next !== nothing
+        (gij, state) = next
+        i = state[end][1]
+        j = state[end][2]
+        ortho = i == j ? gij ≈ T(1) : gij ≈ T(0)
+        next = iterate(b.g, state)
+    end
+    return ortho
+end
+
+function isorthonormal(b::AbstractBasis{dim,Sym}) where {dim}
+    ortho = true
+    next = iterate(b.g)
+    while ortho && next !== nothing
+        (gij, state) = next
+        i = state[end][1]
+        j = state[end][2]
+        ortho = i == j ? factor(simplify(gij)) == Sym(1) : factor(simplify(gij)) == Sym(0)
+        next = iterate(b.g, state)
+    end
+    return ortho
+end
+
+isorthonormal(b::OrthonormalBasis) = true
 
 #####################
 # Display Functions #

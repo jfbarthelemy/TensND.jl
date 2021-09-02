@@ -30,8 +30,26 @@
                 br = Basis(θ, ϕ, ψ)
                 @test metric(br) == I
                 @test br.e == br.E
+                @test angles(br) == (θ = θ, ϕ = ϕ, ψ = ψ)
+                br = Basis(θ)
+                @test metric(br) == I
+                @test br.e == br.E
+                @test angles(br) == (θ = θ,)
             else
                 @test vecbasis(nb) ≈ nb.e ≈ T[1 0 0; 0 sq2/2 0; 0 sq2/2 1]
+                θ, ϕ, ψ = rand(T, 3)
+                br = Basis(θ, ϕ, ψ)
+                @test metric(br) ≈ I
+                @test br.e == br.E
+                angbr = angles(br)
+                @test angbr.θ ≈ θ && angbr.ϕ ≈ ϕ && angbr.ψ ≈ ψ
+                angbr = angles(Array(br))
+                @test angbr.θ ≈ θ && angbr.ϕ ≈ ϕ && angbr.ψ ≈ ψ
+                br = Basis(θ)
+                @test metric(br) ≈ I
+                @test br.e == br.E
+                @test angles(br).θ ≈ θ
+                @test angles(Array(br)).θ ≈ θ
             end
 
             if T ≠ Sym
