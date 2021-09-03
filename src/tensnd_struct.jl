@@ -473,7 +473,10 @@ end
 qcontract(t1::AbstractArray{T1,4}, t2::AbstractArray{T2,4}) where {T1,T2} =
     dot(AbstractArray{T1}(t1), AbstractArray{T2}(t2))
 
-function qcontract(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim}) where {order1,order2,dim}
+function qcontract(
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
+) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (
         invvar(nt1.var[end-3]),
@@ -526,7 +529,7 @@ function Tensors.otimesl(
     t2::AbstractArray{T2,order2},
 ) where {T1,T2,order1,order2}
     ec1 = (ntuple(i -> i, order1 - 1)..., order1 + 2)
-    ec2 = (order1, order1+1,  ntuple(i -> order1 + 2 + i, order2 - 2)...)
+    ec2 = (order1, order1 + 1, ntuple(i -> order1 + 2 + i, order2 - 2)...)
     ec3 = ntuple(i -> i, order1 + order2)
     return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
 end
@@ -537,17 +540,29 @@ function Tensors.otimesl(
 ) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     data = otimesl(nt1.data, nt2.data)
-    var = (nt1.var[begin:end-1]..., nt2.var[begin + 1], nt1.var[end], nt2.var[begin], nt2.var[begin+2:end]...)
+    var = (
+        nt1.var[begin:end-1]...,
+        nt2.var[begin+1],
+        nt1.var[end],
+        nt2.var[begin],
+        nt2.var[begin+2:end]...,
+    )
     return Tensnd(data, var, nt1.basis)
 end
 
-otimesul(t1::AbstractArray{T1},t2::AbstractArray{T2}) where {T1,T2} = (otimesu(t1, t2) + otimesl(t1,t2))/promote_type(T1,T2)(2)
+otimesul(t1::AbstractArray{T1}, t2::AbstractArray{T2}) where {T1,T2} =
+    (otimesu(t1, t2) + otimesl(t1, t2)) / promote_type(T1, T2)(2)
 
-otimesul(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim} = symmetric(otimesu(S1,S2))
+otimesul(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim} =
+    symmetric(otimesu(S1, S2))
 
-function otimesul(t1::AbstractTensnd{order1,dim,TA1,TB1,<:SecondOrderTensor,B1},t2
-    ::AbstractTensnd{order2,dim,TA2,TB2,<:SecondOrderTensor,B2}) where {order1,dim,TA1,TB1,B1,order2,TA2,TB2,B2}
+function otimesul(
+    t1::AbstractTensnd{order1,dim,TA1,TB1,<:SecondOrderTensor,B1},
+    t2::AbstractTensnd{order2,dim,TA2,TB2,<:SecondOrderTensor,B2},
+) where {order1,dim,TA1,TB1,B1,order2,TA2,TB2,B2}
     nt1, nt2 = same_basis(t1, t2)
+    var = (nt1.var[end-1], nt1.var[end], nt2.var[begin+2:end]...)
+    nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
     data = symmetric(otimesu(nt1.data, nt2.data))
     var = (nt1.var[begin:end-1]..., nt2.var[begin], nt1.var[end], nt2.var[begin+1:end]...)
     return Tensnd(data, var, nt1.basis)
@@ -559,3 +574,4 @@ const ⊗̲ = otimesl
 const ⊠ = otimesu
 const ⊗̲̅ = otimesul
 const ⊠ᷤ = otimesul
+const sboxtimes = otimesul
