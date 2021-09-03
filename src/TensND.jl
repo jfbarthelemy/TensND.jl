@@ -13,6 +13,8 @@ export vecbasis, metric
 export normal_basis, normalize, isorthogonal, isorthonormal
 export Tensnd, components
 export KM, invKM
+export qcontract, otimesul, ⊞, ⊗̅, ⊗̲, ⊠, ⊗̲̅, ⊠ᷤ
+
 
 export fϵ, ϵ
 export tensId2, tensId4, tensId4s, tensJ4, tensK4

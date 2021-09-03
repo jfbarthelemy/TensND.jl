@@ -296,9 +296,9 @@ for OP in (:+, :-)
     end
 end
 
-Base.:*(α::Number, t::Tensnd) = Tensnd(α * t.data, t.var, t.basis)
-Base.:*(t::Tensnd, α::Number) = Tensnd(α * t.data, t.var, t.basis)
-Base.:/(t::Tensnd, α::Number) = Tensnd(t.data / α, t.var, t.basis)
+Base.:*(α::Number, t::AbstractTensnd) = Tensnd(α * t.data, t.var, t.basis)
+Base.:*(t::AbstractTensnd, α::Number) = Tensnd(α * t.data, t.var, t.basis)
+Base.:/(t::AbstractTensnd, α::Number) = Tensnd(t.data / α, t.var, t.basis)
 
 Base.inv(t::Tensnd{2}) = Tensnd(inv(t.data), (invvar(t.var[2]), invvar(t.var[1])), t.basis)
 Base.inv(t::Tensnd{4}) = Tensnd(
@@ -347,8 +347,8 @@ function Tensors.otimes(
 end
 
 function Tensors.otimes(
-    t1::Tensnd{order1,dim},
-    t2::Tensnd{order2,dim},
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
 ) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     data = otimes(nt1.data, nt2.data)
@@ -375,8 +375,8 @@ end
 
 
 function LinearAlgebra.dot(
-    t1::Tensnd{order1,dim},
-    t2::Tensnd{order2,dim},
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
 ) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (invvar(nt1.var[end]), nt2.var[begin+1:end]...)
@@ -408,8 +408,8 @@ Tensors.dcontract(t1::AbstractArray{T1,2}, t2::AbstractArray{T2,2}) where {T1,T2
     dot(AbstractArray{T1}(t1), AbstractArray{T2}(t2))
 
 function Tensors.dcontract(
-    t1::Tensnd{order1,dim},
-    t2::Tensnd{order2,dim},
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
 ) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (invvar(nt1.var[end-1]), invvar(nt1.var[end]), nt2.var[begin+2:end]...)
@@ -443,7 +443,11 @@ function Tensors.dotdot(
     return einsum(EinCode((ecv1S, ec2), ec3), (v1S, AbstractArray{T2}(v2)))
 end
 
-function Tensors.dotdot(v1::Tensnd{order1,dim}, S::Tensnd{orderS,dim}, v2::Tensnd{order2,dim}) where {order1,orderS,order2,dim}
+function Tensors.dotdot(
+    v1::AbstractTensnd{order1,dim},
+    S::AbstractTensnd{orderS,dim},
+    v2::AbstractTensnd{order2,dim},
+) where {order1,orderS,order2,dim}
     nS, nv1 = same_basis(S, v1)
     nS, nv2 = same_basis(S, v2)
     var = (invvar(nS.var[begin]),)
@@ -454,3 +458,104 @@ function Tensors.dotdot(v1::Tensnd{order1,dim}, S::Tensnd{orderS,dim}, v2::Tensn
     var = (nS.var[begin+1], nS.var[end-1])
     return Tensnd(data, var, nS.basis)
 end
+
+function qcontract(
+    t1::AbstractArray{T1,order1},
+    t2::AbstractArray{T2,order2},
+) where {T1,T2,order1,order2}
+    newc = order1 + order2
+    ec1 = (ntuple(i -> i, order1 - 4)..., newc, newc + 1, newc + 2, newc + 3)
+    ec2 = (newc, newc + 1, newc + 2, newc + 3, ntuple(i -> order1 - 4 + i, order2 - 4)...)
+    ec3 = ntuple(i -> i, order1 + order2 - 8)
+    return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
+end
+
+qcontract(t1::AbstractArray{T1,4}, t2::AbstractArray{T2,4}) where {T1,T2} =
+    dot(AbstractArray{T1}(t1), AbstractArray{T2}(t2))
+
+function qcontract(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim}) where {order1,order2,dim}
+    nt1, nt2 = same_basis(t1, t2)
+    var = (
+        invvar(nt1.var[end-3]),
+        invvar(nt1.var[end-2]),
+        invvar(nt1.var[end-1]),
+        invvar(nt1.var[end]),
+        nt2.var[begin+4:end]...,
+    )
+    nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
+    data = Tensors.qcontract(nt1.data, nt2.data)
+    var = (nt1.var[begin:end-4]..., nt2.var[begin+4:end]...)
+    return Tensnd(data, var, nt1.basis)
+end
+
+function qcontract(t1::AbstractTensnd{4,dim}, t2::AbstractTensnd{4,dim}) where {dim}
+    nt1, nt2 = same_basis(t1, t2)
+    var = (
+        invvar(nt1.var[end-3]),
+        invvar(nt1.var[end-2]),
+        invvar(nt1.var[end-1]),
+        invvar(nt1.var[end]),
+        nt2.var[begin+4:end]...,
+    )
+    nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
+    return qcontract(nt1.data, nt2.data)
+end
+
+function Tensors.otimesu(
+    t1::AbstractArray{T1,order1},
+    t2::AbstractArray{T2,order2},
+) where {T1,T2,order1,order2}
+    ec1 = (ntuple(i -> i, order1 - 1)..., order1 + 1)
+    ec2 = (order1, ntuple(i -> order1 + 1 + i, order2 - 1)...)
+    ec3 = ntuple(i -> i, order1 + order2)
+    return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
+end
+
+function Tensors.otimesu(
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
+) where {order1,order2,dim}
+    nt1, nt2 = same_basis(t1, t2)
+    data = otimesu(nt1.data, nt2.data)
+    var = (nt1.var[begin:end-1]..., nt2.var[begin], nt1.var[end], nt2.var[begin+1:end]...)
+    return Tensnd(data, var, nt1.basis)
+end
+
+function Tensors.otimesl(
+    t1::AbstractArray{T1,order1},
+    t2::AbstractArray{T2,order2},
+) where {T1,T2,order1,order2}
+    ec1 = (ntuple(i -> i, order1 - 1)..., order1 + 2)
+    ec2 = (order1, order1+1,  ntuple(i -> order1 + 2 + i, order2 - 2)...)
+    ec3 = ntuple(i -> i, order1 + order2)
+    return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
+end
+
+function Tensors.otimesl(
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
+) where {order1,order2,dim}
+    nt1, nt2 = same_basis(t1, t2)
+    data = otimesl(nt1.data, nt2.data)
+    var = (nt1.var[begin:end-1]..., nt2.var[begin + 1], nt1.var[end], nt2.var[begin], nt2.var[begin+2:end]...)
+    return Tensnd(data, var, nt1.basis)
+end
+
+otimesul(t1::AbstractArray{T1},t2::AbstractArray{T2}) where {T1,T2} = (otimesu(t1, t2) + otimesl(t1,t2))/promote_type(T1,T2)(2)
+
+otimesul(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim} = symmetric(otimesu(S1,S2))
+
+function otimesul(t1::AbstractTensnd{order1,dim,TA1,TB1,<:SecondOrderTensor,B1},t2
+    ::AbstractTensnd{order2,dim,TA2,TB2,<:SecondOrderTensor,B2}) where {order1,dim,TA1,TB1,B1,order2,TA2,TB2,B2}
+    nt1, nt2 = same_basis(t1, t2)
+    data = symmetric(otimesu(nt1.data, nt2.data))
+    var = (nt1.var[begin:end-1]..., nt2.var[begin], nt1.var[end], nt2.var[begin+1:end]...)
+    return Tensnd(data, var, nt1.basis)
+end
+
+const ⊞ = qcontract
+const ⊗̅ = otimesu
+const ⊗̲ = otimesl
+const ⊠ = otimesu
+const ⊗̲̅ = otimesul
+const ⊠ᷤ = otimesul
