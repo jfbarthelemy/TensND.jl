@@ -26,7 +26,7 @@ The attributes of this object are
 - `Basis.G`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
 
 # Examples
-```jldoctest
+```julia
 julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
 Basis{3, Sym}
 # basis: 3×3 Tensor{2, 3, Sym, 9}:
@@ -41,8 +41,7 @@ Basis{3, Sym}
  1  0  0
  0  2  1
  0  1  1
-# contravariant metric tensor:
-3×3 SymmetricTensor{2, 3, Sym, 6}:
+# contravariant metric tensor: 3×3 SymmetricTensor{2, 3, Sym, 6}:
  1   0   0
  0   1  -1
  0  -1   2
@@ -113,40 +112,38 @@ The attributes of this object are
 - `Basis.G`: identity matrix defining the contravariant components of the metric tensor `G[i,j]=δᵢⱼ`
 
 # Examples
-```jldoctest
+```julia
 julia> b = CanonicalBasis()
-CanonicalBasis{3, Sym}
-# basis: 3×3 Tensor{2, 3, Sym, 9}:
+CanonicalBasis{3, SymPy.Sym}
+# basis: 3×3 Tensors.Tensor{2, 3, SymPy.Sym, 9}:
  1  0  0
  0  1  0
  0  0  1
-# dual basis: 3×3 Tensor{2, 3, Sym, 9}:
+# dual basis: 3×3 Tensors.Tensor{2, 3, SymPy.Sym, 9}:
  1  0  0
  0  1  0
  0  0  1
-# covariant metric tensor: 3×3 SymmetricTensor{2, 3, Sym, 6}:
+# covariant metric tensor: 3×3 Tensors.SymmetricTensor{2, 3, SymPy.Sym, 6}:
  1  0  0
  0  1  0
  0  0  1
-# contravariant metric tensor:
-3×3 SymmetricTensor{2, 3, Sym, 6}:
+# contravariant metric tensor: 3×3 Tensors.SymmetricTensor{2, 3, SymPy.Sym, 6}:
  1  0  0
  0  1  0
  0  0  1
 
 julia> b = CanonicalBasis{2, Float64}()
 CanonicalBasis{2, Float64}
-# basis: 2×2 Tensor{2, 2, Float64, 4}:
+# basis: 2×2 Tensors.Tensor{2, 2, Float64, 4}:
  1.0  0.0
  0.0  1.0
-# dual basis: 2×2 Tensor{2, 2, Float64, 4}:
+# dual basis: 2×2 Tensors.Tensor{2, 2, Float64, 4}:
  1.0  0.0
  0.0  1.0
-# covariant metric tensor: 2×2 SymmetricTensor{2, 2, Float64, 3}:
+# covariant metric tensor: 2×2 Tensors.SymmetricTensor{2, 2, Float64, 3}:
  1.0  0.0
  0.0  1.0
-# contravariant metric tensor:
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+# contravariant metric tensor: 2×2 Tensors.SymmetricTensor{2, 2, Float64, 3}:
  1.0  0.0
  0.0  1.0
 ```
@@ -348,7 +345,7 @@ for OP in (:show, :print, :display)
             $OP(b.E)
             print("# covariant metric tensor: ")
             $OP(b.g)
-            println("# contravariant metric tensor: ")
+            print("# contravariant metric tensor: ")
             $OP(b.G)
         end
     end

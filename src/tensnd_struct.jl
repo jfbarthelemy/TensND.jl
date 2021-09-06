@@ -27,7 +27,7 @@ Tensor type of any order defined by
 - a tuple of variances (covariant `:cov` or contravariant `:cont`) of length equal to the `order` of the tensor
 
 # Examples
-```jldoctest
+```julia
 julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v) ;
 
 julia> T = Tensnd(b.g,(:cov,:cov),b)
@@ -129,7 +129,7 @@ end
 Extracts the components of a tensor for new variances and/or in a new basis
 
 # Examples
-```jldoctest
+```julia
 julia> v = Sym[0 1 1; 1 0 1; 1 1 0] ; b = Basis(v) ;
 
 julia> V = Tensor{1,3}(i->symbols("v\$i",real=true))
@@ -583,7 +583,7 @@ Defines a quadruple contracted product between two tensors
 `𝔸 ⊙ 𝔹 = AᵢⱼₖₗBⁱʲᵏˡ`
 
 # Examples
-```jldoctest
+```julia
 julia> 𝕀 = t𝕀(Sym) ; 𝕁 = t𝕁(Sym) ; 𝕂 = t𝕂(Sym) ;
 
 julia> 𝕀 ⊙ 𝕀
