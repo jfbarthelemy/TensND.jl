@@ -28,8 +28,8 @@ end
 
 tensK4(T::Type{<:Number} = Sym, dim = 3) = tensId4s(T, dim) - tensJ4(T, dim)
 
-const 𝟏 = tensId2
-const 𝟙 = tensId4
-const 𝕀 = tensId4s
-const 𝕁 = tensJ4
-const 𝕂 = tensK4
+const t𝟏 = tensId2
+const t𝟙 = tensId4
+const t𝕀 = tensId4s
+const t𝕁 = tensJ4
+const t𝕂 = tensK4

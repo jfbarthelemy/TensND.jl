@@ -557,21 +557,59 @@ otimesul(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim} =
     symmetric(otimesu(S1, S2))
 
 function otimesul(
-    t1::AbstractTensnd{order1,dim,TA1,TB1,<:SecondOrderTensor,B1},
-    t2::AbstractTensnd{order2,dim,TA2,TB2,<:SecondOrderTensor,B2},
-) where {order1,dim,TA1,TB1,B1,order2,TA2,TB2,B2}
+    t1::AbstractTensnd,
+    t2::AbstractTensnd,
+)
     nt1, nt2 = same_basis(t1, t2)
     var = (nt1.var[end-1], nt1.var[end], nt2.var[begin+2:end]...)
     nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
-    data = symmetric(otimesu(nt1.data, nt2.data))
-    var = (nt1.var[begin:end-1]..., nt2.var[begin], nt1.var[end], nt2.var[begin+1:end]...)
+    data = otimesul(nt1.data, nt2.data)
+    var = (nt1.var..., nt2.var...)
     return Tensnd(data, var, nt1.basis)
 end
 
-const ⊞ = qcontract
+function sotimes(
+    t1::AbstractArray{T1,order1},
+    t2::AbstractArray{T2,order2},
+) where {T1,T2,order1,order2}
+    ec1 = ntuple(i -> i, order1)
+    ec2 = ntuple(i -> order1 + i, order2)
+    ec3 = ntuple(i -> i, order1 + order2)
+    t3 = einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
+    ec1 = (ntuple(i -> i, order1 - 1)..., order1 + 1)
+    ec2 = (order1, ntuple(i -> order1 + 1 + i, order2 - 1)...)
+    ec3 = ntuple(i -> i, order1 + order2)
+    t4 = einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
+    return (t3 + t4) / promote_type(T1, T2)(2)
+end
+
+@inline function sotimes(S1::Vec{dim}, S2::Vec{dim}) where {dim}
+    return Tensor{2, dim}(@inline function(i,j) @inbounds (S1[i] * S2[j] + S1[j] * S2[i])/2; end)
+end
+
+@inline function sotimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+    TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
+    TensorType(@inline function(i,j,k,l) @inbounds (S1[i,j] * S2[k,l] + S1[i,k] * S2[j,l])/2; end)
+end
+
+function sotimes(
+    t1::AbstractTensnd,
+    t2::AbstractTensnd,
+)
+    nt1, nt2 = same_basis(t1, t2)
+    var = (nt1.var[end], nt2.var[begin+1:end]...)
+    nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
+    data = sotimes(nt1.data, nt2.data)
+    var = (nt1.var..., nt2.var...)
+    return Tensnd(data, var, nt1.basis)
+end
+
+const ⊚ = qcontract
+const ⊠ = otimesu
+const ⊠ˢ = otimesul
+const ⊗ˢ = sotimes
+
+const sboxtimes = otimesul
 const ⊗̅ = otimesu
 const ⊗̲ = otimesl
-const ⊠ = otimesu
 const ⊗̲̅ = otimesul
-const ⊠ᷤ = otimesul
-const sboxtimes = otimesul

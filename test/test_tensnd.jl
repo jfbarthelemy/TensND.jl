@@ -30,10 +30,15 @@
     ] / 2
 
     # Isotropic stiffness and compliance tensors
+    𝟏 = t𝟏(Sym)
+    𝟙 = t𝟙(Sym)
+    𝕀 = t𝕀(Sym)
+    𝕁 = t𝕁(Sym)
+    𝕂 = t𝕂(Sym)
     E, ν = symbols("E ν", real = true)
     λ = E * ν / ((1 + ν) * (1 - 2ν))
     μ = E / (2(1 + ν))
-    ℂ = 3λ * 𝕁() + 2μ * 𝕀()
+    ℂ = 3λ * 𝕁 + 2μ * 𝕀
     𝕊 = inv(ℂ)
     @test simplify.(KM(𝕊)) == [
         1/E -ν/E -ν/E 0 0 0
@@ -55,18 +60,32 @@
     end
     𝛆 = Tensnd(SymmetricTensor{2,3}((i, j) -> eval(Symbol("ε$i$j"))))
     𝛔 = ℂ ⊡ 𝛆
-    @test factor.(𝛔) == factor.(λ * tr(𝛆) * 𝟏() + 2μ * 𝛆)
+    @test factor.(𝛔) == factor.(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
     @test factor(simplify(𝛔 ⊡ 𝛆)) == factor(simplify(λ * tr(𝛆)^2 + 2μ * 𝛆 ⊡ 𝛆))
 
-    @test 𝟙() == 𝟏() ⊠ 𝟏()
-    @test 𝕀() == 𝟏() ⊠ᷤ 𝟏()
-    @test 𝕀() ⊞ 𝕀() == 6
-    @test 𝕁() ⊞ 𝕀() == 𝕁() ⊞ 𝕁() == 1
-    @test 𝕂() ⊞ 𝕀() == 𝕂() ⊞ 𝕂() == 5
-    @test 𝕂() ⊞ 𝕁() == 𝕁() ⊞ 𝕂() == 0
+    @test 𝟙 == 𝟏 ⊠ 𝟏
+    @test 𝕀 == 𝟏 ⊠ˢ 𝟏
+    @test 𝕀 ⊚ 𝕀 == 6
+    @test 𝕁 ⊚ 𝕀 == 𝕁 ⊚ 𝕁 == 1
+    @test 𝕂 ⊚ 𝕀 == 𝕂 ⊚ 𝕂 == 5
+    @test 𝕂 ⊚ 𝕁 == 𝕁 ⊚ 𝕂 == 0
     k = E / (3(1 - 2ν))
-    @test simplify(ℂ⊞𝕁()) == simplify(3k)
-    @test simplify(ℂ⊞𝕂()) == simplify(10μ)
+    @test simplify(ℂ ⊚ 𝕁) == simplify(3k)
+    @test simplify(ℂ ⊚ 𝕂) == simplify(10μ)
+
+
+    for i ∈ 1:3
+        @eval $(Symbol("a$i")) = symbols($"a$i", real = true)
+        @eval $(Symbol("b$i")) = symbols($"b$i", real = true)
+    end
+    a = Tensnd(Vec{3}((i,) -> eval(Symbol("a$i"))))
+    b = Tensnd(Vec{3}((i,) -> eval(Symbol("b$i"))))
+    @test a ⊗ b == Sym[a1*b1 a1*b2 a1*b3; a2*b1 a2*b2 a2*b3; a3*b1 a3*b2 a3*b3]
+    @test a ⊗ˢ b == Sym[
+        a1*b1 a1*b2/2+a2*b1/2 a1*b3/2+a3*b1/2
+        a1*b2/2+a2*b1/2 a2*b2 a2*b3/2+a3*b2/2
+        a1*b3/2+a3*b1/2 a2*b3/2+a3*b2/2 a3*b3
+    ]
 
 
 end

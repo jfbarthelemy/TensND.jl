@@ -13,12 +13,11 @@ export vecbasis, metric
 export normal_basis, normalize, isorthogonal, isorthonormal
 export Tensnd, components
 export KM, invKM
-export qcontract, otimesul, ⊞, ⊗̅, ⊗̲, ⊠, ⊗̲̅, ⊠ᷤ
-
+export qcontract, otimesul, ⊚, ⊠, ⊠ˢ, ⊗ˢ, ⊗̅, ⊗̲, ⊗̲̅
 
 export fϵ, ϵ
 export tensId2, tensId4, tensId4s, tensJ4, tensK4
-export 𝟏, 𝟙, 𝕀, 𝕁, 𝕂
+export t𝟏, t𝟙, t𝕀, t𝕁, t𝕂
 
 include("bases.jl")
 include("tensnd_struct.jl")
