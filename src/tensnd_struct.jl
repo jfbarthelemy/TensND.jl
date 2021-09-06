@@ -28,16 +28,18 @@ Tensor type of any order defined by
 
 # Examples
 ```jldoctest
-julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
-3×3 Basis{3, Sym}:
- 1  0  0
- 0  1  0
- 0  1  1
+julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v) ;
 
 julia> T = Tensnd(b.g,(:cov,:cov),b)
-3×3 Tensnd{2, 3, Sym, Sym, SymmetricTensor{2, 3, Sym, 6}, Basis{3, Sym}}:
+Tensnd{2, 3, Sym, Sym, SymmetricTensor{2, 3, Sym, 6}, Basis{3, Sym}}
+# data: 3×3 SymmetricTensor{2, 3, Sym, 6}:
  1  0  0
  0  2  1
+ 0  1  1
+# var: (:cov, :cov)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 1  0  0
+ 0  1  0
  0  1  1
 
 julia> components(T,(:cont,:cov),b)
@@ -97,16 +99,17 @@ getbasis(t::AbstractTensnd) = t.basis
 #####################
 # Display Functions #
 #####################
-for OP in (:show, :print)
+for OP in (:show, :print, :display)
     @eval begin
         Base.$OP(U::FourthOrderTensor) = $OP(tomandel(U))
 
         function Base.$OP(t::AbstractTensnd)
-            println("data: $(typeof(t.data))")
+            $OP(typeof(t))
+            print("# data: ")
             $OP(t.data)
-            println("\nvar:")
+            print("# var: ")
             $OP(t.var)
-            println("\nbasis: $(typeof(t.basis))")
+            print("# basis: ")
             $OP(t.basis.e)
         end
     end
@@ -127,11 +130,7 @@ Extracts the components of a tensor for new variances and/or in a new basis
 
 # Examples
 ```jldoctest
-julia> v = Sym[0 1 1; 1 0 1; 1 1 0] ; b = Basis(v)
-3×3 Basis{3, Sym}:
- 0  1  1
- 1  0  1
- 1  1  0
+julia> v = Sym[0 1 1; 1 0 1; 1 1 0] ; b = Basis(v) ;
 
 julia> V = Tensor{1,3}(i->symbols("v\$i",real=true))
 3-element Vec{3, Sym}:
@@ -140,10 +139,16 @@ julia> V = Tensor{1,3}(i->symbols("v\$i",real=true))
  v₃
 
 julia> TV = Tensnd(V) # TV = Tensnd(V, (:cont,), CanonicalBasis())
-3-element Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}:
+Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
+# data: 3-element Vec{3, Sym}:
  v₁
  v₂
  v₃
+# var: (:cont,)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
 
 julia> factor.(components(TV, (:cont,), b))
 3-element Vector{Sym}:
@@ -170,10 +175,16 @@ julia> T = Tensor{2,3}((i,j)->symbols("t\$i\$j",real=true))
  t₃₁  t₃₂  t₃₃
 
 julia> TT = Tensnd(T)
-3×3 Tensnd{2, 3, Sym, Sym, Tensor{2, 3, Sym, 9}, CanonicalBasis{3, Sym}}:
+Tensnd{2, 3, Sym, Sym, Tensor{2, 3, Sym, 9}, CanonicalBasis{3, Sym}}
+# data: 3×3 Tensor{2, 3, Sym, 9}:
  t₁₁  t₁₂  t₁₃
  t₂₁  t₂₂  t₂₃
  t₃₁  t₃₂  t₃₃
+# var: (:cont, :cont)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
 
 julia> components(TT, (:cov,:cov), b)
 3×3 Matrix{Sym}:
@@ -480,10 +491,16 @@ julia> k, μ = symbols("k μ", real =true) ;
 julia> ℂ = 3k * t𝕁() + 2μ * t𝕂() ;
 
 julia> 𝛔 = ℂ ⊡ 𝛆
-3×3 Tensnd{2, 3, Sym, Sym, SymmetricTensor{2, 3, Sym, 6}, CanonicalBasis{3, Sym}}:
- ϵ11*(k + 4*μ/3) + ϵ22*(k - 2*μ/3) + ϵ33*(k - 2*μ/3)                                              2⋅μ⋅ϵ21                                              2⋅μ⋅ϵ31
-                                             2⋅μ⋅ϵ21  ϵ11*(k - 2*μ/3) + ϵ22*(k + 4*μ/3) + ϵ33*(k - 2*μ/3)                                              2⋅μ⋅ϵ32
-                                             2⋅μ⋅ϵ31                                              2⋅μ⋅ϵ32  ϵ11*(k - 2*μ/3) + ϵ22*(k - 2*μ/3) + ϵ33*(k + 4*μ/3)
+Tensnd{2, 3, Sym, Sym, SymmetricTensor{2, 3, Sym, 6}, CanonicalBasis{3, Sym}}
+# data: 3×3 SymmetricTensor{2, 3, Sym, 6}:
+ ε11*(k + 4*μ/3) + ε22*(k - 2*μ/3) + ε33*(k - 2*μ/3)                                              2⋅ε21⋅μ                                              2⋅ε31⋅μ
+                                             2⋅ε21⋅μ  ε11*(k - 2*μ/3) + ε22*(k + 4*μ/3) + ε33*(k - 2*μ/3)                                              2⋅ε32⋅μ
+                                             2⋅ε31⋅μ                                              2⋅ε32⋅μ  ε11*(k - 2*μ/3) + ε22*(k - 2*μ/3) + ε33*(k + 4*μ/3)
+# var: (:cont, :cont)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
 ```
 """
 function Tensors.dcontract(

@@ -28,16 +28,24 @@ The attributes of this object are
 # Examples
 ```jldoctest
 julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
-3×3 Basis{3, Sym}:
+Basis{3, Sym}
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
  1  0  0
  0  1  0
  0  1  1
-
-julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v, :cont)
-3×3 Basis{3, Sym}:
+# dual basis: 3×3 Tensor{2, 3, Sym, 9}:
  1  0   0
  0  1  -1
  0  0   1
+# covariant metric tensor: 3×3 SymmetricTensor{2, 3, Sym, 6}:
+ 1  0  0
+ 0  2  1
+ 0  1  1
+# contravariant metric tensor:
+3×3 SymmetricTensor{2, 3, Sym, 6}:
+ 1   0   0
+ 0   1  -1
+ 0  -1   2
 ```
 
 ```julia
@@ -107,13 +115,38 @@ The attributes of this object are
 # Examples
 ```jldoctest
 julia> b = CanonicalBasis()
-3×3 CanonicalBasis{3, Sym}:
+CanonicalBasis{3, Sym}
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+# dual basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+# covariant metric tensor: 3×3 SymmetricTensor{2, 3, Sym, 6}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+# contravariant metric tensor:
+3×3 SymmetricTensor{2, 3, Sym, 6}:
  1  0  0
  0  1  0
  0  0  1
 
 julia> b = CanonicalBasis{2, Float64}()
-2×2 CanonicalBasis{2, Float64}:
+CanonicalBasis{2, Float64}
+# basis: 2×2 Tensor{2, 2, Float64, 4}:
+ 1.0  0.0
+ 0.0  1.0
+# dual basis: 2×2 Tensor{2, 2, Float64, 4}:
+ 1.0  0.0
+ 0.0  1.0
+# covariant metric tensor: 2×2 SymmetricTensor{2, 2, Float64, 3}:
+ 1.0  0.0
+ 0.0  1.0
+# contravariant metric tensor:
+2×2 SymmetricTensor{2, 2, Float64, 3}:
  1.0  0.0
  0.0  1.0
 ```
@@ -305,16 +338,17 @@ isorthonormal(b::OrthonormalBasis) = true
 #####################
 # Display Functions #
 #####################
-for OP in (:show, :print)
+for OP in (:show, :print, :display)
     @eval begin
         function Base.$OP(b::AbstractBasis)
-            println("basis:")
+            $OP(typeof(b))
+            print("# basis: ")
             $OP(b.e)
-            println("\ndual basis:")
+            print("# dual basis: ")
             $OP(b.E)
-            println("\ncovariant metric tensor:")
+            print("# covariant metric tensor: ")
             $OP(b.g)
-            println("\ncontravariant metric tensor:")
+            println("# contravariant metric tensor: ")
             $OP(b.G)
         end
     end
