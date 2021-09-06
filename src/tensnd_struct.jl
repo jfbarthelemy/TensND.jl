@@ -307,14 +307,50 @@ Base.inv(t::Tensnd{4}) = Tensnd(
     t.basis,
 )
 
-KM(t::Tensors.AllTensors; kwargs...) = tomandel(t; kwargs...)
-KM(t::Tensnd; kwargs...) = tomandel(t.data; kwargs...)
+"""
+    KM(t::AbstractTensnd{order,dim}; kwargs...)
+    KM(t::AbstractTensnd{order,dim}, var::NTuple{order,Symbol}, b::AbstractBasis{dim}; kwargs...)
 
-function KM(t::Tensnd{order,dim}, b::AbstractBasis{dim}; kwargs...) where {order,dim}
+Writes the components of a second or fourth order tensor in Kelvin-Mandel notation
+
+# Examples
+```julia
+julia> σ = Tensnd(SymmetricTensor{2,3}((i, j) -> symbols("σ\$i\$j", real = true))) ;
+
+julia> KM(σ)
+6-element Vector{Sym}:
+         σ11
+         σ22
+         σ33
+      √2⋅σ32
+      √2⋅σ31
+      √2⋅σ21
+
+julia> C = Tensnd(SymmetricTensor{4,3}((i, j, k, l) -> symbols("C\$i\$j\$k\$l", real = true))) ;
+
+julia> KM(C)
+6×6 Matrix{Sym}:
+         C₁₁₁₁     C₁₁₂₂     C₁₁₃₃  √2⋅C₁₁₃₂  √2⋅C₁₁₃₁  √2⋅C₁₁₂₁
+         C₂₂₁₁     C₂₂₂₂     C₂₂₃₃  √2⋅C₂₂₃₂  √2⋅C₂₂₃₁  √2⋅C₂₂₂₁
+         C₃₃₁₁     C₃₃₂₂     C₃₃₃₃  √2⋅C₃₃₃₂  √2⋅C₃₃₃₁  √2⋅C₃₃₂₁
+      √2⋅C₃₂₁₁  √2⋅C₃₂₂₂  √2⋅C₃₂₃₃   2⋅C₃₂₃₂   2⋅C₃₂₃₁   2⋅C₃₂₂₁
+      √2⋅C₃₁₁₁  √2⋅C₃₁₂₂  √2⋅C₃₁₃₃   2⋅C₃₁₃₂   2⋅C₃₁₃₁   2⋅C₃₁₂₁
+      √2⋅C₂₁₁₁  √2⋅C₂₁₂₂  √2⋅C₂₁₃₃   2⋅C₂₁₃₂   2⋅C₂₁₃₁   2⋅C₂₁₂₁
+```
+"""
+KM(t::Tensors.AllTensors; kwargs...) = tomandel(t; kwargs...)
+KM(t::AbstractTensnd; kwargs...) = tomandel(t.data; kwargs...)
+
+function KM(
+    t::AbstractTensnd{order,dim},
+    var::NTuple{order,Symbol},
+    b::AbstractBasis{dim};
+    kwargs...,
+) where {order,dim}
     if t.basis == b
         return KM(t; kwargs...)
     else
-        newt = tensor_or_array(components(t, t.var, b))
+        newt = tensor_or_array(components(t, var, b))
         return tomandel(newt; kwargs...)
     end
 end
@@ -332,6 +368,13 @@ const select_type_KM = Dict(
     (3,) => SymmetricTensor{2,2},
     (4,) => Tensor{2,2},
 )
+
+
+"""
+    invKM(v::AbstractVecOrMat; kwargs...)
+
+Defines a tensor from a Kelvin-Mandel vector or matrix representation
+"""
 invKM(TT::Type{<:Tensors.AllTensors}, v::AbstractVecOrMat; kwargs...) =
     Tensnd(frommandel(TT, v; kwargs...))
 invKM(v::AbstractVecOrMat; kwargs...) = invKM(select_type_KM[size(v)], v; kwargs...)
@@ -346,6 +389,13 @@ function Tensors.otimes(
     return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
 end
 
+"""
+    otimes(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
+
+Defines a tensor product between two tensors
+
+`(aⁱeᵢ) ⊗ (bʲeⱼ) = aⁱbʲ eᵢ⊗eⱼ`
+"""
 function Tensors.otimes(
     t1::AbstractTensnd{order1,dim},
     t2::AbstractTensnd{order2,dim},
@@ -373,7 +423,13 @@ for TT1 ∈ (Vec, SecondOrderTensor), TT2 ∈ (Vec, SecondOrderTensor)
     @eval scontract(S1::$TT1, S2::$TT2) = dot(S1, S2)
 end
 
+"""
+    dot(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
 
+Defines a contracted product between two tensors
+
+`a ⋅ b = aⁱbⱼ`
+"""
 function LinearAlgebra.dot(
     t1::AbstractTensnd{order1,dim},
     t2::AbstractTensnd{order2,dim},
@@ -386,7 +442,7 @@ function LinearAlgebra.dot(
     return Tensnd(data, var, nt1.basis)
 end
 
-function LinearAlgebra.dot(t1::Tensnd{1,dim}, t2::Tensnd{1,dim}) where {dim}
+function LinearAlgebra.dot(t1::AbstractTensnd{1,dim}, t2::AbstractTensnd{1,dim}) where {dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (invvar(nt1.var[end]), nt2.var[begin+1:end]...)
     nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
@@ -407,6 +463,29 @@ end
 Tensors.dcontract(t1::AbstractArray{T1,2}, t2::AbstractArray{T2,2}) where {T1,T2} =
     dot(AbstractArray{T1}(t1), AbstractArray{T2}(t2))
 
+"""
+    dcontract(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
+
+Defines a double contracted product between two tensors
+
+`𝛔 ⊡ 𝛆 = σⁱʲεᵢⱼ`
+`𝛔 = ℂ ⊡ 𝛆`
+
+# Examples
+```julia
+julia> 𝛆 = Tensnd(SymmetricTensor{2,3}((i, j) -> symbols("ε\$i\$j", real = true))) ;
+
+julia> k, μ = symbols("k μ", real =true) ;
+
+julia> ℂ = 3k * t𝕁() + 2μ * t𝕂() ;
+
+julia> 𝛔 = ℂ ⊡ 𝛆
+3×3 Tensnd{2, 3, Sym, Sym, SymmetricTensor{2, 3, Sym, 6}, CanonicalBasis{3, Sym}}:
+ ϵ11*(k + 4*μ/3) + ϵ22*(k - 2*μ/3) + ϵ33*(k - 2*μ/3)                                              2⋅μ⋅ϵ21                                              2⋅μ⋅ϵ31
+                                             2⋅μ⋅ϵ21  ϵ11*(k - 2*μ/3) + ϵ22*(k + 4*μ/3) + ϵ33*(k - 2*μ/3)                                              2⋅μ⋅ϵ32
+                                             2⋅μ⋅ϵ31                                              2⋅μ⋅ϵ32  ϵ11*(k - 2*μ/3) + ϵ22*(k - 2*μ/3) + ϵ33*(k + 4*μ/3)
+```
+"""
 function Tensors.dcontract(
     t1::AbstractTensnd{order1,dim},
     t2::AbstractTensnd{order2,dim},
@@ -419,7 +498,7 @@ function Tensors.dcontract(
     return Tensnd(data, var, nt1.basis)
 end
 
-function Tensors.dcontract(t1::Tensnd{2,dim}, t2::Tensnd{2,dim}) where {dim}
+function Tensors.dcontract(t1::AbstractTensnd{2,dim}, t2::AbstractTensnd{2,dim}) where {dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (invvar(nt1.var[end-1]), invvar(nt1.var[end]), nt2.var[begin+2:end]...)
     nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
@@ -443,6 +522,26 @@ function Tensors.dotdot(
     return einsum(EinCode((ecv1S, ec2), ec3), (v1S, AbstractArray{T2}(v2)))
 end
 
+"""
+    dotdot(v1::AbstractTensnd{order1,dim}, S::AbstractTensnd{orderS,dim}, v2::AbstractTensnd{order2,dim})
+
+Defines a bilinear operator `𝐯₁⋅𝕊⋅𝐯₂`
+
+# Examples
+```julia
+julia> n = Tensnd(Sym[0, 0, 1]) ;
+
+julia> k, μ = symbols("k μ", real =true) ;
+
+julia> ℂ = 3k * t𝕁() + 2μ * t𝕂() ;
+
+julia> dotdot(n,ℂ,n) # Acoustic tensor
+3×3 Tensnd{2, 3, Sym, Sym, Tensor{2, 3, Sym, 9}, CanonicalBasis{3, Sym}}:
+ μ  0          0
+ 0  μ          0
+ 0  0  k + 4*μ/3
+```
+"""
 function Tensors.dotdot(
     v1::AbstractTensnd{order1,dim},
     S::AbstractTensnd{orderS,dim},
@@ -459,6 +558,30 @@ function Tensors.dotdot(
     return Tensnd(data, var, nS.basis)
 end
 
+"""
+    dcontract(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
+
+Defines a quadruple contracted product between two tensors
+
+`𝔸 ⊙ 𝔹 = AᵢⱼₖₗBⁱʲᵏˡ`
+
+# Examples
+```jldoctest
+julia> 𝕀 = t𝕀(Sym) ; 𝕁 = t𝕁(Sym) ; 𝕂 = t𝕂(Sym) ;
+
+julia> 𝕀 ⊙ 𝕀
+6
+
+julia> 𝕁 ⊙ 𝕀
+1
+
+julia> 𝕂 ⊙ 𝕀
+5
+
+julia> 𝕂 ⊙ 𝕁
+0
+```
+"""
 function qcontract(
     t1::AbstractArray{T1,order1},
     t2::AbstractArray{T2,order2},
@@ -514,6 +637,13 @@ function Tensors.otimesu(
     return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
 end
 
+"""
+    otimesu(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
+
+Defines a special tensor product between two tensors of at least second order
+
+`(𝐚 ⊠ 𝐛) ⊡ 𝐩 = 𝐚⋅𝐩⋅𝐛 = aⁱᵏbʲˡpₖₗ eᵢ⊗eⱼ`
+"""
 function Tensors.otimesu(
     t1::AbstractTensnd{order1,dim},
     t2::AbstractTensnd{order2,dim},
@@ -556,10 +686,17 @@ otimesul(t1::AbstractArray{T1}, t2::AbstractArray{T2}) where {T1,T2} =
 otimesul(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim} =
     symmetric(otimesu(S1, S2))
 
+"""
+    otimesul(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
+
+Defines a special tensor product between two tensors of at least second order
+
+`(𝐚 ⊠ˢ 𝐛) ⊡ 𝐩 = (𝐚 ⊠ 𝐛) ⊡ (𝐩 + ᵗ𝐩)/2  = 1/2(aⁱᵏbʲˡ+aⁱˡbʲᵏ) pₖₗ eᵢ⊗eⱼ`
+"""
 function otimesul(
-    t1::AbstractTensnd,
-    t2::AbstractTensnd,
-)
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
+) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (nt1.var[end-1], nt1.var[end], nt2.var[begin+2:end]...)
     nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
@@ -568,7 +705,7 @@ function otimesul(
     return Tensnd(data, var, nt1.basis)
 end
 
-function sotimes(
+@inline function sotimes(
     t1::AbstractArray{T1,order1},
     t2::AbstractArray{T2,order2},
 ) where {T1,T2,order1,order2}
@@ -584,18 +721,29 @@ function sotimes(
 end
 
 @inline function sotimes(S1::Vec{dim}, S2::Vec{dim}) where {dim}
-    return Tensor{2, dim}(@inline function(i,j) @inbounds (S1[i] * S2[j] + S1[j] * S2[i])/2; end)
+    return Tensor{2,dim}(@inline function (i, j)
+        @inbounds (S1[i] * S2[j] + S1[j] * S2[i]) / 2
+    end)
 end
 
 @inline function sotimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
-    TensorType(@inline function(i,j,k,l) @inbounds (S1[i,j] * S2[k,l] + S1[i,k] * S2[j,l])/2; end)
+    TensorType(@inline function (i, j, k, l)
+        @inbounds (S1[i, j] * S2[k, l] + S1[i, k] * S2[j, l]) / 2
+    end)
 end
 
+"""
+    sotimes(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
+
+Defines a symmetric tensor product between two tensors
+
+`(aⁱeᵢ) ⊗ˢ (bʲeⱼ) = 1/2(aⁱbʲ + aʲbⁱ) eᵢ⊗eⱼ`
+"""
 function sotimes(
-    t1::AbstractTensnd,
-    t2::AbstractTensnd,
-)
+    t1::AbstractTensnd{order1,dim},
+    t2::AbstractTensnd{order2,dim},
+) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (nt1.var[end], nt2.var[begin+1:end]...)
     nt2 = Tensnd(components(nt2, var, nt2.basis), var, nt2.basis)
@@ -604,7 +752,26 @@ function sotimes(
     return Tensnd(data, var, nt1.basis)
 end
 
-const ⊚ = qcontract
+Base.transpose(
+    t::AbstractTensnd{order,dim,TA,TB,<:SecondOrderTensor,B},
+) where {order,dim,TA,TB,B} = Tensnd(transpose(t.data), (t.var[2], t.var[1]), t.basis)
+
+Base.transpose(
+    t::AbstractTensnd{order,dim,TA,TB,<:FourthOrderTensor,B},
+) where {order,dim,TA,TB,B} =
+    Tensnd(Tensors.transpose(t.data), (t.var[2], t.var[1], t.var[4], t.var[3]), t.basis)
+
+Tensors.majortranspose(
+    t::AbstractTensnd{order,dim,TA,TB,<:FourthOrderTensor,B},
+) where {order,dim,TA,TB,B} =
+    Tensnd(majortranspose(t.data), (t.var[3], t.var[4], t.var[1], t.var[2]), t.basis)
+
+Tensors.minortranspose(
+    t::AbstractTensnd{order,dim,TA,TB,<:FourthOrderTensor,B},
+) where {order,dim,TA,TB,B} =
+    Tensnd(minortranspose(t.data), (t.var[2], t.var[1], t.var[4], t.var[3]), t.basis)
+
+const ⊙ = qcontract
 const ⊠ = otimesu
 const ⊠ˢ = otimesul
 const ⊗ˢ = sotimes
