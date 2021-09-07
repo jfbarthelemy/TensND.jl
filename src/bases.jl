@@ -203,11 +203,29 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     end
 end
 
+
 angles(M::AbstractArray{T,2}, ::Val{2}) where {T} = (θ = atan(M[2,1] - M[1,2], M[1,1] + M[2,2]),)
 function angles(M::AbstractArray{T,2}, ::Val{3}) where {T}
     R = RotZYZ(M)
     return (θ = R.theta2, ϕ = R.theta1, ψ = R.theta3)
 end
+"""
+    angles(M::AbstractArray{T,2})
+
+Determines the Euler angles corresponding to the input matrix supposed to be a rotation matrix or at least a similarity
+
+# Examples
+```julia
+julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = RotatedBasis(θ, ϕ, ψ) ; display(b.e)
+3×3 Tensor{2, 3, Sym, 9}:
+ -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
+  sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
+                        -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
+
+julia> angles(b)
+(θ = θ, ϕ = ϕ, ψ = ψ)
+```
+"""
 angles(M::AbstractArray{T,2}) where {T} = angles(M, Val(size(M)[1]))
 angles(b::RotatedBasis) = b.angles
 

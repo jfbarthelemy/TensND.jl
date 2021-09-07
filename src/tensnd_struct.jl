@@ -125,6 +125,7 @@ end
 """
     components(::Tensnd{order,dim,T}, ::NTuple{order,Symbol})
     components(::Tensnd{order,dim,T}, ::NTuple{order,Symbol}, ::AbstractBasis{dim,T})
+    components(::Tensnd{order,dim,T}, ::AbstractBasis{dim,T})
 
 Extracts the components of a tensor for new variances and/or in a new basis
 
@@ -265,6 +266,8 @@ function components(
         return m
     end
 end
+
+components(t::Tensnd, basis::AbstractBasis) = components(t, t.var, basis)
 
 ##############
 # Operations #
@@ -794,6 +797,7 @@ const ⊠ˢ = otimesul
 const ⊗ˢ = sotimes
 
 const sboxtimes = otimesul
-const ⊗̅ = otimesu
-const ⊗̲ = otimesl
-const ⊗̲̅ = otimesul
+
+# const ⊗̅ = otimesu
+# const ⊗̲ = otimesl
+# const ⊗̲̅ = otimesul
