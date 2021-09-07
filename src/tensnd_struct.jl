@@ -69,6 +69,13 @@ struct Tensnd{order,dim,TA,TB,A,B} <: AbstractTensnd{order,dim,TA,TB,A,B}
         newdata = tensor_or_array(data)
         new{order,dim,TA,TB,typeof(newdata),typeof(basis)}(newdata, var, basis)
     end
+    function Tensnd(
+        data::AbstractTensor{order,dim,TA},
+        basis::AbstractBasis{dim,TB},
+    ) where {order,dim,TA,TB}
+        newdata = tensor_or_array(data)
+        new{order,dim,TA,TB,typeof(newdata),typeof(basis)}(newdata, ntuple(_ -> :cont, order), basis)
+    end
 end
 
 # This function aims at storing the table of components in the `Tensor` type whenever possible
@@ -201,7 +208,7 @@ julia> factor.(components(TT, (:cont,:cov), b))
 ```
 """
 function components(
-    t::Tensnd{order,dim,T},
+    t::AbstractTensnd{order,dim,T},
     var::NTuple{order,Symbol},
 ) where {order,dim,T<:Number}
     if var == t.var
@@ -226,17 +233,17 @@ function components(
 end
 
 components(
-    t::Tensnd{order,dim,TA,TB,A,B},
+    t::AbstractTensnd{order,dim,TA,TB,A,B},
     ::NTuple{order,Symbol},
-) where {order,dim,TA<:Number,TB<:Number,A,B<:OrthonormalBasis} = t.data
+) where {order,dim,TA<:Number,TB<:Number,A<:AbstractArray,B<:OrthonormalBasis} = t.data
 
 components(
-    t::Tensnd{order,dim,TA,TB,A,B},
-) where {order,dim,TA<:Number,TB<:Number,A,B<:OrthonormalBasis} = t.data
+    t::AbstractTensnd{order,dim,TA,TB,A,B},
+) where {order,dim,TA<:Number,TB<:Number,A<:AbstractArray,B<:OrthonormalBasis} = t.data
 
 
 function components(
-    t::Tensnd{order,dim,T},
+    t::AbstractTensnd{order,dim,T},
     var::NTuple{order,Symbol},
     basis::AbstractBasis{dim},
 ) where {order,dim,T}
@@ -267,7 +274,9 @@ function components(
     end
 end
 
-components(t::Tensnd, basis::AbstractBasis) = components(t, t.var, basis)
+components(t::AbstractTensnd, basis::AbstractBasis) = components(t, t.var, basis)
+
+components_canon(t::AbstractTensnd) = components(t, t.var, CanonicalBasis{getdim(t), eltype(t)}())
 
 ##############
 # Operations #

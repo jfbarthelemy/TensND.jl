@@ -158,7 +158,7 @@ Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
     Tensnd(Vec{dim}(j -> j == i ? one(T) : zero(T)))
 
 """
-    𝐞p(i::Int, θ::T = zero(Sym))
+    𝐞ᵖ(i::Int, θ::T = zero(Sym))
 
 Vector of the polar basis
 
@@ -166,60 +166,138 @@ Vector of the polar basis
 ```julia
 julia> θ = symbols("θ", real = true) ;
 
-julia> 𝐞p(1, θ)
-Tensnd{1, 2, Sym, Sym, Vec{2, Sym}, CanonicalBasis{2, Sym}}
+julia> 𝐞ᵖ(1, θ)
+Tensnd{1, 2, Sym, Sym, Vec{2, Sym}, RotatedBasis{2, Sym}}
 # data: 2-element Vec{2, Sym}:
- cos(θ)
- sin(θ)
+ 1
+ 0
 # var: (:cont,)
 # basis: 2×2 Tensor{2, 2, Sym, 4}:
- 1  0
- 0  1
+ cos(θ)  -sin(θ)
+ sin(θ)   cos(θ)
 ``` 
 """
-𝐞p(::Val{1}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{2}([cos(θ), sin(θ)]))
-𝐞p(::Val{2}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{2}([-sin(θ), cos(θ)]))
+𝐞ᵖ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} =
+    Tensnd(Vec{2}([one(T), zero(T)]), Basis(θ))
+𝐞ᵖ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} =
+    Tensnd(Vec{2}([zero(T), one(T)]), Basis(θ))
+# 𝐞ᵖ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{2}([cos(θ), sin(θ)]))
+# 𝐞ᵖ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{2}([-sin(θ), cos(θ)]))
 
-𝐞c(::Val{1}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([cos(θ), sin(θ), zero(T)]))
-𝐞c(::Val{2}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([-sin(θ), cos(θ), zero(T)]))
-𝐞c(::Val{3}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([zero(T), zero(T), one(T)]))
+"""
+    𝐞ᶜ(i::Int, θ::T = zero(Sym))
 
-𝐞s(::Val{1}, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym)) where {T<:Number} =
-    Tensnd(
-        Vec{3}([
-            -sin(ψ) ⋅ sin(ϕ) + cos(θ) ⋅ cos(ψ) ⋅ cos(ϕ),
-            sin(ψ) ⋅ cos(ϕ) + sin(ϕ) ⋅ cos(θ) ⋅ cos(ψ),
-            -sin(θ) ⋅ cos(ψ),
-        ]),
-    )
+Vector of the cylindrical basis
 
-𝐞s(::Val{2}, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym)) where {T<:Number} =
-    Tensnd(
-        Vec{3}([
-            -sin(ψ) ⋅ cos(θ) ⋅ cos(ϕ) - sin(ϕ) ⋅ cos(ψ),
-            -sin(ψ) ⋅ sin(ϕ) ⋅ cos(θ) + cos(ψ) ⋅ cos(ϕ),
-            sin(θ) ⋅ sin(ψ),
-        ]),
-    )
+# Examples
+```julia
+julia> θ = symbols("θ", real = true) ;
 
-𝐞s(::Val{3}, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym)) where {T<:Number} =
-    Tensnd(Vec{3}([sin(θ) ⋅ cos(ϕ), sin(θ) ⋅ sin(ϕ), cos(θ)]))
+julia> 𝐞ᶜ(1, θ)
+Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+ 1
+ 0
+ 0
+# var: (:cont,)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ cos(θ)  -sin(θ)  0
+ sin(θ)   cos(θ)  0
+      0        0  1
+``` 
+"""
+𝐞ᶜ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} =
+    Tensnd(Vec{3}([one(T), zero(T), zero(T)]), CylindricalBasis(θ))
+𝐞ᶜ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} =
+    Tensnd(Vec{3}([zero(T), one(T), zero(T)]), CylindricalBasis(θ))
+𝐞ᶜ(::Val{3}, θ::T = zero(Sym)) where {T<:Number} =
+    Tensnd(Vec{3}([zero(T), zero(T), one(T)]), CylindricalBasis(θ))
+# 𝐞ᶜ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([cos(θ), sin(θ), zero(T)]))
+# 𝐞ᶜ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([-sin(θ), cos(θ), zero(T)]))
+# 𝐞ᶜ(::Val{3}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([zero(T), zero(T), one(T)]))
+
+"""
+    𝐞ˢ(i::Int, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym))
+
+Vector of the spherical basis
+
+# Examples
+```julia
+julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ;
+
+Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+ 1
+ 0
+ 0
+# var: (:cont,)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
+  sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
+                        -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
+``` 
+"""
+function 𝐞ˢ(
+    ::Val{1},
+    θ::T1 = zero(Sym),
+    ϕ::T2 = zero(Sym),
+    ψ::T3 = zero(Sym),
+) where {T1<:Number,T2<:Number,T3<:Number}
+    T = promote_type(T1, T2, T3)
+    Tensnd(Vec{3}([one(T), zero(T), zero(T)]), Basis(θ, ϕ, ψ))
+end
+function 𝐞ˢ(
+    ::Val{2},
+    θ::T1 = zero(Sym),
+    ϕ::T2 = zero(Sym),
+    ψ::T3 = zero(Sym),
+) where {T1<:Number,T2<:Number,T3<:Number}
+    T = promote_type(T1, T2, T3)
+    Tensnd(Vec{3}([zero(T), one(T), zero(T)]), Basis(θ, ϕ, ψ))
+end
+function 𝐞ˢ(
+    ::Val{3},
+    θ::T1 = zero(Sym),
+    ϕ::T2 = zero(Sym),
+    ψ::T3 = zero(Sym),
+) where {T1<:Number,T2<:Number,T3<:Number}
+    T = promote_type(T1, T2, T3)
+    Tensnd(Vec{3}([zero(T), zero(T), one(T)]), Basis(θ, ϕ, ψ))
+end
+# 𝐞ˢ(::Val{1}, θ::T1 = zero(Sym), ϕ::T2 = zero(Sym), ψ::T3 = zero(Sym)) where {T1<:Number,T2<:Number,T3<:Number} =
+#     Tensnd(
+#         Vec{3, promote_type(T1,T2,T3)}([
+#             -sin(ψ) ⋅ sin(ϕ) + cos(θ) ⋅ cos(ψ) ⋅ cos(ϕ),
+#             sin(ψ) ⋅ cos(ϕ) + sin(ϕ) ⋅ cos(θ) ⋅ cos(ψ),
+#             -sin(θ) ⋅ cos(ψ),
+#         ]),
+#     )
+# 𝐞ˢ(::Val{2}, θ::T1 = zero(Sym), ϕ::T2 = zero(Sym), ψ::T3 = zero(Sym)) where {T1<:Number,T2<:Number,T3<:Number} =
+#     Tensnd(
+#         Vec{3, promote_type(T1,T2,T3)}([
+#             -sin(ψ) ⋅ cos(θ) ⋅ cos(ϕ) - sin(ϕ) ⋅ cos(ψ),
+#             -sin(ψ) ⋅ sin(ϕ) ⋅ cos(θ) + cos(ψ) ⋅ cos(ϕ),
+#             sin(θ) ⋅ sin(ψ),
+#         ]),
+#     )
+# 𝐞ˢ(::Val{3}, θ::T1 = zero(Sym), ϕ::T2 = zero(Sym), ψ::T3 = zero(Sym)) where {T1<:Number,T2<:Number,T3<:Number} =
+#     Tensnd(Vec{3, promote_type(T1,T2,T3)}([sin(θ) ⋅ cos(ϕ), sin(θ) ⋅ sin(ϕ), cos(θ)]))
 
 
-for eb in (:𝐞p, :𝐞c, :𝐞s)
+for eb in (:𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
     @eval $eb(i::Int, args...) = $eb(Val(i), args...)
 end
 
-for eb in (:𝐞, :𝐞p, :𝐞c, :𝐞s)
-    @eval begin 
-        $(Symbol(eb,eb))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ $eb(j, args...)
-        $(Symbol(eb,eb,"s"))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ˢ $eb(j, args...)
+for eb in (:𝐞, :𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
+    @eval begin
+        $(Symbol(eb, eb))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ $eb(j, args...)
+        $(Symbol(eb, eb, "s"))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ˢ $eb(j, args...)
     end
 end
-    
 
-    
-        
+
+
+
 
 
 

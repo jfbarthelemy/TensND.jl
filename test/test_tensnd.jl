@@ -2,7 +2,7 @@
     sq2 = √Sym(2)
     v = Sym[0 1 1; 1 0 1; 1 1 0]
     b = Basis(v)
-    bn = normal_basis(b)
+    bn = normalize(b)
     for i ∈ 1:3
         @eval $(Symbol("v$i")) = symbols($"v$i", real = true)
     end
@@ -73,7 +73,6 @@
     @test simplify(ℂ ⊙ 𝕁) == simplify(3k)
     @test simplify(ℂ ⊙ 𝕂) == simplify(10μ)
 
-
     for i ∈ 1:3
         @eval $(Symbol("a$i")) = symbols($"a$i", real = true)
         @eval $(Symbol("b$i")) = symbols($"b$i", real = true)
@@ -87,5 +86,8 @@
         a1*b3/2+a3*b1/2 a2*b3/2+a3*b2/2 a3*b3
     ]
 
+    θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; br = Basis(θ, ϕ, ψ) ;
+    ts = 𝐞ˢ𝐞ˢ(3,2,θ,ϕ,ψ)
+    @test components(ts, br) == 𝐞𝐞(3,2)
 
 end

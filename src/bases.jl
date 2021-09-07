@@ -94,7 +94,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
     end
     Basis(v::AbstractArray{T,2}, var) where {T} = Basis(v, Val(var))
     Basis(v::AbstractArray{T,2}) where {T} = Basis(v, :cov)
-    Basis(θ::T, ϕ::T, ψ::T) where {T} = RotatedBasis(θ, ϕ, ψ)
+    Basis(θ::T1, ϕ::T2, ψ::T3) where {T1,T2,T3} = RotatedBasis(θ, ϕ, ψ)
     Basis(θ::T) where {T} = RotatedBasis(θ)
     Basis{dim,T}() where {dim,T} = CanonicalBasis{dim,T}()
     Basis() = CanonicalBasis()
@@ -182,7 +182,8 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
     G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
     angles::NamedTuple
-    function RotatedBasis(θ::T, ϕ::T, ψ::T) where {T<:Number}
+    function RotatedBasis(θ::T1, ϕ::T2, ψ::T3) where {T1<:Number,T2<:Number,T3<:Number}
+        T = promote_type(T1,T2,T3)
         dim = 3
         R = RotZYZ(ϕ, θ, ψ)
         e = E = Tensor{2,dim,T}(R)
@@ -203,6 +204,7 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     end
 end
 
+CylindricalBasis(θ::T) where {T<:Number} = RotatedBasis(0, θ, 0)
 
 angles(M::AbstractArray{T,2}, ::Val{2}) where {T} = (θ = atan(M[2,1] - M[1,2], M[1,1] + M[2,2]),)
 function angles(M::AbstractArray{T,2}, ::Val{3}) where {T}
@@ -263,26 +265,19 @@ metric(b::AbstractBasis, var) = metric(b, Val(var))
 metric(b::AbstractBasis) = metric(b, :cov)
 
 """
-    normal_basis(v::AbstractArray{T,2}, var = :cov) where {T}
+    normalize(b::AbstractBasis, var = cov)
 
 Builds a basis after normalization of column vectors of input matrix `v` where columns define either
 - primal vectors ie `eᵢ=v[:,i]/norm(v[:,i])` if `var = :cov` as by default
 - dual vector ie `eⁱ=v[:,i]/norm(v[:,i])` if `var = :cont`.
 """
-function normal_basis(v::AbstractArray{T,2}, var = :cov) where {T}
-    w = copy(v)
+function LinearAlgebra.normalize(b::AbstractBasis, var = :cov)
+    w = copy(vecbasis(b, var))
     for i = 1:size(w, 2)
         w[:, i] /= norm(w[:, i])
     end
     return Basis(w, var)
 end
-
-"""
-    normalize(b::AbstractBasis, var = cov)
-
-Builds a normalized basis from the input basis `b` by calling `normal_basis`
-"""
-LinearAlgebra.normalize(b::AbstractBasis, var = :cov) = normal_basis(vecbasis(b, var), var)
 
 """
     isorthogonal(b::AbstractBasis)
