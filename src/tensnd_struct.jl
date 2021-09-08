@@ -756,7 +756,7 @@ end
 end
 
 @inline function sotimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
+    TensorType = Tensors.getreturntype(otimes, Tensors.get_base(typeof(S1)), Tensors.get_base(typeof(S2)))
     TensorType(@inline function (i, j, k, l)
         @inbounds (S1[i, j] * S2[k, l] + S1[i, k] * S2[j, l]) / 2
     end)

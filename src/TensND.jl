@@ -19,11 +19,18 @@ export fϵ, ϵ
 export tensId2, tensId4, tensId4s, tensJ4, tensK4
 export t𝟏, t𝟙, t𝕀, t𝕁, t𝕂
 export 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ
-export 𝐞𝐞, 𝐞𝐞ˢ, 𝐞ᵖ𝐞ᵖ, 𝐞ᵖ𝐞ᵖs, 𝐞ᶜ𝐞ᶜ, 𝐞ᶜ𝐞ᶜs, 𝐞ˢ𝐞ˢ, 𝐞ˢ𝐞ˢs
+export init_canonical, init_isotropic, init_polar, init_cylindrical, init_spherical, init_rotated
+# export 𝟏, 𝟙, 𝕀, 𝕁, 𝕂, Bc
+# export 𝐞₁, 𝐞₂, 𝐞₃
+# export 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ
 
 include("bases.jl")
 include("tensnd_struct.jl")
 include("special_tens.jl")
 include("coorsystems.jl")
+
+
+# function __init__()
+# end
 
 end # module

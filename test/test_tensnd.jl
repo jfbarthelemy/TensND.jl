@@ -30,11 +30,7 @@
     ] / 2
 
     # Isotropic stiffness and compliance tensors
-    𝟏 = t𝟏(Sym)
-    𝟙 = t𝟙(Sym)
-    𝕀 = t𝕀(Sym)
-    𝕁 = t𝕁(Sym)
-    𝕂 = t𝕂(Sym)
+    𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic()
     E, ν = symbols("E ν", real = true)
     λ = E * ν / ((1 + ν) * (1 - 2ν))
     μ = E / (2(1 + ν))
@@ -65,6 +61,7 @@
 
     @test 𝟙 == 𝟏 ⊠ 𝟏
     @test 𝕀 == 𝟏 ⊠ˢ 𝟏
+    @test 3𝕁 == 𝟏 ⊗ 𝟏
     @test 𝕀 ⊙ 𝕀 == 6
     @test 𝕁 ⊙ 𝕀 == 𝕁 ⊙ 𝕁 == 1
     @test 𝕂 ⊙ 𝕀 == 𝕂 ⊙ 𝕂 == 5
@@ -86,8 +83,8 @@
         a1*b3/2+a3*b1/2 a2*b3/2+a3*b2/2 a3*b3
     ]
 
-    θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; br = Basis(θ, ϕ, ψ) ;
-    ts = 𝐞ˢ𝐞ˢ(3,2,θ,ϕ,ψ)
-    @test components(ts, br) == 𝐞𝐞(3,2)
+    b, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
+    θ, ϕ, bs, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
+    @test components(𝐞ʳ ⊗ 𝐞ᵠ, bs) == 𝐞₃ ⊗ 𝐞₂
 
 end

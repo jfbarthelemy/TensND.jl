@@ -158,7 +158,7 @@ Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
     Tensnd(Vec{dim}(j -> j == i ? one(T) : zero(T)))
 
 """
-    𝐞ᵖ(i::Int, θ::T = zero(Sym))
+    𝐞ᵖ(i::Int, θ::T = zero(Sym); canonical = false)
 
 Vector of the polar basis
 
@@ -177,15 +177,15 @@ Tensnd{1, 2, Sym, Sym, Vec{2, Sym}, RotatedBasis{2, Sym}}
  sin(θ)   cos(θ)
 ``` 
 """
-𝐞ᵖ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} =
+𝐞ᵖ(::Val{1}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
+    canonical ? Tensnd(Vec{2}([cos(θ), sin(θ)])) :
     Tensnd(Vec{2}([one(T), zero(T)]), Basis(θ))
-𝐞ᵖ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} =
+𝐞ᵖ(::Val{2}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
+    canonical ? Tensnd(Vec{2}([-sin(θ), cos(θ)])) :
     Tensnd(Vec{2}([zero(T), one(T)]), Basis(θ))
-# 𝐞ᵖ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{2}([cos(θ), sin(θ)]))
-# 𝐞ᵖ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{2}([-sin(θ), cos(θ)]))
 
 """
-    𝐞ᶜ(i::Int, θ::T = zero(Sym))
+    𝐞ᶜ(i::Int, θ::T = zero(Sym); canonical = false)
 
 Vector of the cylindrical basis
 
@@ -206,20 +206,20 @@ Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
       0        0  1
 ``` 
 """
-𝐞ᶜ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} =
+𝐞ᶜ(::Val{1}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
+    canonical ? Tensnd(Vec{3}([cos(θ), sin(θ), zero(T)])) :
     Tensnd(Vec{3}([one(T), zero(T), zero(T)]), CylindricalBasis(θ))
-𝐞ᶜ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} =
+𝐞ᶜ(::Val{2}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
+    canonical ? Tensnd(Vec{3}([-sin(θ), cos(θ), zero(T)])) :
     Tensnd(Vec{3}([zero(T), one(T), zero(T)]), CylindricalBasis(θ))
-𝐞ᶜ(::Val{3}, θ::T = zero(Sym)) where {T<:Number} =
+𝐞ᶜ(::Val{3}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
+    canonical ? Tensnd(Vec{3}([zero(T), zero(T), one(T)])) :
     Tensnd(Vec{3}([zero(T), zero(T), one(T)]), CylindricalBasis(θ))
-# 𝐞ᶜ(::Val{1}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([cos(θ), sin(θ), zero(T)]))
-# 𝐞ᶜ(::Val{2}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([-sin(θ), cos(θ), zero(T)]))
-# 𝐞ᶜ(::Val{3}, θ::T = zero(Sym)) where {T<:Number} = Tensnd(Vec{3}([zero(T), zero(T), one(T)]))
 
 """
-    𝐞ˢ(i::Int, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym))
+    𝐞ˢ(i::Int, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym); canonical = false)
 
-Vector of the spherical basis
+Vector of the basis rotated with the 3 Euler angles `θ, ϕ, ψ` (spherical if `ψ=0`)
 
 # Examples
 ```julia
@@ -239,65 +239,161 @@ Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
 """
 function 𝐞ˢ(
     ::Val{1},
-    θ::T1 = zero(Sym),
-    ϕ::T2 = zero(Sym),
-    ψ::T3 = zero(Sym),
+    θ::T1 = 0,
+    ϕ::T2 = 0,
+    ψ::T3 = 0;
+    canonical = false,
 ) where {T1<:Number,T2<:Number,T3<:Number}
-    T = promote_type(T1, T2, T3)
-    Tensnd(Vec{3}([one(T), zero(T), zero(T)]), Basis(θ, ϕ, ψ))
+    if canonical
+        return Tensnd(
+            Vec{3}([
+                -sin(ψ) * sin(ϕ) + cos(θ) * cos(ψ) * cos(ϕ),
+                sin(ψ) * cos(ϕ) + sin(ϕ) * cos(θ) * cos(ψ),
+                -sin(θ) * cos(ψ),
+            ]),
+        )
+    else
+        T = promote_type(T1, T2, T3)
+        return Tensnd(Vec{3}([one(T), zero(T), zero(T)]), Basis(θ, ϕ, ψ))
+    end
 end
 function 𝐞ˢ(
     ::Val{2},
-    θ::T1 = zero(Sym),
-    ϕ::T2 = zero(Sym),
-    ψ::T3 = zero(Sym),
+    θ::T1 = 0,
+    ϕ::T2 = 0,
+    ψ::T3 = 0;
+    canonical = false,
 ) where {T1<:Number,T2<:Number,T3<:Number}
-    T = promote_type(T1, T2, T3)
-    Tensnd(Vec{3}([zero(T), one(T), zero(T)]), Basis(θ, ϕ, ψ))
+    if canonical
+        return Tensnd(
+            Vec{3}([
+                -sin(ψ) * cos(θ) * cos(ϕ) - sin(ϕ) * cos(ψ),
+                -sin(ψ) * sin(ϕ) * cos(θ) + cos(ψ) * cos(ϕ),
+                sin(θ) * sin(ψ),
+            ]),
+        )
+    else
+        T = promote_type(T1, T2, T3)
+        return Tensnd(Vec{3}([zero(T), one(T), zero(T)]), Basis(θ, ϕ, ψ))
+    end
 end
 function 𝐞ˢ(
     ::Val{3},
-    θ::T1 = zero(Sym),
-    ϕ::T2 = zero(Sym),
-    ψ::T3 = zero(Sym),
+    θ::T1 = 0,
+    ϕ::T2 = 0,
+    ψ::T3 = 0;
+    canonical = false,
 ) where {T1<:Number,T2<:Number,T3<:Number}
-    T = promote_type(T1, T2, T3)
-    Tensnd(Vec{3}([zero(T), zero(T), one(T)]), Basis(θ, ϕ, ψ))
-end
-# 𝐞ˢ(::Val{1}, θ::T1 = zero(Sym), ϕ::T2 = zero(Sym), ψ::T3 = zero(Sym)) where {T1<:Number,T2<:Number,T3<:Number} =
-#     Tensnd(
-#         Vec{3, promote_type(T1,T2,T3)}([
-#             -sin(ψ) ⋅ sin(ϕ) + cos(θ) ⋅ cos(ψ) ⋅ cos(ϕ),
-#             sin(ψ) ⋅ cos(ϕ) + sin(ϕ) ⋅ cos(θ) ⋅ cos(ψ),
-#             -sin(θ) ⋅ cos(ψ),
-#         ]),
-#     )
-# 𝐞ˢ(::Val{2}, θ::T1 = zero(Sym), ϕ::T2 = zero(Sym), ψ::T3 = zero(Sym)) where {T1<:Number,T2<:Number,T3<:Number} =
-#     Tensnd(
-#         Vec{3, promote_type(T1,T2,T3)}([
-#             -sin(ψ) ⋅ cos(θ) ⋅ cos(ϕ) - sin(ϕ) ⋅ cos(ψ),
-#             -sin(ψ) ⋅ sin(ϕ) ⋅ cos(θ) + cos(ψ) ⋅ cos(ϕ),
-#             sin(θ) ⋅ sin(ψ),
-#         ]),
-#     )
-# 𝐞ˢ(::Val{3}, θ::T1 = zero(Sym), ϕ::T2 = zero(Sym), ψ::T3 = zero(Sym)) where {T1<:Number,T2<:Number,T3<:Number} =
-#     Tensnd(Vec{3, promote_type(T1,T2,T3)}([sin(θ) ⋅ cos(ϕ), sin(θ) ⋅ sin(ϕ), cos(θ)]))
-
-
-for eb in (:𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
-    @eval $eb(i::Int, args...) = $eb(Val(i), args...)
-end
-
-for eb in (:𝐞, :𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
-    @eval begin
-        $(Symbol(eb, eb))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ $eb(j, args...)
-        $(Symbol(eb, eb, "s"))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ˢ $eb(j, args...)
+    if canonical
+        return Tensnd(Vec{3}([sin(θ) * cos(ϕ), sin(θ) * sin(ϕ), cos(θ)]))
+    else
+        T = promote_type(T1, T2, T3)
+        return Tensnd(Vec{3}([zero(T), zero(T), one(T)]), Basis(θ, ϕ, ψ))
     end
 end
 
 
+for eb in (:𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
+    @eval $eb(i::Int, args...; kwargs...) = $eb(Val(i), args...; kwargs...)
+end
+
+# for eb in (:𝐞, :𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
+#     @eval begin
+#         $(Symbol(eb, eb))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ $eb(j, args...)
+#         $(Symbol(eb, eb, "s"))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ˢ $eb(j, args...)
+#     end
+# end
 
 
+"""
+    init_canonical(T::Type{<:Number} = Sym)
+
+Returns the canonical basis and the 3 unit vectors
+
+# Examples
+```julia
+julia> b, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
+(Sym[1 0 0; 0 1 0; 0 0 1], Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1])
+``` 
+"""
+init_canonical(T::Type{<:Number} = Sym) = Basis(), 𝐞(1, 3, T), 𝐞(2, 3, T), 𝐞(3, 3, T)
+
+"""
+    init_isotropic(T::Type{<:Number} = Sym)
+
+Returns the isotropic tensors
+
+# Examples
+```julia
+julia> 𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic() ;
+``` 
+"""
+init_isotropic(T::Type{<:Number} = Sym) = t𝟏(T), t𝟙(T), t𝕀(T), t𝕁(T), t𝕂(T)
+
+"""
+    init_polar(θ ; canonical = false)
+
+Returns the angle, the polar basis and the 2 unit vectors
+
+# Examples
+```julia
+julia> θ, bp, 𝐞ʳ, 𝐞ᶿ = init_polar(symbols("θ", real = true)) ;
+``` 
+"""
+init_polar(θ; canonical = false) =
+    θ, Basis(θ), 𝐞ᵖ(1, θ; canonical = canonical), 𝐞ᵖ(2, θ; canonical = canonical)
+
+"""
+    init_cylindrical(θ ; canonical = false)
+
+Returns the angle, the cylindrical basis and the 3 unit vectors
+
+# Examples
+```julia
+julia> θ, bc, 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = init_cylindrical(symbols("θ", real = true)) ;
+``` 
+"""
+init_cylindrical(θ; canonical = false) = θ,
+CylindricalBasis(θ),
+𝐞ᶜ(1, θ; canonical = canonical),
+𝐞ᶜ(2, θ; canonical = canonical),
+𝐞ᶜ(3, θ; canonical = canonical)
+
+
+"""
+    init_spherical(θ, ϕ; canonical = false)
+
+Returns the angles, the spherical basis and the 3 unit vectors
+
+# Examples
+```julia
+julia> θ, ϕ, bs, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
+``` 
+"""
+init_spherical(θ, ϕ; canonical = false) = θ,
+ϕ,
+Basis(θ, ϕ),
+𝐞ˢ(1, θ, ϕ; canonical = canonical),
+𝐞ˢ(2, θ, ϕ; canonical = canonical),
+𝐞ˢ(3, θ, ϕ; canonical = canonical)
+
+"""
+    init_rotated(θ, ϕ, ψ; canonical = false)
+
+Returns the angles, the ratated basis and the 3 unit vectors
+
+# Examples
+```julia
+julia> θ, ϕ, ψ, br, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_rotated(symbols("θ ϕ ψ", real = true)...) ;
+``` 
+"""
+init_rotated(θ, ϕ, ψ; canonical = false) = θ,
+ϕ,
+ψ,
+Basis(θ, ϕ, ψ),
+𝐞ˢ(1, θ, ϕ, ψ; canonical = canonical),
+𝐞ˢ(2, θ, ϕ, ψ; canonical = canonical),
+𝐞ˢ(3, θ, ϕ, ψ; canonical = canonical)
 
 
 

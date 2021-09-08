@@ -94,7 +94,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
     end
     Basis(v::AbstractArray{T,2}, var) where {T} = Basis(v, Val(var))
     Basis(v::AbstractArray{T,2}) where {T} = Basis(v, :cov)
-    Basis(θ::T1, ϕ::T2, ψ::T3) where {T1,T2,T3} = RotatedBasis(θ, ϕ, ψ)
+    Basis(θ::T1, ϕ::T2, ψ::T3 = 0) where {T1,T2,T3} = RotatedBasis(θ, ϕ, ψ)
     Basis(θ::T) where {T} = RotatedBasis(θ)
     Basis{dim,T}() where {dim,T} = CanonicalBasis{dim,T}()
     Basis() = CanonicalBasis()
@@ -182,7 +182,7 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
     G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
     angles::NamedTuple
-    function RotatedBasis(θ::T1, ϕ::T2, ψ::T3) where {T1<:Number,T2<:Number,T3<:Number}
+    function RotatedBasis(θ::T1, ϕ::T2, ψ::T3 = 0) where {T1<:Number,T2<:Number,T3<:Number}
         T = promote_type(T1,T2,T3)
         dim = 3
         R = RotZYZ(ϕ, θ, ψ)
