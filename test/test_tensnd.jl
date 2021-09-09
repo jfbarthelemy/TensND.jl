@@ -83,8 +83,8 @@
         a1*b3/2+a3*b1/2 a2*b3/2+a3*b2/2 a3*b3
     ]
 
-    b, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
-    θ, ϕ, bs, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
-    @test components(𝐞ʳ ⊗ 𝐞ᵠ, bs) == 𝐞₃ ⊗ 𝐞₂
+    ℬ, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
+    θ, ϕ, ℬˢ, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
+    @test components(𝐞ʳ ⊗ 𝐞ᵠ, ℬˢ) == components(𝐞₃ ⊗ 𝐞₂, ℬ)
 
 end

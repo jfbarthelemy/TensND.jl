@@ -312,7 +312,7 @@ Returns the canonical basis and the 3 unit vectors
 
 # Examples
 ```julia
-julia> b, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
+julia> ℬ, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
 (Sym[1 0 0; 0 1 0; 0 0 1], Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1])
 ``` 
 """
@@ -337,7 +337,7 @@ Returns the angle, the polar basis and the 2 unit vectors
 
 # Examples
 ```julia
-julia> θ, bp, 𝐞ʳ, 𝐞ᶿ = init_polar(symbols("θ", real = true)) ;
+julia> θ, ℬᵖ, 𝐞ʳ, 𝐞ᶿ = init_polar(symbols("θ", real = true)) ;
 ``` 
 """
 init_polar(θ; canonical = false) =
@@ -350,7 +350,7 @@ Returns the angle, the cylindrical basis and the 3 unit vectors
 
 # Examples
 ```julia
-julia> θ, bc, 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = init_cylindrical(symbols("θ", real = true)) ;
+julia> θ, ℬᶜ, 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = init_cylindrical(symbols("θ", real = true)) ;
 ``` 
 """
 init_cylindrical(θ; canonical = false) = θ,
@@ -363,16 +363,18 @@ CylindricalBasis(θ),
 """
     init_spherical(θ, ϕ; canonical = false)
 
-Returns the angles, the spherical basis and the 3 unit vectors
+Returns the angles, the spherical basis and the 3 unit vectors.
+Take care that the order of the 3 vectors is 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ so that
+the basis coincides with the canonical one when the angles are null.
 
 # Examples
 ```julia
-julia> θ, ϕ, bs, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
+julia> θ, ϕ, ℬˢ, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
 ``` 
 """
 init_spherical(θ, ϕ; canonical = false) = θ,
 ϕ,
-Basis(θ, ϕ),
+SphericalBasis(θ, ϕ),
 𝐞ˢ(1, θ, ϕ; canonical = canonical),
 𝐞ˢ(2, θ, ϕ; canonical = canonical),
 𝐞ˢ(3, θ, ϕ; canonical = canonical)
@@ -384,8 +386,8 @@ Returns the angles, the ratated basis and the 3 unit vectors
 
 # Examples
 ```julia
-julia> θ, ϕ, ψ, br, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_rotated(symbols("θ ϕ ψ", real = true)...) ;
-``` 
+julia> θ, ϕ, ψ, ℬʳ, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_rotated(symbols("θ ϕ ψ", real = true)...) ;
+```
 """
 init_rotated(θ, ϕ, ψ; canonical = false) = θ,
 ϕ,

@@ -204,7 +204,9 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     end
 end
 
-CylindricalBasis(θ::T) where {T<:Number} = RotatedBasis(0, θ, 0)
+CylindricalBasis(θ) = RotatedBasis(0, θ, 0)
+
+SphericalBasis(θ, ϕ) = RotatedBasis(θ, ϕ, 0)
 
 angles(M::AbstractArray{T,2}, ::Val{2}) where {T} = (θ = atan(M[2,1] - M[1,2], M[1,1] + M[2,2]),)
 function angles(M::AbstractArray{T,2}, ::Val{3}) where {T}
