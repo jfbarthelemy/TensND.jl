@@ -10,12 +10,12 @@ export AbstractBasis, Basis, CanonicalBasis, RotatedBasis, CylindricalBasis
 export angles
 export eltype
 export vecbasis, metric
-export normal_basis, normalize, isorthogonal, isorthonormal
+export isorthogonal, isorthonormal
 export Tensnd, components, components_canon
 export KM, invKM
 export qcontract, otimesul, ⊙, ⊠, ⊠ˢ, ⊗ˢ#, ⊗̅, ⊗̲, ⊗̲̅
 
-export fϵ, ϵ
+export LeviCivita
 export tensId2, tensId4, tensId4s, tensJ4, tensK4
 export t𝟏, t𝟙, t𝕀, t𝕁, t𝕂
 export 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ

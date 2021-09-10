@@ -1,18 +1,29 @@
 """
-    fϵ(T, i::Int, j::Int, k::Int)
-    fϵ(i::Int, j::Int, k::Int) = fϵ(Int, i::Int, j::Int, k::Int)
+    LeviCivita(T::Type{<:Number} = Sym)
 
-Function giving Levi-Civita symbol `ϵᵢⱼₖ = (i-j) (j-k) (k-i) / 2`
-"""
-fϵ(i::Int, j::Int, k::Int, ::Type{<:T} = Int) where {T} =
-    T(T((i - j) * (j - k) * (k - i)) / T(2))
+Builds an Array{T,3} of Levi-Civita Symbol `ϵᵢⱼₖ = (i-j) (j-k) (k-i) / 2`
 
-"""
-    ϵ[i,j,k]
+# Examples
+```julia
+julia> ε = LeviCivita(Sym)
+3×3×3 Array{Sym, 3}:
+[:, :, 1] =
+ 0   0  0
+ 0   0  1
+ 0  -1  0
 
-Levi-Civita symbol `ϵᵢⱼₖ=(i-j)(j-k)(k-i)/2`
+[:, :, 2] =
+ 0  0  -1
+ 0  0   0
+ 1  0   0
+
+[:, :, 3] =
+  0  1  0
+ -1  0  0
+  0  0  0
+``` 
 """
-const ϵ = [fϵ(i, j, k) for i = 1:3, j = 1:3, k = 1:3]
+LeviCivita(T::Type{<:Number} = Sym) = [T(T((i - j) * (j - k) * (k - i)) / T(2)) for i = 1:3, j = 1:3, k = 1:3]
 
 
 """
@@ -40,7 +51,7 @@ julia> 𝟏.data
 ```  
 """
 tensId2(T::Type{<:Number} = Sym, dim = 3) =
-    Tensnd(one(SymmetricTensor{2,dim,T}), (:cont, :cont), CanonicalBasis{dim,T}())
+    Tensnd(one(SymmetricTensor{2,dim,T}), CanonicalBasis{dim,T}())
 
 """
     tensId4(T::Type{<:Number} = Sym, dim = 3)
@@ -64,7 +75,7 @@ julia> 𝟙 = t𝟙() ; KM(𝟙)
 ``` 
 """
 tensId4(T::Type{<:Number} = Sym, dim = 3) =
-    Tensnd(one(Tensor{4,dim,T}), (:cont, :cont, :cont, :cont), CanonicalBasis{dim,T}())
+    Tensnd(one(Tensor{4,dim,T}), CanonicalBasis{dim,T}())
 
 """
     tensId4s(T::Type{<:Number} = Sym, dim = 3)
@@ -84,11 +95,8 @@ julia> 𝕀 = t𝕀() ; KM(𝕀)
  0  0  0  0  0  1
 ``` 
 """
-tensId4s(T::Type{<:Number} = Sym, dim = 3) = Tensnd(
-    one(SymmetricTensor{4,dim,T}),
-    (:cont, :cont, :cont, :cont),
-    CanonicalBasis{dim,T}(),
-)
+tensId4s(T::Type{<:Number} = Sym, dim = 3) =
+    Tensnd(one(SymmetricTensor{4,dim,T}), CanonicalBasis{dim,T}())
 
 """
     tensJ4(T::Type{<:Number} = Sym, dim = 3)
@@ -110,7 +118,7 @@ julia> 𝕁 = t𝕁() ; KM(𝕁)
 """
 function tensJ4(T::Type{<:Number} = Sym, dim = 3)
     δ = one(SymmetricTensor{2,dim,T})
-    return Tensnd(δ ⊗ δ / dim, (:cont, :cont, :cont, :cont), CanonicalBasis{dim,T}())
+    return Tensnd(δ ⊗ δ / dim, CanonicalBasis{dim,T}())
 end
 
 """

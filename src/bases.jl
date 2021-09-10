@@ -1,9 +1,16 @@
 abstract type AbstractBasis{dim,T<:Number} <: AbstractArray{T,2} end
 abstract type OrthonormalBasis{dim,T<:Number} <: AbstractBasis{dim,T} end
-
 @pure Base.size(::AbstractBasis{dim}) where {dim} = (dim, dim)
+Base.getindex(b::AbstractBasis, i::Int, j::Int) = getindex(vecbasis(b, :cov), i, j)
 
-Base.getindex(b::AbstractBasis, i::Int, j::Int) = getindex(b.e, i, j)
+struct LazyIdentity{dim,T<:Number} <: AbstractArray{T,2} end
+@pure Base.size(::LazyIdentity{dim}) where {dim} = (dim, dim)
+Base.getindex(::LazyIdentity{dim,T}, i::Int, j::Int) where {dim,T} =
+    i == j ? one(T) : zero(T)
+
+
+isidentity(a::AbstractArray{T,2}) where {T} = a ≈ I
+isidentity(a::AbstractArray{Sym,2}) = a == I
 
 
 """
@@ -56,10 +63,10 @@ julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = Basis(θ, ϕ, ψ) ;
 ```
 """
 struct Basis{dim,T} <: AbstractBasis{dim,T}
-    e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
-    E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
-    g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
+    e::Tensor{2,dim} # Primal basis `eᵢ=e[:,i]`
+    E::Tensor{2,dim} # Dual basis `eⁱ=E[:,i]`
+    g::SymmetricTensor{2,dim} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
+    G::SymmetricTensor{2,dim} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
     function Basis(
         e::AbstractArray{T,2},
         E::AbstractArray{T,2},
@@ -68,29 +75,53 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
     ) where {T}
         dim = size(v, 1)
         @assert dim == size(v, 2) "v should be a square matrix"
-        e = Tensor{2,dim}(e)
-        g = SymmetricTensor{2,dim}(g)
-        G = SymmetricTensor{2,dim}(G)
-        E = Tensor{2,dim}(E)
-        new{dim,T}(e, E, g, G)
+        if isidentity(e)
+            return CanonicalBasis{dim,T}()
+        else
+            if isidentity(g)
+                return RotatedBasis(angles(e)...)
+            else
+                e = Tensor{2,dim}(e)
+                g = SymmetricTensor{2,dim}(g)
+                G = SymmetricTensor{2,dim}(G)
+                E = Tensor{2,dim}(E)
+                new{dim,T}(e, E, g, G)
+            end
+        end
     end
     function Basis(v::AbstractArray{T,2}, ::Val{:cov}) where {T}
         dim = size(v, 1)
         @assert dim == size(v, 2) "v should be a square matrix"
-        e = Tensor{2,dim}(v)
-        g = SymmetricTensor{2,dim}(e' ⋅ e)
-        G = inv(g)
-        E = e ⋅ G'
-        new{dim,T}(e, E, g, G)
+        if isidentity(v)
+            return CanonicalBasis{dim,T}()
+        else
+            e = Tensor{2,dim}(v)
+            g = SymmetricTensor{2,dim}(e' ⋅ e)
+            if isidentity(g)
+                return RotatedBasis(angles(e)...)
+            else
+                G = inv(g)
+                E = e ⋅ G'
+                new{dim,T}(e, E, g, G)
+            end
+        end
     end
     function Basis(v::AbstractArray{T,2}, ::Val{:cont}) where {T}
         dim = size(v, 1)
         @assert dim == size(v, 2) "v should be a square matrix"
-        E = Tensor{2,dim}(v)
-        G = SymmetricTensor{2,dim}(E' ⋅ E)
-        g = inv(G)
-        e = E ⋅ g'
-        new{dim,T}(e, E, g, G)
+        if isidentity(v)
+            return CanonicalBasis{dim,T}()
+        else
+            E = Tensor{2,dim}(v)
+            G = SymmetricTensor{2,dim}(E' ⋅ E)
+            if isidentity(G)
+                return RotatedBasis(angles(e)...)
+            else
+                g = inv(G)
+                e = E ⋅ g'
+                new{dim,T}(e, E, g, G)
+            end
+        end
     end
     Basis(v::AbstractArray{T,2}, var) where {T} = Basis(v, Val(var))
     Basis(v::AbstractArray{T,2}) where {T} = Basis(v, :cov)
@@ -148,18 +179,8 @@ CanonicalBasis{2, Float64}
  0.0  1.0
 ```
 """
-struct CanonicalBasis{dim,T} <: OrthonormalBasis{dim,T}
-    e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
-    E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
-    g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`   
-    function CanonicalBasis{dim,T}() where {dim,T}
-        e = E = one(Tensor{2,dim,T})
-        g = G = one(SymmetricTensor{2,dim,T})
-        new{dim,T}(e, E, g, G)
-    end
-    CanonicalBasis() = CanonicalBasis{3,Sym}()
-end
+struct CanonicalBasis{dim,T} <: OrthonormalBasis{dim,T} end
+CanonicalBasis() = CanonicalBasis{3,Sym}()
 
 """
     RotatedBasis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
@@ -179,28 +200,23 @@ julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = RotatedBasis(θ, ϕ
 struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
     E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
-    g::AbstractArray{T,2} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-    G::AbstractArray{T,2} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
     angles::NamedTuple
     function RotatedBasis(θ::T1, ϕ::T2, ψ::T3 = 0) where {T1<:Number,T2<:Number,T3<:Number}
-        T = promote_type(T1,T2,T3)
+        T = promote_type(T1, T2, T3)
         dim = 3
         R = RotZYZ(ϕ, θ, ψ)
         e = E = Tensor{2,dim,T}(R)
-        g = G = one(SymmetricTensor{2,dim,T})
-        new{dim,T}(e, E, g, G, angles(R))
+        new{dim,T}(e, E, angles(R))
     end
     function RotatedBasis(θ::T) where {T<:Number}
         dim = 2
         e = E = Tensor{2,dim,T}((cos(θ), sin(θ), -sin(θ), cos(θ)))
-        g = G = one(SymmetricTensor{2,dim,T})
-        new{dim,T}(e, E, g, G, angles(e))
+        new{dim,T}(e, E, angles(e))
     end
     function RotatedBasis(θ::Sym)
         dim = 2
         e = E = Tensor{2,dim,Sym}((cos(θ), sin(θ), -sin(θ), cos(θ)))
-        g = G = one(SymmetricTensor{2,dim,Sym})
-        new{dim,Sym}(e, E, g, G, (θ = θ,))
+        new{dim,Sym}(e, E, (θ = θ,))
     end
 end
 
@@ -208,11 +224,13 @@ CylindricalBasis(θ) = RotatedBasis(0, θ, 0)
 
 SphericalBasis(θ, ϕ) = RotatedBasis(θ, ϕ, 0)
 
-angles(M::AbstractArray{T,2}, ::Val{2}) where {T} = (θ = atan(M[2,1] - M[1,2], M[1,1] + M[2,2]),)
+angles(M::AbstractArray{T,2}, ::Val{2}) where {T} =
+    (θ = atan(M[2, 1] - M[1, 2], M[1, 1] + M[2, 2]),)
 function angles(M::AbstractArray{T,2}, ::Val{3}) where {T}
     R = RotZYZ(M)
     return (θ = R.theta2, ϕ = R.theta1, ψ = R.theta3)
 end
+
 """
     angles(M::AbstractArray{T,2})
 
@@ -233,8 +251,9 @@ julia> angles(b)
 angles(M::AbstractArray{T,2}) where {T} = angles(M, Val(size(M)[1]))
 angles(b::RotatedBasis) = b.angles
 
-angles(v::AbstractArray{T,1}, ::Val{2}) where {T} = (θ = atan(v[2], v[1]))
-angles(v::AbstractArray{T,1}, ::Val{3}) where {T} = (θ = atan(√(v[1]^2+v[2]^2), v[3]), ϕ = atan(v[2], v[1]))
+angles(v::AbstractArray{T,1}, ::Val{2}) where {T} = (θ = atan(v[2], v[1]),)
+angles(v::AbstractArray{T,1}, ::Val{3}) where {T} =
+    (θ = atan(√(v[1]^2 + v[2]^2), v[3]), ϕ = atan(v[2], v[1]))
 angles(v::AbstractArray{T,1}) where {T} = angles(v, Val(size(v)[1]))
 
 
@@ -249,6 +268,9 @@ Returns the primal (if `var = :cov`) or primal (if `var = :cont`) basis
 """
 vecbasis(b::AbstractBasis, ::Val{:cov}) = b.e
 vecbasis(b::AbstractBasis, ::Val{:cont}) = b.E
+vecbasis(::CanonicalBasis{dim,T}, ::Val{:cov}) where {dim,T} = LazyIdentity{dim,T}()
+vecbasis(::CanonicalBasis{dim,T}, ::Val{:cont}) where {dim,T} = LazyIdentity{dim,T}()
+
 vecbasis(b::AbstractBasis, var) = vecbasis(b, Val(var))
 vecbasis(b::AbstractBasis) = vecbasis(b, :cov)
 
@@ -263,6 +285,9 @@ Returns the covariant (if `var = :cov`) or contravariant (if `var = :cont`) metr
 """
 metric(b::AbstractBasis, ::Val{:cov}) = b.g
 metric(b::AbstractBasis, ::Val{:cont}) = b.G
+metric(::OrthonormalBasis{dim,T}, ::Val{:cov}) where {dim,T} = LazyIdentity{dim,T}()
+metric(::OrthonormalBasis{dim,T}, ::Val{:cont}) where {dim,T} = LazyIdentity{dim,T}()
+
 metric(b::AbstractBasis, var) = metric(b, Val(var))
 metric(b::AbstractBasis) = metric(b, :cov)
 
@@ -286,31 +311,7 @@ end
 
 Checks whether the basis `b` is orthogonal
 """
-function isorthogonal(b::AbstractBasis{dim,T}) where {dim,T}
-    ortho = true
-    next = iterate(b.g)
-    while ortho && next !== nothing
-        (gij, state) = next
-        i = state[end][1]
-        j = state[end][2]
-        ortho = i == j || gij ≈ T(0)
-        next = iterate(b.g, state)
-    end
-    return ortho
-end
-
-function isorthogonal(b::AbstractBasis{dim,Sym}) where {dim}
-    ortho = true
-    next = iterate(b.g)
-    while ortho && next !== nothing
-        (gij, state) = next
-        i = state[end][1]
-        j = state[end][2]
-        ortho = i == j || factor(simplify(gij)) == Sym(0)
-        next = iterate(b.g, state)
-    end
-    return ortho
-end
+isorthogonal(b::AbstractBasis) = isdiag(metric(b))
 
 isorthogonal(b::OrthonormalBasis) = true
 
@@ -319,31 +320,7 @@ isorthogonal(b::OrthonormalBasis) = true
 
 Checks whether the basis `b` is orthonormal
 """
-function isorthonormal(b::AbstractBasis{dim,T}) where {dim,T}
-    ortho = true
-    next = iterate(b.g)
-    while ortho && next !== nothing
-        (gij, state) = next
-        i = state[end][1]
-        j = state[end][2]
-        ortho = i == j ? gij ≈ T(1) : gij ≈ T(0)
-        next = iterate(b.g, state)
-    end
-    return ortho
-end
-
-function isorthonormal(b::AbstractBasis{dim,Sym}) where {dim}
-    ortho = true
-    next = iterate(b.g)
-    while ortho && next !== nothing
-        (gij, state) = next
-        i = state[end][1]
-        j = state[end][2]
-        ortho = i == j ? factor(simplify(gij)) == Sym(1) : factor(simplify(gij)) == Sym(0)
-        next = iterate(b.g, state)
-    end
-    return ortho
-end
+isorthonormal(b::AbstractBasis) = isidentity(metric(b))
 
 isorthonormal(b::OrthonormalBasis) = true
 
@@ -355,13 +332,13 @@ for OP in (:show, :print, :display)
         function Base.$OP(b::AbstractBasis)
             $OP(typeof(b))
             print("# basis: ")
-            $OP(b.e)
+            $OP(vecbasis(b, :cov))
             print("# dual basis: ")
-            $OP(b.E)
+            $OP(vecbasis(b, :cont))
             print("# covariant metric tensor: ")
-            $OP(b.g)
+            $OP(metric(b, :cov))
             print("# contravariant metric tensor: ")
-            $OP(b.G)
+            $OP(metric(b, :cont))
         end
     end
 end
