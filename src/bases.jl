@@ -26,15 +26,15 @@ Basis without any argument refers to the canonical basis (`CanonicalBasis`) in `
 
 Basis can also be built from Euler angles (`RotatedBasis`) `θ` in 2D and `(θ, ϕ, ψ)` in 3D
 
-The attributes of this object are
-- `Basis.e`: square matrix defining the primal basis `eᵢ=e[:,i]`
-- `Basis.E`: square matrix defining the dual basis `eⁱ=E[:,i]`
-- `Basis.g`: square matrix defining the covariant components of the metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-- `Basis.G`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
+The attributes of this object can be obtained by
+- `vecbasis(ℬ, :cov)`: square matrix defining the primal basis `eᵢ=e[:,i]`
+- `vecbasis(ℬ, :cont)`: square matrix defining the dual basis `eⁱ=E[:,i]`
+- `metric(ℬ, :cov)`: square matrix defining the covariant components of the metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
+- `metric(ℬ, :cont)`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
 
 # Examples
 ```julia
-julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v)
+julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; ℬ = Basis(v)
 Basis{3, Sym}
 # basis: 3×3 Tensor{2, 3, Sym, 9}:
  1  0  0
@@ -52,10 +52,8 @@ Basis{3, Sym}
  1   0   0
  0   1  -1
  0  -1   2
-```
 
-```julia
-julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = Basis(θ, ϕ, ψ) ; display(b.e)
+julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; ℬʳ = Basis(θ, ϕ, ψ) ; display(vecbasis(ℬʳ, :cov))
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
   sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
@@ -136,51 +134,52 @@ end
 
 Canonical basis of dimension `dim` (default: 3) and type `T` (default: Sym)
 
-The attributes of this object are
-- `Basis.e`: identity matrix defining the primal basis `e[i,j]=δᵢⱼ`
-- `Basis.E`: identity matrix defining the dual basis `g[i,j]=δᵢⱼ`
-- `Basis.g`: identity matrix defining the covariant components of the metric tensor `g[i,j]=δᵢⱼ`
-- `Basis.G`: identity matrix defining the contravariant components of the metric tensor `G[i,j]=δᵢⱼ`
+The attributes of this object can be obtained by
+- `vecbasis(ℬ, :cov)`: square matrix defining the primal basis `eᵢ=e[:,i]=δᵢⱼ`
+- `vecbasis(ℬ, :cont)`: square matrix defining the dual basis `eⁱ=E[:,i]=δᵢⱼ`
+- `metric(ℬ, :cov)`: square matrix defining the covariant components of the metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]=δᵢⱼ`
+- `metric(ℬ, :cont)`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]=δᵢⱼ`
 
 # Examples
 ```julia
-julia> b = CanonicalBasis()
-CanonicalBasis{3, SymPy.Sym}
-# basis: 3×3 Tensors.Tensor{2, 3, SymPy.Sym, 9}:
+julia> ℬ = CanonicalBasis()
+CanonicalBasis{3, Sym}
+# basis: 3×3 TensND.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
-# dual basis: 3×3 Tensors.Tensor{2, 3, SymPy.Sym, 9}:
+# dual basis: 3×3 TensND.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
-# covariant metric tensor: 3×3 Tensors.SymmetricTensor{2, 3, SymPy.Sym, 6}:
+# covariant metric tensor: 3×3 TensND.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
-# contravariant metric tensor: 3×3 Tensors.SymmetricTensor{2, 3, SymPy.Sym, 6}:
+# contravariant metric tensor: 3×3 TensND.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
 
-julia> b = CanonicalBasis{2, Float64}()
+julia> ℬ₂ = CanonicalBasis{2, Float64}()
 CanonicalBasis{2, Float64}
-# basis: 2×2 Tensors.Tensor{2, 2, Float64, 4}:
+# basis: 2×2 TensND.LazyIdentity{2, Float64}:
  1.0  0.0
  0.0  1.0
-# dual basis: 2×2 Tensors.Tensor{2, 2, Float64, 4}:
+# dual basis: 2×2 TensND.LazyIdentity{2, Float64}:
  1.0  0.0
  0.0  1.0
-# covariant metric tensor: 2×2 Tensors.SymmetricTensor{2, 2, Float64, 3}:
+# covariant metric tensor: 2×2 TensND.LazyIdentity{2, Float64}:
  1.0  0.0
  0.0  1.0
-# contravariant metric tensor: 2×2 Tensors.SymmetricTensor{2, 2, Float64, 3}:
+# contravariant metric tensor: 2×2 TensND.LazyIdentity{2, Float64}:
  1.0  0.0
  0.0  1.0
 ```
 """
 struct CanonicalBasis{dim,T} <: OrthonormalBasis{dim,T} end
 CanonicalBasis() = CanonicalBasis{3,Sym}()
+
 
 """
     RotatedBasis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
@@ -190,7 +189,7 @@ Orthonormal basis of dimension `dim` (default: 3) and type `T` (default: Sym) bu
 
 # Examples
 ```julia
-julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = RotatedBasis(θ, ϕ, ψ) ; display(b.e)
+julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; ℬʳ = RotatedBasis(θ, ϕ, ψ) ; display(vecbasis(ℬʳ, :cov))
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
   sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
@@ -238,18 +237,18 @@ Determines the Euler angles corresponding to the input matrix supposed to be a r
 
 # Examples
 ```julia
-julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; b = RotatedBasis(θ, ϕ, ψ) ; display(b.e)
+julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; ℬʳ = RotatedBasis(θ, ϕ, ψ) ; display(vecbasis(ℬʳ, :cov))
 3×3 Tensor{2, 3, Sym, 9}:
  -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
   sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
                         -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
 
-julia> angles(b)
+julia> angles(ℬʳ)
 (θ = θ, ϕ = ϕ, ψ = ψ)
 ```
 """
 angles(M::AbstractArray{T,2}) where {T} = angles(M, Val(size(M)[1]))
-angles(b::RotatedBasis) = b.angles
+angles(ℬ::RotatedBasis) = ℬ.angles
 
 angles(v::AbstractArray{T,1}, ::Val{2}) where {T} = (θ = atan(v[2], v[1]),)
 angles(v::AbstractArray{T,1}, ::Val{3}) where {T} =
@@ -262,44 +261,44 @@ angles(v::AbstractArray{T,1}) where {T} = angles(v, Val(size(v)[1]))
 @pure getdim(::AbstractBasis{dim}) where {dim} = dim
 
 """
-    vecbasis(b::AbstractBasis, var = :cov)
+    vecbasis(ℬ::AbstractBasis, var = :cov)
 
 Returns the primal (if `var = :cov`) or primal (if `var = :cont`) basis
 """
-vecbasis(b::AbstractBasis, ::Val{:cov}) = b.e
-vecbasis(b::AbstractBasis, ::Val{:cont}) = b.E
+vecbasis(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.e
+vecbasis(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.E
 vecbasis(::CanonicalBasis{dim,T}, ::Val{:cov}) where {dim,T} = LazyIdentity{dim,T}()
 vecbasis(::CanonicalBasis{dim,T}, ::Val{:cont}) where {dim,T} = LazyIdentity{dim,T}()
 
-vecbasis(b::AbstractBasis, var) = vecbasis(b, Val(var))
-vecbasis(b::AbstractBasis) = vecbasis(b, :cov)
+vecbasis(ℬ::AbstractBasis, var) = vecbasis(ℬ, Val(var))
+vecbasis(ℬ::AbstractBasis) = vecbasis(ℬ, :cov)
 
 invvar(::Val{:cov}) = :cont
 invvar(::Val{:cont}) = :cov
 invvar(var) = invvar(Val(var))
 
 """
-    metric(b::AbstractBasis, var = :cov)
+    metric(ℬ::AbstractBasis, var = :cov)
 
 Returns the covariant (if `var = :cov`) or contravariant (if `var = :cont`) metric matrix
 """
-metric(b::AbstractBasis, ::Val{:cov}) = b.g
-metric(b::AbstractBasis, ::Val{:cont}) = b.G
+metric(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.g
+metric(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.G
 metric(::OrthonormalBasis{dim,T}, ::Val{:cov}) where {dim,T} = LazyIdentity{dim,T}()
 metric(::OrthonormalBasis{dim,T}, ::Val{:cont}) where {dim,T} = LazyIdentity{dim,T}()
 
-metric(b::AbstractBasis, var) = metric(b, Val(var))
-metric(b::AbstractBasis) = metric(b, :cov)
+metric(ℬ::AbstractBasis, var) = metric(ℬ, Val(var))
+metric(ℬ::AbstractBasis) = metric(ℬ, :cov)
 
 """
-    normalize(b::AbstractBasis, var = cov)
+    normalize(ℬ::AbstractBasis, var = cov)
 
 Builds a basis after normalization of column vectors of input matrix `v` where columns define either
 - primal vectors ie `eᵢ=v[:,i]/norm(v[:,i])` if `var = :cov` as by default
 - dual vector ie `eⁱ=v[:,i]/norm(v[:,i])` if `var = :cont`.
 """
-function LinearAlgebra.normalize(b::AbstractBasis, var = :cov)
-    w = copy(vecbasis(b, var))
+function LinearAlgebra.normalize(ℬ::AbstractBasis, var = :cov)
+    w = copy(vecbasis(ℬ, var))
     for i = 1:size(w, 2)
         w[:, i] /= norm(w[:, i])
     end
@@ -307,38 +306,38 @@ function LinearAlgebra.normalize(b::AbstractBasis, var = :cov)
 end
 
 """
-    isorthogonal(b::AbstractBasis)
+    isorthogonal(ℬ::AbstractBasis)
 
-Checks whether the basis `b` is orthogonal
+Checks whether the basis `ℬ` is orthogonal
 """
-isorthogonal(b::AbstractBasis) = isdiag(metric(b))
+isorthogonal(ℬ::AbstractBasis) = isdiag(metric(ℬ))
 
-isorthogonal(b::OrthonormalBasis) = true
+isorthogonal(::OrthonormalBasis) = true
 
 """
-    isorthonormal(b::AbstractBasis)
+    isorthonormal(ℬ::AbstractBasis)
 
-Checks whether the basis `b` is orthonormal
+Checks whether the basis `ℬ` is orthonormal
 """
-isorthonormal(b::AbstractBasis) = isidentity(metric(b))
+isorthonormal(ℬ::AbstractBasis) = isidentity(metric(ℬ))
 
-isorthonormal(b::OrthonormalBasis) = true
+isorthonormal(::OrthonormalBasis) = true
 
 #####################
 # Display Functions #
 #####################
 for OP in (:show, :print, :display)
     @eval begin
-        function Base.$OP(b::AbstractBasis)
-            $OP(typeof(b))
+        function Base.$OP(ℬ::AbstractBasis)
+            $OP(typeof(ℬ))
             print("# basis: ")
-            $OP(vecbasis(b, :cov))
+            $OP(vecbasis(ℬ, :cov))
             print("# dual basis: ")
-            $OP(vecbasis(b, :cont))
+            $OP(vecbasis(ℬ, :cont))
             print("# covariant metric tensor: ")
-            $OP(metric(b, :cov))
+            $OP(metric(ℬ, :cov))
             print("# contravariant metric tensor: ")
-            $OP(metric(b, :cont))
+            $OP(metric(ℬ, :cont))
         end
     end
 end

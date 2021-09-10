@@ -21,19 +21,19 @@ Tensor type of any order defined by
 
 # Examples
 ```julia
-julia> v = Sym[1 0 0; 0 1 0; 0 1 1] ; b = Basis(v) ;
+julia> ℬ = Basis(Sym[1 0 0; 0 1 0; 0 1 1]) ;
 
-julia> T = Tensnd(b.g,(:cov,:cov),b)
-Tensnd{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}, Basis{3, Sym}}
+julia> T = Tensnd(metric(ℬ,:cov),ℬ,(:cov,:cov))
+Tensnd{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 # data: 3×3 SymmetricTensor{2, 3, Sym, 6}:
  1  0  0
  0  2  1
  0  1  1
-# var: (:cov, :cov)
 # basis: 3×3 Tensor{2, 3, Sym, 9}:
  1  0  0
  0  1  0
  0  1  1
+# var: (:cov, :cov)
 
 julia> components(T,(:cont,:cov),b)
 3×3 Matrix{Sym}:
@@ -104,7 +104,7 @@ tensor_or_array(tab::AbstractArray) = tab
 getdata(t::AbstractTensnd) = t.data
 getbasis(t::AbstractTensnd) = t.basis
 
-getvar(t::Tensnd) = getvar(t)
+getvar(t::Tensnd) = t.var
 getvar(t::Tensnd, i::Int) = getvar(t)[i]
 
 getvar(::TensndOrthonormal{order}) where {order} = ntuple(_ -> :cont, order)
@@ -124,10 +124,10 @@ for OP in (:show, :print, :display)
             $OP(typeof(t))
             print("# data: ")
             $OP(getdata(t))
-            print("# var: ")
-            $OP(getvar(t))
             print("# basis: ")
             $OP(vecbasis(getbasis(t)))
+            print("# var: ")
+            $OP(getvar(t))
         end
     end
 end
@@ -140,77 +140,65 @@ end
 ########################
 
 """
-    components(::Tensnd{order,dim,T}, ::NTuple{order,Symbol})
-    components(::Tensnd{order,dim,T}, ::NTuple{order,Symbol}, ::AbstractBasis{dim,T})
-    components(::Tensnd{order,dim,T}, ::AbstractBasis{dim,T})
+    components(t::AbstractTensnd{order,dim,T},ℬ::AbstractBasis{dim},var::NTuple{order,Symbol})
+    components(t::AbstractTensnd{order,dim,T},ℬ::AbstractBasis{dim})
+    components(t::AbstractTensnd{order,dim,T},var::NTuple{order,Symbol})
 
 Extracts the components of a tensor for new variances and/or in a new basis
 
 # Examples
 ```julia
-julia> v = Sym[0 1 1; 1 0 1; 1 1 0] ; b = Basis(v) ;
+julia> ℬ = Basis(Sym[0 1 1; 1 0 1; 1 1 0]) ;
 
-julia> V = Tensor{1,3}(i->symbols("v\$i",real=true))
-3-element Vec{3, Sym}:
- v₁
- v₂
- v₃
-
-julia> TV = Tensnd(V) # TV = Tensnd(V, (:cont,), CanonicalBasis())
-Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
+julia> TV = Tensnd(Tensor{1,3}(i->symbols("v\$i",real=true)))
+TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
 # data: 3-element Vec{3, Sym}:
  v₁
  v₂
  v₃
-# var: (:cont,)
-# basis: 3×3 Tensor{2, 3, Sym, 9}:
+# basis: 3×3 TensND.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
+# var: (:cont,)
 
-julia> factor.(components(TV, (:cont,), b))
+julia> factor.(components(TV, ℬ, (:cont,)))
 3-element Vector{Sym}:
  -(v1 - v2 - v3)/2
   (v1 - v2 + v3)/2
   (v1 + v2 - v3)/2
 
-julia> components(TV, (:cov,), b)
+julia> components(TV, ℬ, (:cov,))
 3-element Vector{Sym}:
  v₂ + v₃
  v₁ + v₃
  v₁ + v₂
 
-julia> simplify.(components(TV, (:cov,), normal_basis(b)))
+julia> simplify.(components(TV, normalize(ℬ), (:cov,)))
 3-element Vector{Sym}:
  sqrt(2)*(v2 + v3)/2
  sqrt(2)*(v1 + v3)/2
  sqrt(2)*(v1 + v2)/2
 
-julia> T = Tensor{2,3}((i,j)->symbols("t\$i\$j",real=true))
-3×3 Tensor{2, 3, Sym, 9}:
- t₁₁  t₁₂  t₁₃
- t₂₁  t₂₂  t₂₃
- t₃₁  t₃₂  t₃₃
-
-julia> TT = Tensnd(T)
-Tensnd{2, 3, Sym, Sym, Tensor{2, 3, Sym, 9}, CanonicalBasis{3, Sym}}
+julia> TT = Tensnd(Tensor{2,3}((i,j)->symbols("t\$i\$j",real=true)))
+TensND.TensndCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
 # data: 3×3 Tensor{2, 3, Sym, 9}:
  t₁₁  t₁₂  t₁₃
  t₂₁  t₂₂  t₂₃
  t₃₁  t₃₂  t₃₃
-# var: (:cont, :cont)
-# basis: 3×3 Tensor{2, 3, Sym, 9}:
+# basis: 3×3 TensND.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
+# var: (:cont, :cont)
 
-julia> components(TT, (:cov,:cov), b)
+julia> components(TT, ℬ, (:cov,:cov))
 3×3 Matrix{Sym}:
  t₂₂ + t₂₃ + t₃₂ + t₃₃  t₂₁ + t₂₃ + t₃₁ + t₃₃  t₂₁ + t₂₂ + t₃₁ + t₃₂
  t₁₂ + t₁₃ + t₃₂ + t₃₃  t₁₁ + t₁₃ + t₃₁ + t₃₃  t₁₁ + t₁₂ + t₃₁ + t₃₂
  t₁₂ + t₁₃ + t₂₂ + t₂₃  t₁₁ + t₁₃ + t₂₁ + t₂₃  t₁₁ + t₁₂ + t₂₁ + t₂₂
 
-julia> factor.(components(TT, (:cont,:cov), b))
+julia> factor.(components(TT, ℬ, (:cont,:cov)))
 3×3 Matrix{Sym}:
  -(t12 + t13 - t22 - t23 - t32 - t33)/2  …  -(t11 + t12 - t21 - t22 - t31 - t32)/2
   (t12 + t13 - t22 - t23 + t32 + t33)/2      (t11 + t12 - t21 - t22 + t31 + t32)/2
@@ -248,10 +236,10 @@ end
 
 function components(
     t::AbstractTensnd{order,dim,T},
-    basis::AbstractBasis{dim},
+    ℬ::AbstractBasis{dim},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if basis == getbasis(t)
+    if ℬ == getbasis(t)
         return components(t, var)
     else
         bb = Dict()
@@ -259,7 +247,7 @@ function components(
             if v1 ∈ getvar(t) && v2 ∈ var
                 bb[v1, v2] =
                     Tensor{2,3}(vecbasis(getbasis(t), invvar(v1)))' ⋅
-                    Tensor{2,3}(vecbasis(basis, v2))
+                    Tensor{2,3}(vecbasis(ℬ, v2))
             end
         end
         m = Array(getdata(t))
@@ -280,16 +268,18 @@ function components(
     end
 end
 
-components(t::AbstractTensnd{order,dim,T}, basis::AbstractBasis{dim}) where {order,dim,T} = components(t, basis, getvar(t))
+components(t::AbstractTensnd{order,dim,T}, ℬ::AbstractBasis{dim}) where {order,dim,T} = components(t, ℬ, getvar(t))
+
+components(t::AbstractTensnd{order,dim,T}, ℬ::OrthonormalBasis{dim}) where {order,dim,T} = components(t, ℬ, ntuple(_ -> :cont, order))
 
 function components(
     t::TensndOrthonormal{order,dim,T},
-    basis::OrthonormalBasis{dim},
+    ℬ::OrthonormalBasis{dim},
 ) where {order,dim,T}
-    if basis == getbasis(t)
+    if ℬ == getbasis(t)
         return getdata(t)
     else
-        bb = Tensor{2,3}(vecbasis(getbasis(t)))' ⋅ Tensor{2,3}(vecbasis(basis))
+        bb = Tensor{2,3}(vecbasis(getbasis(t)))' ⋅ Tensor{2,3}(vecbasis(ℬ))
         m = Array(getdata(t))
         ec1 = ntuple(i -> i, order)
         newcp = order + 1
@@ -309,14 +299,65 @@ end
 
 components(t::TensndOrthonormal{order,dim,T}, basis::OrthonormalBasis{dim}, ::NTuple{order,Symbol}) where {order,dim,T} = components(t, basis)
 
+"""
+    components_canon(t::AbstractTensnd)
+
+Extracts the components of a tensor in the canonical basis
+"""
 components_canon(t::AbstractTensnd) =
     components(t, CanonicalBasis{getdim(t),eltype(t)}(), getvar(t))
 
-function change_tens(t::AbstractTensnd, newbasis::AbstractBasis, newvar::NTuple)
-    if newbasis == getbasis(t) && newvar == getvar(t)
+components_canon(t::TensndOrthonormal) =
+    components(t, CanonicalBasis{getdim(t),eltype(t)}())
+
+"""
+    change_tens(t::AbstractTensnd{order,dim,T},ℬ::AbstractBasis{dim},var::NTuple{order,Symbol})
+    change_tens(t::AbstractTensnd{order,dim,T},ℬ::AbstractBasis{dim})
+    change_tens(t::AbstractTensnd{order,dim,T},var::NTuple{order,Symbol})
+
+Rewrites the same tensor with components corresponding to new variances and/or to a new basis
+
+```julia
+julia> ℬ = Basis(Sym[0 1 1; 1 0 1; 1 1 0]) ;
+
+julia> TV = Tensnd(Tensor{1,3}(i->symbols("v\$i",real=true)))
+TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+ v₁
+ v₂
+ v₃
+# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+# var: (:cont,)
+
+julia> factor.(components(TV, ℬ, (:cont,)))
+3-element Vector{Sym}:
+ -(v1 - v2 - v3)/2
+  (v1 - v2 + v3)/2
+  (v1 + v2 - v3)/2
+
+julia> ℬ₀ = Basis(Sym[0 1 1; 1 0 1; 1 1 1]) ;
+
+julia> TV0 = change_tens(TV, ℬ₀)
+Tensnd{1, 3, Sym, Vec{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+     -v₁ + v₃
+     -v₂ + v₃
+ v₁ + v₂ - v₃
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 0  1  1
+ 1  0  1
+ 1  1  1
+# var: (:cont,)
+```
+"""
+function change_tens(t::AbstractTensnd, ℬ::AbstractBasis, newvar::NTuple)
+    if ℬ == getbasis(t) && newvar == getvar(t)
         return t
     else
-        return Tensnd(components(t, newbasis, newvar), newbasis, newvar)
+        return Tensnd(components(t, ℬ, newvar), ℬ, newvar)
     end
 end
 
@@ -336,6 +377,40 @@ function change_tens(t::AbstractTensnd, newvar::NTuple)
     end
 end
 
+"""
+    change_tens_canon(t::AbstractTensnd{order,dim,T},var::NTuple{order,Symbol})
+
+Rewrites the same tensor with components corresponding to the canonical basis
+
+```julia
+julia> ℬ = Basis(Sym[0 1 1; 1 0 1; 1 1 0]) ;
+
+julia> TV = Tensnd(Tensor{1,3}(i->symbols("v\$i",real=true)), ℬ)
+Tensnd{1, 3, Sym, Vec{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+ v₁
+ v₂
+ v₃
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ 0  1  1
+ 1  0  1
+ 1  1  1
+# var: (:cont,)
+
+julia> TV0 = change_tens_canon(TV)
+TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+      v₂ + v₃
+      v₁ + v₃
+ v₁ + v₂ + v₃
+# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+# var: (:cont,)
+```
+"""
+change_tens_canon(t::AbstractTensnd) = change_tens(t, CanonicalBasis{getdim(t),eltype(t)}())
 
 
 ##############

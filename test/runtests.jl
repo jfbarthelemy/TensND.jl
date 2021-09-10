@@ -21,6 +21,7 @@ reset_timer!()
 
 include("test_bases.jl")
 include("test_tensnd.jl")
+include("test_special_tens.jl")
 
 print_timer()
 println()
