@@ -77,7 +77,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             if isidentity(g)
-                return RotatedBasis(angles(e)...)
+                return RotatedBasis(e)
             else
                 e = Tensor{2,dim}(e)
                 g = SymmetricTensor{2,dim}(g)
@@ -94,9 +94,11 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             e = Tensor{2,dim}(v)
-            g = SymmetricTensor{2,dim}(e' ⋅ e)
+            ete = e' ⋅ e
+            if T == Sym ete = simplify.(ete) end
+            g = SymmetricTensor{2,dim}(ete)
             if isidentity(g)
-                return RotatedBasis(angles(e)...)
+                return RotatedBasis(e)
             else
                 G = inv(g)
                 E = e ⋅ G'
@@ -111,9 +113,11 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             E = Tensor{2,dim}(v)
-            G = SymmetricTensor{2,dim}(E' ⋅ E)
+            EtE = E' ⋅ E
+            if T == Sym EtE = simplify.(EtE) end
+            G = SymmetricTensor{2,dim}(EtE)
             if isidentity(G)
-                return RotatedBasis(angles(e)...)
+                return RotatedBasis(E)
             else
                 g = inv(G)
                 e = E ⋅ g'
@@ -200,6 +204,11 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     e::AbstractArray{T,2} # Primal basis `eᵢ=e[:,i]`
     E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
     angles::NamedTuple
+    function RotatedBasis(R::AbstractArray{T,2}) where {T<:Number}
+        dim = 3
+        e = E = Tensor{2,dim,T}(R)
+        new{dim,T}(e, E, angles(R))
+    end
     function RotatedBasis(θ::T1, ϕ::T2, ψ::T3 = 0) where {T1<:Number,T2<:Number,T3<:Number}
         T = promote_type(T1, T2, T3)
         dim = 3

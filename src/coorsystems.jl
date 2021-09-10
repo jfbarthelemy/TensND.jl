@@ -30,3 +30,30 @@ TensND.TensndRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 ∂(t::AbstractTensnd{order,dim,Sym,A},xᵢ::Sym) where {order,dim,A} =
     change_tens(Tensnd(diff.(components_canon(t), xᵢ)), getbasis(t), getvar(t))
 
+∂(t::Sym,xᵢ::Sym) = diff(t, xᵢ)
+
+
+struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
+    OM::AbstractTensnd{1,dim,Sym}
+    x::AbstractVector{Sym}
+    basis::AbstractBasis{dim,Sym}
+    bnorm::AbstractBasis{dim,Sym}
+    aᵢ::NTuple{dim,AbstractTensnd}
+    aⁱ::NTuple{dim,AbstractTensnd}
+    eᵢ::NTuple{dim,AbstractTensnd}
+    function CoorSystemSym(OM::AbstractTensnd{1,dim,Sym}, x::AbstractVector{Sym} ; simp::Dict = Dict()) where {dim}
+        var = getvar(OM)
+        ℬ = getbasis(OM)
+        aᵢ = ntuple(i -> ∂(OM,x[i]), dim)
+        e = Tensor{2,dim}(hcat(components.(aᵢ)...))
+        # g = SymmetricTensor{2,dim}(simplify.(e' ⋅ e))
+        # G = inv(g)
+        # E = e ⋅ G'
+        E = inv(e)'
+        aⁱ = ntuple(i -> Tensnd(E[:,i], ℬ, invvar.(var)), dim)
+        basis = Basis(simplify.(subs.(simplify.(hcat(components_canon.(aᵢ)...)), simp...)))
+        eᵢ = ntuple(i -> Tensnd(simplify.(subs.(simplify.(aᵢ[i] / norm(aᵢ[i])), simp...)), ℬ, invvar.(var)), dim)
+        bnorm = Basis(simplify.(subs.(simplify.(hcat(components_canon.(eᵢ)...)), simp...)))
+        new{dim}(OM,x,basis,bnorm,aᵢ,aⁱ,eᵢ)
+    end
+end

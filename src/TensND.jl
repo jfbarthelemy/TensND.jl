@@ -23,6 +23,7 @@ export init_canonical, init_isotropic, init_polar, init_cylindrical, init_spheri
 export rot2, rot3, rot6
 
 export ∂
+export CoorSystemSym
 
 
 include("bases.jl")

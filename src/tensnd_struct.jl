@@ -571,6 +571,9 @@ function Tensors.otimes(
     return Tensnd(data, getbasis(nt1))
 end
 
+Tensors.otimes(α::Number, t::AbstractTensnd) = α * t
+Tensors.otimes(t::AbstractTensnd, α::Number) = α * t
+
 function scontract(
     t1::AbstractArray{T1,order1},
     t2::AbstractArray{T2,order2},
@@ -993,6 +996,11 @@ end
         @inbounds (S1[i, j] * S2[k, l] + S1[i, k] * S2[j, l]) / 2
     end)
 end
+
+sotimes(α::Number, t::AbstractTensnd) = α * t
+sotimes(t::AbstractTensnd, α::Number) = α * t
+
+
 
 """
     sotimes(t1::AbstractTensnd{order1,dim}, t2::AbstractTensnd{order2,dim})
