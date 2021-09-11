@@ -305,26 +305,6 @@ for eb in (:𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
     @eval $eb(i::Int, args...; kwargs...) = $eb(Val(i), args...; kwargs...)
 end
 
-# for eb in (:𝐞, :𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
-#     @eval begin
-#         $(Symbol(eb, eb))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ $eb(j, args...)
-#         $(Symbol(eb, eb, "s"))(i::Int, j::Int, args...) = $eb(i, args...) ⊗ˢ $eb(j, args...)
-#     end
-# end
-
-
-"""
-    init_canonical(T::Type{<:Number} = Sym)
-
-Returns the canonical basis and the 3 unit vectors
-
-# Examples
-```julia
-julia> ℬ, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
-(Sym[1 0 0; 0 1 0; 0 0 1], Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1])
-``` 
-"""
-init_canonical(T::Type{<:Number} = Sym) = Basis(), 𝐞(1, 3, T), 𝐞(2, 3, T), 𝐞(3, 3, T)
 
 """
     init_isotropic(T::Type{<:Number} = Sym)
@@ -337,73 +317,6 @@ julia> 𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic() ;
 ``` 
 """
 init_isotropic(T::Type{<:Number} = Sym) = t𝟏(T), t𝟙(T), t𝕀(T), t𝕁(T), t𝕂(T)
-
-"""
-    init_polar(θ ; canonical = false)
-
-Returns the angle, the polar basis and the 2 unit vectors
-
-# Examples
-```julia
-julia> θ, ℬᵖ, 𝐞ʳ, 𝐞ᶿ = init_polar(symbols("θ", real = true)) ;
-``` 
-"""
-init_polar(θ; canonical = false) =
-    θ, Basis(θ), 𝐞ᵖ(1, θ; canonical = canonical), 𝐞ᵖ(2, θ; canonical = canonical)
-
-"""
-    init_cylindrical(θ ; canonical = false)
-
-Returns the angle, the cylindrical basis and the 3 unit vectors
-
-# Examples
-```julia
-julia> θ, ℬᶜ, 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = init_cylindrical(symbols("θ", real = true)) ;
-``` 
-"""
-init_cylindrical(θ; canonical = false) = θ,
-CylindricalBasis(θ),
-𝐞ᶜ(1, θ; canonical = canonical),
-𝐞ᶜ(2, θ; canonical = canonical),
-𝐞ᶜ(3, θ; canonical = canonical)
-
-
-"""
-    init_spherical(θ, ϕ; canonical = false)
-
-Returns the angles, the spherical basis and the 3 unit vectors.
-Take care that the order of the 3 vectors is 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ so that
-the basis coincides with the canonical one when the angles are null.
-
-# Examples
-```julia
-julia> θ, ϕ, ℬˢ, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
-``` 
-"""
-init_spherical(θ, ϕ; canonical = false) = θ,
-ϕ,
-SphericalBasis(θ, ϕ),
-𝐞ˢ(1, θ, ϕ; canonical = canonical),
-𝐞ˢ(2, θ, ϕ; canonical = canonical),
-𝐞ˢ(3, θ, ϕ; canonical = canonical)
-
-"""
-    init_rotated(θ, ϕ, ψ; canonical = false)
-
-Returns the angles, the ratated basis and the 3 unit vectors
-
-# Examples
-```julia
-julia> θ, ϕ, ψ, ℬʳ, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_rotated(symbols("θ ϕ ψ", real = true)...) ;
-```
-"""
-init_rotated(θ, ϕ, ψ; canonical = false) = θ,
-ϕ,
-ψ,
-Basis(θ, ϕ, ψ),
-𝐞ˢ(1, θ, ϕ, ψ; canonical = canonical),
-𝐞ˢ(2, θ, ϕ, ψ; canonical = canonical),
-𝐞ˢ(3, θ, ϕ, ψ; canonical = canonical)
 
 
 """

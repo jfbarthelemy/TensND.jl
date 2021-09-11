@@ -15,6 +15,7 @@
         0 0 0 0 0 (1+ν)/E
     ]
     @test invKM(KM(𝕊)) == 𝕊
+    
     # Acoustic tensor
     n = Tensnd(Sym[0, 0, 1])
     Eᵒᵉᵈᵒ = E * (1 - ν) / ((1 + ν) * (1 - 2ν))
@@ -39,10 +40,6 @@
     k = E / (3(1 - 2ν))
     @test simplify(ℂ ⊙ 𝕁) == simplify(3k)
     @test simplify(ℂ ⊙ 𝕂) == simplify(10μ)
-
-    ℬ, 𝐞₁, 𝐞₂, 𝐞₃ = init_canonical()
-    θ, ϕ, ℬˢ, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
-    @test components(𝐞ʳ ⊗ 𝐞ᵠ, ℬˢ) == components(𝐞₃ ⊗ 𝐞₂, ℬ) == components_canon(𝐞₃ ⊗ 𝐞₂)
 
     # Rotations
     θ, ϕ, ψ = symbols("θ ϕ ψ", real = true) ;
