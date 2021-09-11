@@ -615,7 +615,6 @@ function LinearAlgebra.dot(
     t2::TensndOrthonormal{order2,dim},
 ) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
-    nt2 = change_tens(nt2, getbasis(nt2))
     data = scontract(getdata(nt1), getdata(nt2))
     return Tensnd(data, getbasis(nt1))
 end
@@ -626,6 +625,13 @@ function LinearAlgebra.dot(t1::AbstractTensnd{1,dim}, t2::AbstractTensnd{1,dim})
     nt2 = change_tens(nt2, getbasis(nt2), var)
     return scontract(getdata(nt1), getdata(nt2))
 end
+
+function LinearAlgebra.dot(t1::TensndOrthonormal{1,dim}, t2::TensndOrthonormal{1,dim}) where {dim}
+    nt1, nt2 = same_basis(t1, t2)
+    return scontract(getdata(nt1), getdata(nt2))
+end
+
+LinearAlgebra.norm(u::AbstractTensnd{1,dim}) where {dim} = √(dot(u, u))
 
 function Tensors.dcontract(
     t1::AbstractArray{T1,order1},

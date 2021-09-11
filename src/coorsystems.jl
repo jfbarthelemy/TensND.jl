@@ -48,7 +48,7 @@ CanonicalBasis{length(coords),eltype(coords)}()
 
 init_canonical(::Val{3}) = init_canonical(symbols("x y z", real = true))
 init_canonical(::Val{2}) = init_canonical(symbols("x y", real = true))
-init_canonical(dim::Int = 3) = init_canonical(Val(dim))
+init_canonical(dim::Int) = init_canonical(Val(dim))
 
 
 
@@ -120,6 +120,7 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
     aᵢ::NTuple{dim,AbstractTensnd}
     aⁱ::NTuple{dim,AbstractTensnd}
     eᵢ::NTuple{dim,AbstractTensnd}
+    eⁱ::NTuple{dim,AbstractTensnd}
     function CoorSystemSym(
         OM::AbstractTensnd{1,dim,Sym},
         coords::NTuple{dim,Sym};
@@ -139,11 +140,19 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
             i -> Tensnd(
                 simplify.(subs.(simplify.(aᵢ[i] / norm(aᵢ[i])), simp...)),
                 ℬ,
-                invvar.(var),
+                var,
             ),
             dim,
         )
         bnorm = Basis(simplify.(subs.(simplify.(hcat(components_canon.(eᵢ)...)), simp...)))
-        new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ)
+        eⁱ = ntuple(
+            i -> Tensnd(
+                simplify.(subs.(simplify.(aⁱ[i] / norm(aⁱ[i])), simp...)),
+                ℬ,
+                invvar.(var),
+            ),
+            dim,
+        )
+        new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ, eⁱ)
     end
 end
