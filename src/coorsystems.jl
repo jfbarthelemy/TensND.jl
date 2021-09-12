@@ -62,8 +62,10 @@ Returns the coordinates, base vectors and basis of the polar basis
 julia> coords, vectors, ℬᵖ = init_polar() ; r, θ = coords ; 𝐞ʳ, 𝐞ᶿ = vectors ;
 ``` 
 """
-init_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false) =
-    Tuple(coords), ntuple(i -> 𝐞ᵖ(i, coords[2]; canonical = canonical), 2), Basis(coords[2])
+init_polar(
+    coords = (symbols("r", positive = true), symbols("θ", real = true));
+    canonical = false,
+) = Tuple(coords), ntuple(i -> 𝐞ᵖ(i, coords[2]; canonical = canonical), 2), Basis(coords[2])
 
 """
     init_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
@@ -75,8 +77,16 @@ Returns the coordinates, base vectors and basis of the cylindrical basis
 julia> coords, vectors, ℬᶜ = init_cylindrical() ; r, θ, z = coords ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = vectors ;
 ``` 
 """
-init_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false) =
-    Tuple(coords), ntuple(i -> 𝐞ᶜ(i, coords[2]; canonical = canonical), 3), CylindricalBasis(coords[2])
+init_cylindrical(
+    coords = (
+        symbols("r", positive = true),
+        symbols("θ", real = true),
+        symbols("z", real = true),
+    );
+    canonical = false,
+) = Tuple(coords),
+ntuple(i -> 𝐞ᶜ(i, coords[2]; canonical = canonical), 3),
+CylindricalBasis(coords[2])
 
 
 
@@ -93,8 +103,16 @@ the coordinates are ordered as `θ, ϕ, r`.
 julia> coords, vectors, ℬˢ = init_spherical() ; θ, ϕ, r = coords ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ  = vectors ;
 ``` 
 """
-init_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false) =
-    Tuple(coords), ntuple(i -> 𝐞ˢ(i, coords[1:2]...; canonical = canonical), 3), SphericalBasis(coords[1:2]...)
+init_spherical(
+    coords = (
+        symbols("θ", real = true),
+        symbols("ϕ", real = true),
+        symbols("r", positive = true),
+    );
+    canonical = false,
+) = Tuple(coords),
+ntuple(i -> 𝐞ˢ(i, coords[1:2]...; canonical = canonical), 3),
+SphericalBasis(coords[1:2]...)
 
 
 """
@@ -126,33 +144,20 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         coords::NTuple{dim,Sym};
         simp::Dict = Dict(),
     ) where {dim}
+        sd = length(simp) > 0 ? x -> simplify(subs(simplify(x), simp...)) : x -> simplify(x)
         var = getvar(OM)
         ℬ = getbasis(OM)
         aᵢ = ntuple(i -> ∂(OM, coords[i]), dim)
-        e = Tensor{2,dim}(hcat(components.(aᵢ)...))
+        e = Tensor{2,dim}(sd.(hcat(components.(aᵢ)...)))
         # g = SymmetricTensor{2,dim}(simplify.(e' ⋅ e))
         # G = inv(g)
         # E = e ⋅ G'
-        E = inv(e)'
+        E = sd.(inv(e)')
         aⁱ = ntuple(i -> Tensnd(E[:, i], ℬ, invvar.(var)), dim)
-        basis = Basis(simplify.(subs.(simplify.(hcat(components_canon.(aᵢ)...)), simp...)))
-        eᵢ = ntuple(
-            i -> Tensnd(
-                simplify.(subs.(simplify.(aᵢ[i] / norm(aᵢ[i])), simp...)),
-                ℬ,
-                var,
-            ),
-            dim,
-        )
-        bnorm = Basis(simplify.(subs.(simplify.(hcat(components_canon.(eᵢ)...)), simp...)))
-        eⁱ = ntuple(
-            i -> Tensnd(
-                simplify.(subs.(simplify.(aⁱ[i] / norm(aⁱ[i])), simp...)),
-                ℬ,
-                invvar.(var),
-            ),
-            dim,
-        )
+        basis = Basis(sd.(hcat(components_canon.(aᵢ)...)))
+        eᵢ = ntuple(i -> Tensnd(sd.(aᵢ[i] / norm(aᵢ[i])), ℬ, var), dim)
+        bnorm = Basis(sd.(hcat(components_canon.(eᵢ)...)))
+        eⁱ = ntuple(i -> Tensnd(sd.(aⁱ[i] / norm(aⁱ[i])), ℬ, invvar.(var)), dim)
         new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ, eⁱ)
     end
 end
