@@ -13,7 +13,7 @@ export vecbasis, metric
 export isorthogonal, isorthonormal
 export Tensnd, components, components_canon, change_tens, change_tens_canon
 export KM, invKM
-export qcontract, otimesul, ⊙, ⊠, ⊠ˢ, ⊗ˢ#, ⊗̅, ⊗̲, ⊗̲̅
+export contract, qcontract, otimesul, ⊙, ⊠, ⊠ˢ, ⊗ˢ#, ⊗̅, ⊗̲, ⊗̲̅
 
 export LeviCivita
 export tensId2, tensId4, tensId4s, tensJ4, tensK4
@@ -22,8 +22,7 @@ export 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ
 export init_canonical, init_isotropic, init_polar, init_cylindrical, init_spherical, init_rotated
 export rot2, rot3, rot6
 
-export ∂
-export CoorSystemSym
+export ∂, CoorSystemSym, GRAD, DIV
 
 
 include("bases.jl")

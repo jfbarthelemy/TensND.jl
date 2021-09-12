@@ -161,3 +161,26 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ, eⁱ)
     end
 end
+
+getcoords(CS::CoorSystemSym) = CS.coords
+getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
+
+getOM(CS::CoorSystemSym) = CS.OM
+
+getbasis(CS::CoorSystemSym) = CS.basis
+
+getbnorm(CS::CoorSystemSym) = CS.bnorm
+
+vecbasis(CS::CoorSystemSym,::Val{:cov}) = CS.aᵢ
+vecbasis(CS::CoorSystemSym,::Val{:cont}) = CS.aⁱ
+vecbasis(CS::CoorSystemSym, var = :cov) = vecbasis(CS, Val(var))
+vecbasis(CS::CoorSystemSym, i::Int, var = :cov) = vecbasis(CS, var)[i]
+
+vecbnorm(CS::CoorSystemSym,::Val{:cov}) = CS.eᵢ
+vecbnorm(CS::CoorSystemSym,::Val{:cont}) = CS.eⁱ
+vecbnorm(CS::CoorSystemSym, var = :cov) = vecbnorm(CS, Val(var))
+vecbnorm(CS::CoorSystemSym, i::Int, var = :cov) = vecbnorm(CS, var)[i]
+
+GRAD(T::Union{Sym,AbstractTensnd{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order, dim} = sum([∂(T, getcoords(CS,i)) ⊗ vecbasis(CS, i, :cont) for i in 1:dim])
+
+DIV(T::Union{AbstractTensnd{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order, dim} = sum([∂(T, getcoords(CS,i)) ⋅ vecbasis(CS, i, :cont) for i in 1:dim])

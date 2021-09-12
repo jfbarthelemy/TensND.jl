@@ -21,6 +21,12 @@
         𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = vectors
         OM = r * 𝐞ʳ
         CS = CoorSystemSym(OM, coords; simp = Dict(abs(sin(θ)) => sin(θ)))
+        σʳʳ = SymFunction("σʳʳ", real = true)(r)
+        σᶿᶿ = SymFunction("σᶿᶿ", real = true)(r)
+        σᵠᵠ = SymFunction("σᵠᵠ", real = true)(r)
+        𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ
+        div𝛔 = DIV(𝛔, CS)
+        @test simplify(div𝛔 ⋅ 𝐞ʳ) == simplify(diff(σʳʳ, r) + (2 * σʳʳ - σᶿᶿ - σᵠᵠ) / r) 
 
     end
 

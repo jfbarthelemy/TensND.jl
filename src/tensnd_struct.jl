@@ -268,9 +268,11 @@ function components(
     end
 end
 
-components(t::AbstractTensnd{order,dim,T}, ℬ::AbstractBasis{dim}) where {order,dim,T} = components(t, ℬ, getvar(t))
+components(t::AbstractTensnd{order,dim,T}, ℬ::AbstractBasis{dim}) where {order,dim,T} =
+    components(t, ℬ, getvar(t))
 
-components(t::AbstractTensnd{order,dim,T}, ℬ::OrthonormalBasis{dim}) where {order,dim,T} = components(t, ℬ, ntuple(_ -> :cont, order))
+components(t::AbstractTensnd{order,dim,T}, ℬ::OrthonormalBasis{dim}) where {order,dim,T} =
+    components(t, ℬ, ntuple(_ -> :cont, order))
 
 function components(
     t::TensndOrthonormal{order,dim,T},
@@ -297,7 +299,11 @@ function components(
     end
 end
 
-components(t::TensndOrthonormal{order,dim,T}, basis::OrthonormalBasis{dim}, ::NTuple{order,Symbol}) where {order,dim,T} = components(t, basis)
+components(
+    t::TensndOrthonormal{order,dim,T},
+    basis::OrthonormalBasis{dim},
+    ::NTuple{order,Symbol},
+) where {order,dim,T} = components(t, basis)
 
 """
     components_canon(t::AbstractTensnd)
@@ -571,6 +577,25 @@ function Tensors.otimes(
     return Tensnd(data, getbasis(nt1))
 end
 
+Tensors.otimes(v::AbstractTensnd{1,dim}) where {dim} =
+    Tensnd(otimes(getdata(v)), getbasis(v), (getvar(v)..., getvar(v)...))
+
+Tensors.otimes(v::TensndOrthonormal{1,dim}) where {dim} =
+    Tensnd(otimes(getdata(v)), getbasis(v))
+
+@inline function Tensors.otimes(S::SymmetricTensor{2,dim}) where {dim}
+    return SymmetricTensor{4,dim}(@inline function (i, j, k, l)
+        @inbounds S[i, j] * S[k, l]
+    end)
+end
+
+Tensors.otimes(t::AbstractTensnd{2,dim}) where {dim} =
+    Tensnd(otimes(getdata(t)), getbasis(t), (getvar(t)..., getvar(t)...))
+
+Tensors.otimes(t::TensndOrthonormal{2,dim}) where {dim} =
+    Tensnd(otimes(getdata(t)), getbasis(t))
+
+
 Tensors.otimes(α::Number, t::AbstractTensnd) = α * t
 Tensors.otimes(t::AbstractTensnd, α::Number) = α * t
 
@@ -626,12 +651,64 @@ function LinearAlgebra.dot(t1::AbstractTensnd{1,dim}, t2::AbstractTensnd{1,dim})
     return scontract(getdata(nt1), getdata(nt2))
 end
 
-function LinearAlgebra.dot(t1::TensndOrthonormal{1,dim}, t2::TensndOrthonormal{1,dim}) where {dim}
+function LinearAlgebra.dot(
+    t1::TensndOrthonormal{1,dim},
+    t2::TensndOrthonormal{1,dim},
+) where {dim}
     nt1, nt2 = same_basis(t1, t2)
     return scontract(getdata(nt1), getdata(nt2))
 end
 
+LinearAlgebra.dot(v::TensndOrthonormal{1,dim}) where {dim} = dot(getdata(v))
+
+LinearAlgebra.dot(t::TensndOrthonormal{2,dim}) where {dim} = dot(getdata(t))
+
 LinearAlgebra.norm(u::AbstractTensnd{1,dim}) where {dim} = √(dot(u, u))
+
+LinearAlgebra.norm(t::AbstractTensnd{2,dim}) where {dim} = √(dot(t, t))
+
+LinearAlgebra.dot(u::TensndOrthonormal{1,dim}) where {dim} = √(dot(u))
+
+LinearAlgebra.dot(t::TensndOrthonormal{2,dim}) where {dim} = √(dot(t))
+
+
+function contract(t::AbstractArray{T,order}, i::Int, j::Int) where {T,order}
+    m = min(i, j)
+    M = max(i, j)
+    ec1 = ntuple(k -> k == j ? i : k, order)
+    ec2 = (Tuple(1:m-1)..., Tuple(m+1:M-1)..., Tuple(M+1:order)...)
+    return einsum(EinCode((ec1,), ec2), (AbstractArray{T}(t),))
+end
+
+contract(t::AbstractArray{T,2}, ::Int, ::Int) where {T} = tr(t)
+
+"""
+    contract(t::AbstractTensnd{order,dim}, i::Int, j::Int)
+
+Calculates the tensor obtained after contraction with respect to the indices `i` and `j`
+"""
+function contract(t::AbstractTensnd{order,dim}, i::Int, j::Int) where {order,dim}
+    var = ntuple(k -> k == j ? invvar(getvar(t, i)) : getvar(t, k), order)
+    nt = change_tens(t, getbasis(t), var)
+    data = contract(getdata(nt), i, j)
+    m = min(i, j)
+    M = max(i, j)
+    var = (getvar(nt)(1:m-1)..., getvar(nt)(m+1:M-1)..., getvar(nt)(M+1:order)...)
+    return Tensnd(data, getbasis(nt), var)
+end
+
+function contract(t::AbstractTensnd{2,dim}, i::Int, j::Int) where {dim}
+    var = ntuple(k -> k == j ? invvar(getvar(t, i)) : getvar(t, k), order)
+    nt = change_tens(t, getbasis(t), var)
+    return contract(getdata(nt), i, j)
+end
+
+contract(t::TensndOrthonormal{order,dim}, i::Int, j::Int) where {order,dim} =
+    Tensnd(contract(getdata(t), i, j), getbasis(t))
+
+contract(t::TensndOrthonormal{2,dim}, i::Int, j::Int) where {dim} =
+    contract(getdata(t), i, j)
+
 
 function Tensors.dcontract(
     t1::AbstractArray{T1,order1},
@@ -707,7 +784,10 @@ function Tensors.dcontract(t1::AbstractTensnd{2,dim}, t2::AbstractTensnd{2,dim})
     return Tensors.dcontract(getdata(nt1), getdata(nt2))
 end
 
-function Tensors.dcontract(t1::TensndOrthonormal{2,dim}, t2::TensndOrthonormal{2,dim}) where {dim}
+function Tensors.dcontract(
+    t1::TensndOrthonormal{2,dim},
+    t2::TensndOrthonormal{2,dim},
+) where {dim}
     nt1, nt2 = same_basis(t1, t2)
     return Tensors.dcontract(getdata(nt1), getdata(nt2))
 end
@@ -841,7 +921,7 @@ function qcontract(
     data = qcontract(getdata(nt1), getdata(nt2))
     return Tensnd(data, getbasis(nt1))
 end
-    
+
 function qcontract(t1::AbstractTensnd{4,dim}, t2::AbstractTensnd{4,dim}) where {dim}
     nt1, nt2 = same_basis(t1, t2)
     var = (
@@ -971,7 +1051,7 @@ function otimesul(
     return Tensnd(data, getbasis(nt1))
 end
 
-@inline function sotimes(
+function sotimes(
     t1::AbstractArray{T1,order1},
     t2::AbstractArray{T2,order2},
 ) where {T1,T2,order1,order2}
@@ -1050,25 +1130,19 @@ Base.transpose(t::AbstractTensnd{order,dim,T,<:FourthOrderTensor}) where {order,
     )
 
 Base.transpose(t::TensndOrthonormal{order,dim,T,<:FourthOrderTensor}) where {order,dim,T} =
-    Tensnd(
-        Tensors.transpose(getdata(t)),
-        getbasis(t),
-    )
+    Tensnd(Tensors.transpose(getdata(t)), getbasis(t))
 
 Tensors.majortranspose(
-        t::AbstractTensnd{order,dim,T,<:FourthOrderTensor},
-    ) where {order,dim,T} = Tensnd(
-        majortranspose(getdata(t)),
-        getbasis(t),
-        (getvar(t)[3], getvar(t)[4], getvar(t)[1], getvar(t)[2]),
-    )
-    
-Tensors.majortranspose(
-    t::TensndOrthonormal{order,dim,T,<:FourthOrderTensor},
+    t::AbstractTensnd{order,dim,T,<:FourthOrderTensor},
 ) where {order,dim,T} = Tensnd(
     majortranspose(getdata(t)),
     getbasis(t),
+    (getvar(t)[3], getvar(t)[4], getvar(t)[1], getvar(t)[2]),
 )
+
+Tensors.majortranspose(
+    t::TensndOrthonormal{order,dim,T,<:FourthOrderTensor},
+) where {order,dim,T} = Tensnd(majortranspose(getdata(t)), getbasis(t))
 
 Tensors.minortranspose(
     t::AbstractTensnd{order,dim,T,<:FourthOrderTensor},
@@ -1080,10 +1154,7 @@ Tensors.minortranspose(
 
 Tensors.minortranspose(
     t::TensndOrthonormal{order,dim,T,<:FourthOrderTensor},
-) where {order,dim,T} = Tensnd(
-    minortranspose(getdata(t)),
-    getbasis(t),
-)
+) where {order,dim,T} = Tensnd(minortranspose(getdata(t)), getbasis(t))
 
 const ⊙ = qcontract
 const ⊠ = otimesu
