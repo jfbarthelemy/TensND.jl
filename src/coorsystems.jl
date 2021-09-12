@@ -145,19 +145,20 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         simp::Dict = Dict(),
     ) where {dim}
         sd = length(simp) > 0 ? x -> simplify(subs(simplify(x), simp...)) : x -> simplify(x)
+        sdt = length(simp) > 0 ? x -> tenssimp(tenssubs(tenssimp(x), simp)) : x -> tenssimp(x)
         var = getvar(OM)
         ℬ = getbasis(OM)
         aᵢ = ntuple(i -> ∂(OM, coords[i]), dim)
-        e = Tensor{2,dim}(sd.(hcat(components.(aᵢ)...)))
-        # g = SymmetricTensor{2,dim}(simplify.(e' ⋅ e))
-        # G = inv(g)
-        # E = e ⋅ G'
+        basis = Basis(hcat(components_canon.(aᵢ)...))
+        e = Tensor{2,dim}(hcat(components.(aᵢ)...))
         E = sd.(inv(e)')
         aⁱ = ntuple(i -> Tensnd(E[:, i], ℬ, invvar.(var)), dim)
-        basis = Basis(sd.(hcat(components_canon.(aᵢ)...)))
-        eᵢ = ntuple(i -> Tensnd(sd.(aᵢ[i] / norm(aᵢ[i])), ℬ, var), dim)
+        eᵢ = ntuple(i -> aᵢ[i] / norm(aᵢ[i]), dim)
         bnorm = Basis(sd.(hcat(components_canon.(eᵢ)...)))
-        eⁱ = ntuple(i -> Tensnd(sd.(aⁱ[i] / norm(aⁱ[i])), ℬ, invvar.(var)), dim)
+        eᵢ = ntuple(i -> change_tens(sdt(eᵢ[i]), bnorm, (:cov,)), dim)
+        aᵢ = ntuple(i -> change_tens(sdt(aᵢ[i]), bnorm, (:cov,)), dim)
+        aⁱ = ntuple(i -> change_tens(sdt(aⁱ[i]), bnorm, (:cont,)), dim)
+        eⁱ = ntuple(i -> sdt(aⁱ[i] / norm(aⁱ[i])), dim)
         new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ, eⁱ)
     end
 end

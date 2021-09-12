@@ -419,6 +419,11 @@ TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
 change_tens_canon(t::AbstractTensnd) = change_tens(t, CanonicalBasis{getdim(t),eltype(t)}())
 
 
+tenssimp(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(simplify.(getdata(t)), getbasis(t), getvar(t))
+
+tenssubs(t::AbstractTensnd{order,dim,Sym}, d::Dict) where {order,dim} = Tensnd(subs.(getdata(t), d...), getbasis(t), getvar(t))
+
+
 ##############
 # Operations #
 ##############
