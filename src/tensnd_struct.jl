@@ -76,15 +76,15 @@ struct TensndCanonical{order,dim,T,A} <: TensndOrthonormal{order,dim,T,A}
     data::A
     function TensndCanonical(data::AbstractArray{T,order}) where {order,T}
         newdata = tensor_or_array(data)
-        new{order,size(newdata)[1],T,typeof(newdata)}(newdata)
+        new{order,size(newdata,1),T,typeof(newdata)}(newdata)
     end
 end
 
 # This function aims at storing the table of components in the `Tensor` type whenever possible
-tensor_or_array(tab::AbstractArray{T,1}) where {T} = Vec{size(tab)[1]}(tab)
+tensor_or_array(tab::AbstractArray{T,1}) where {T} = Vec{size(tab,1)}(tab)
 for order ∈ (2, 4)
     @eval function tensor_or_array(tab::AbstractArray{T,$order}) where {T}
-        dim = size(tab)[1]
+        dim = size(tab,1)
         newtab = Tensor{$order,dim}(tab)
         if Tensors.issymmetric(newtab)
             newtab = convert(SymmetricTensor{$order,dim}, newtab)

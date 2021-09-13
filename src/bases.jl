@@ -205,7 +205,7 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
     angles::NamedTuple
     function RotatedBasis(R::AbstractArray{T,2}) where {T<:Number}
-        dim = size(R)[1]
+        dim = size(R,1)
         e = E = Tensor{2,dim,T}(R)
         new{dim,T}(e, E, angles(R))
     end
@@ -256,13 +256,13 @@ julia> angles(ℬʳ)
 (θ = θ, ϕ = ϕ, ψ = ψ)
 ```
 """
-angles(M::AbstractArray{T,2}) where {T} = angles(M, Val(size(M)[1]))
+angles(M::AbstractArray{T,2}) where {T} = angles(M, Val(size(M,1)))
 angles(ℬ::RotatedBasis) = ℬ.angles
 
 angles(v::AbstractArray{T,1}, ::Val{2}) where {T} = (θ = atan(v[2], v[1]),)
 angles(v::AbstractArray{T,1}, ::Val{3}) where {T} =
     (θ = atan(√(v[1]^2 + v[2]^2), v[3]), ϕ = atan(v[2], v[1]))
-angles(v::AbstractArray{T,1}) where {T} = angles(v, Val(size(v)[1]))
+angles(v::AbstractArray{T,1}) where {T} = angles(v, Val(size(v, 1)))
 
 
 @pure Base.eltype(::AbstractBasis{dim,T}) where {dim,T} = T
