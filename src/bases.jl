@@ -205,7 +205,7 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     E::AbstractArray{T,2} # Dual basis `eⁱ=E[:,i]`
     angles::NamedTuple
     function RotatedBasis(R::AbstractArray{T,2}) where {T<:Number}
-        dim = 3
+        dim = size(R)[1]
         e = E = Tensor{2,dim,T}(R)
         new{dim,T}(e, E, angles(R))
     end
@@ -272,7 +272,7 @@ angles(v::AbstractArray{T,1}) where {T} = angles(v, Val(size(v)[1]))
 """
     vecbasis(ℬ::AbstractBasis, var = :cov)
 
-Returns the primal (if `var = :cov`) or primal (if `var = :cont`) basis
+Returns the primal (if `var = :cov`) or dual (if `var = :cont`) basis
 """
 vecbasis(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.e
 vecbasis(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.E

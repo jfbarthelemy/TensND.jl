@@ -32,28 +32,138 @@ TensND.TensndRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 
 ∂(t::Sym, xᵢ::Sym) = diff(t, xᵢ)
 
-"""
-    init_canonical(coords = symbols("x y z", real = true))
 
-Returns the coordinates, base vectors and basis of the canonical basis
+
+struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
+    OM::AbstractTensnd{1,dim,Sym}
+    coords::NTuple{dim,Sym}
+    basis::AbstractBasis{dim,Sym}
+    bnorm::AbstractBasis{dim,Sym}
+    aᵢ::NTuple{dim,AbstractTensnd}
+    aⁱ::NTuple{dim,AbstractTensnd}
+    eᵢ::NTuple{dim,AbstractTensnd}
+    eⁱ::NTuple{dim,AbstractTensnd}
+    rules::Dict
+    function CoorSystemSym(
+        OM::AbstractTensnd{1,dim,Sym},
+        coords::NTuple{dim,Sym};
+        rules::Dict = Dict(),
+    ) where {dim}
+        sd =
+            length(rules) > 0 ? x -> simplify(subs(simplify(x), rules...)) :
+            x -> simplify(x)
+        sdt =
+            length(rules) > 0 ? x -> tenssimp(tenssubs(tenssimp(x), rules)) :
+            x -> tenssimp(x)
+        var = getvar(OM)
+        ℬ = getbasis(OM)
+        aᵢ = ntuple(i -> ∂(OM, coords[i]), dim)
+        basis = Basis(hcat(components_canon.(aᵢ)...))
+        e = Tensor{2,dim}(hcat(components.(aᵢ)...))
+        E = sd.(inv(e)')
+        aⁱ = ntuple(i -> Tensnd(E[:, i], ℬ, invvar.(var)), dim)
+        eᵢ = ntuple(i -> aᵢ[i] / norm(aᵢ[i]), dim)
+        bnorm = Basis(sd.(hcat(components_canon.(eᵢ)...)))
+        eᵢ = ntuple(i -> change_tens(sdt(eᵢ[i]), bnorm, (:cov,)), dim)
+        aᵢ = ntuple(i -> change_tens(sdt(aᵢ[i]), bnorm, (:cov,)), dim)
+        aⁱ = ntuple(i -> change_tens(sdt(aⁱ[i]), bnorm, (:cont,)), dim)
+        eⁱ = ntuple(i -> sdt(aⁱ[i] / norm(aⁱ[i])), dim)
+        new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ, eⁱ, rules)
+    end
+end
+
+getcoords(CS::CoorSystemSym) = CS.coords
+getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
+
+getOM(CS::CoorSystemSym) = CS.OM
+
+getbasis(CS::CoorSystemSym) = CS.basis
+
+getbnorm(CS::CoorSystemSym) = CS.bnorm
+
+natvec(CS::CoorSystemSym, ::Val{:cov}) = CS.aᵢ
+natvec(CS::CoorSystemSym, ::Val{:cont}) = CS.aⁱ
+natvec(CS::CoorSystemSym, var = :cov) = natvec(CS, Val(var))
+natvec(CS::CoorSystemSym, i::Int, var = :cov) = natvec(CS, var)[i]
+
+unitvec(CS::CoorSystemSym, ::Val{:cov}) = CS.eᵢ
+unitvec(CS::CoorSystemSym, ::Val{:cont}) = CS.eⁱ
+unitvec(CS::CoorSystemSym, var = :cov) = unitvec(CS, Val(var))
+unitvec(CS::CoorSystemSym, i::Int, var = :cov) = unitvec(CS, var)[i]
+
+
+
+GRAD(
+    T::Union{Sym,AbstractTensnd{order,dim,Sym}},
+    CS::CoorSystemSym{dim},
+) where {order,dim} = sum([∂(T, getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim])
+
+DIV(T::Union{AbstractTensnd{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order,dim} =
+    sum([∂(T, getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim])
+
+LAPLACE(
+    T::Union{Sym,AbstractTensnd{order,dim,Sym}},
+    CS::CoorSystemSym{dim},
+) where {order,dim} = DIV(GRAD(T, CS), CS)
+
+
+
+
+
+"""
+    init_cartesian(coords = symbols("x y z", real = true))
+
+Returns the coordinates, unit vectors and basis of the cartesian basis
 
 # Examples
 ```julia
-julia> coords, vectors, ℬ = init_canonical() ; x, y, z = coords ; 𝐞₁, 𝐞₂, 𝐞₃ = vectors ;
+julia> coords, vectors, ℬ = init_cartesian() ; x, y, z = coords ; 𝐞₁, 𝐞₂, 𝐞₃ = vectors ;
 ``` 
 """
-init_canonical(coords = symbols("x y z", real = true)) = Tuple(coords),
+init_cartesian(coords = symbols("x y z", real = true)) = Tuple(coords),
 ntuple(i -> 𝐞(i, length(coords), eltype(coords)), length(coords)),
 CanonicalBasis{length(coords),eltype(coords)}()
 
-init_canonical(::Val{3}) = init_canonical(symbols("x y z", real = true))
-init_canonical(::Val{2}) = init_canonical(symbols("x y", real = true))
-init_canonical(dim::Int) = init_canonical(Val(dim))
+init_cartesian(::Val{3}) = init_cartesian(symbols("x y z", real = true))
+init_cartesian(::Val{2}) = init_cartesian(symbols("x y", real = true))
+init_cartesian(dim::Int) = init_cartesian(Val(dim))
 
+"""
+    CS_cartesian(coords = symbols("x y z", real = true))
+
+Returns the cartesian coordinate system, coordinates, unit vectors and basis
+
+# Examples
+```julia
+julia> CScan, 𝐗, 𝐄, ℬ = CS_cartesian()
+(CoorSystemSym{3}(Sym[x, y, z], (x, y, z), Sym[1 0 0; 0 1 0; 0 0 1], Sym[1 0 0; 0 1 0; 0 0 1], (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Dict{Any, Any}()), (x, y, z), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Sym[1 0 0; 0 1 0; 0 0 1])
+
+julia> 𝛔 = Tensnd(SymmetricTensor{2,3}((i, j) -> SymFunction("σ\$i\$j", real = true)(𝐗...)))
+TensND.TensndCanonical{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
+# data: 3×3 SymmetricTensor{2, 3, Sym, 6}:
+ σ11(x, y, z)  σ21(x, y, z)  σ31(x, y, z)
+ σ21(x, y, z)  σ22(x, y, z)  σ32(x, y, z)
+ σ31(x, y, z)  σ32(x, y, z)  σ33(x, y, z)
+# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+# var: (:cont, :cont)
+
+julia> DIV(𝛔, CScan) == sum([sum([diff(getdata(𝛔)[i,j],𝐗[j]) for j ∈ 1:3]) * 𝐄[i] for i ∈ 1:3])
+true
+``` 
+"""
+function CS_cartesian(coords = symbols("x y z", real = true))
+    (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ = init_cartesian(coords)
+    OM = x * 𝐞₁ + y * 𝐞₂ + z * 𝐞₃
+    CS = CoorSystemSym(OM, coords)
+    return CS, (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ
+end
 
 
 """
-    init_polar(θ ; canonical = false)
+    init_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
 
 Returns the coordinates, base vectors and basis of the polar basis
 
@@ -66,6 +176,42 @@ init_polar(
     coords = (symbols("r", positive = true), symbols("θ", real = true));
     canonical = false,
 ) = Tuple(coords), ntuple(i -> 𝐞ᵖ(i, coords[2]; canonical = canonical), 2), Basis(coords[2])
+
+"""
+    CS_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
+
+Returns the polar coordinate system, coordinates, unit vectors and basis
+
+# Examples
+```julia
+julia> Polar, (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = CS_polar()
+(CoorSystemSym{2}(Sym[r, 0], (r, θ), Sym[cos(θ) -r*sin(θ); sin(θ) r*cos(θ)], Sym[cos(θ) -sin(θ); sin(θ) cos(θ)], (Sym[1, 0], Sym[0, r]), (Sym[1, 0], Sym[0, 1/r]), (Sym[1, 0], Sym[0, 1]), (Sym[1, 0], Sym[0, 1]), Dict{Any, Any}()), (r, θ), (Sym[1, 0], Sym[0, 1]), Sym[cos(θ) -sin(θ); sin(θ) cos(θ)])
+
+julia> f = SymFunction("f", real = true)(r, θ)
+f(r, θ)
+
+julia> LAPLACE(f, Polar)
+                               2
+                              ∂
+                             ───(f(r, θ))
+                               2
+               ∂             ∂θ
+  2            ──(f(r, θ)) + ────────────
+ ∂             ∂r                 r
+───(f(r, θ)) + ──────────────────────────
+  2                        r
+∂r
+``` 
+"""
+function CS_polar(
+    coords = (symbols("r", positive = true), symbols("θ", real = true));
+    canonical = false,
+)
+    (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = init_polar(coords, canonical = canonical)
+    OM = r * 𝐞ʳ
+    CS = CoorSystemSym(OM, coords)
+    return CS, (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ
+end
 
 """
     init_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
@@ -87,6 +233,50 @@ init_cylindrical(
 ) = Tuple(coords),
 ntuple(i -> 𝐞ᶜ(i, coords[2]; canonical = canonical), 3),
 CylindricalBasis(coords[2])
+
+"""
+    CS_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
+
+Returns the cylindrical coordinate system, coordinates, unit vectors and basis
+
+# Examples
+```julia
+julia> Cylindrical, rθz, (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = CS_cylindrical()
+(CoorSystemSym{3}(Sym[r, 0, z], (r, θ, z), Sym[cos(θ) -r*sin(θ) 0; sin(θ) r*cos(θ) 0; 0 0 1], Sym[cos(θ) -sin(θ) 0; sin(θ) cos(θ) 0; 0 0 1], (Sym[1, 0, 0], Sym[0, r, 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1/r, 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Dict{Any, Any}()), (r, θ, z), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Sym[cos(θ) -sin(θ) 0; sin(θ) cos(θ) 0; 0 0 1])
+
+julia> 𝐯 = Tensnd(Vec{3}(i -> SymFunction("v\$(rθz[i])", real = true)(rθz...)), ℬᶜ)
+TensND.TensndRotated{1, 3, Sym, Vec{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+ vr(r, θ, z)
+ vθ(r, θ, z)
+ vz(r, θ, z)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ cos(θ)  -sin(θ)  0
+ sin(θ)   cos(θ)  0
+      0        0  1
+# var: (:cont,)
+
+julia> DIV(𝐯, Cylindrical)
+                                                  ∂
+                                    vr(r, θ, z) + ──(vθ(r, θ, z))
+∂                 ∂                               ∂θ
+──(vr(r, θ, z)) + ──(vz(r, θ, z)) + ─────────────────────────────
+∂r                ∂z                              r
+``` 
+"""
+function CS_cylindrical(
+    coords = (
+        symbols("r", positive = true),
+        symbols("θ", real = true),
+        symbols("z", real = true),
+    );
+    canonical = false,
+)
+    (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical(coords, canonical = canonical)
+    OM = r * 𝐞ʳ + z * 𝐞ᶻ
+    CS = CoorSystemSym(OM, coords)
+    return CS, (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ
+end
 
 
 
@@ -114,6 +304,64 @@ init_spherical(
 ntuple(i -> 𝐞ˢ(i, coords[1:2]...; canonical = canonical), 3),
 SphericalBasis(coords[1:2]...)
 
+"""
+    CS_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
+
+Returns the spherical coordinate system, coordinates, unit vectors and basis
+
+# Examples
+```julia
+julia> Spherical, (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = CS_spherical()
+(CoorSystemSym{3}(Sym[0, 0, r], (θ, ϕ, r), Sym[r*cos(θ)*cos(ϕ) -r*sin(θ)*sin(ϕ) sin(θ)*cos(ϕ); r*sin(ϕ)*cos(θ) r*sin(θ)*cos(ϕ) sin(θ)*sin(ϕ); -r*sin(θ) 0 cos(θ)], Sym[cos(θ)*cos(ϕ) -sin(ϕ) sin(θ)*cos(ϕ); sin(ϕ)*cos(θ) cos(ϕ) sin(θ)*sin(ϕ); -sin(θ) 0 cos(θ)], (Sym[r, 0, 0], Sym[0, r*sin(θ), 0], Sym[0, 0, 1]), (Sym[1/r, 0, 0], Sym[0, 1/(r*sin(θ)), 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Dict{Sym, Sym}(Abs(sin(θ)) => sin(θ))), (θ, ϕ, r), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Sym[cos(θ)*cos(ϕ) -sin(ϕ) sin(θ)*cos(ϕ); sin(ϕ)*cos(θ) cos(ϕ) sin(θ)*sin(ϕ); -sin(θ) 0 cos(θ)])
+
+julia> for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ") @eval \$(Symbol(σⁱʲ)) = SymFunction(\$σⁱʲ, real = true)(\$r) end
+
+julia> 𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ
+TensND.TensndRotated{2, 3, Sym, Tensor{2, 3, Sym, 9}}
+# data: 3×3 Tensor{2, 3, Sym, 9}:
+ σᶿᶿ(r)       0       0
+      0  σᵠᵠ(r)       0
+      0       0  σʳʳ(r)
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
+ sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
+       -sin(θ)        0         cos(θ)
+# var: (:cont, :cont)
+
+julia> div𝛔 = DIV(𝛔, Spherical)
+TensND.TensndRotated{1, 3, Sym, Vec{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+                              (-σᵠᵠ(r) + σᶿᶿ(r))*cos(θ)/(r*sin(θ))
+                                                                 0
+ Derivative(σʳʳ(r), r) + (σʳʳ(r) - σᵠᵠ(r))/r + (σʳʳ(r) - σᶿᶿ(r))/r
+# basis: 3×3 Tensor{2, 3, Sym, 9}:
+ cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
+ sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
+       -sin(θ)        0         cos(θ)
+# var: (:cont,)
+
+julia> div𝛔 ⋅ 𝐞ʳ
+d            σʳʳ(r) - σᵠᵠ(r)   σʳʳ(r) - σᶿᶿ(r)
+──(σʳʳ(r)) + ─────────────── + ───────────────
+dr                  r                 r
+``` 
+"""
+function CS_spherical(
+    coords = (
+        symbols("θ", real = true),
+        symbols("ϕ", real = true),
+        symbols("r", positive = true),
+    );
+    canonical = false,
+)
+    (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical(coords, canonical = canonical)
+    OM = r * 𝐞ʳ
+    rules = Dict(abs(sin(θ)) => sin(θ))
+    CS = CoorSystemSym(OM, coords; rules = rules)
+    return CS, (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ
+end
+
+
 
 """
     init_rotated(coords = symbols("θ ϕ ψ", real = true); canonical = false)
@@ -128,60 +376,3 @@ julia> angles, vectors, ℬʳ = init_rotated() ; θ, ϕ, ψ = angles ; 𝐞ᶿ, 
 """
 init_rotated(angles = symbols("θ ϕ ψ", real = true); canonical = false) =
     Tuple(angles), ntuple(i -> 𝐞ˢ(i, angles...; canonical = canonical), 3), Basis(angles...)
-
-
-struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
-    OM::AbstractTensnd{1,dim,Sym}
-    coords::NTuple{dim,Sym}
-    basis::AbstractBasis{dim,Sym}
-    bnorm::AbstractBasis{dim,Sym}
-    aᵢ::NTuple{dim,AbstractTensnd}
-    aⁱ::NTuple{dim,AbstractTensnd}
-    eᵢ::NTuple{dim,AbstractTensnd}
-    eⁱ::NTuple{dim,AbstractTensnd}
-    function CoorSystemSym(
-        OM::AbstractTensnd{1,dim,Sym},
-        coords::NTuple{dim,Sym};
-        simp::Dict = Dict(),
-    ) where {dim}
-        sd = length(simp) > 0 ? x -> simplify(subs(simplify(x), simp...)) : x -> simplify(x)
-        sdt = length(simp) > 0 ? x -> tenssimp(tenssubs(tenssimp(x), simp)) : x -> tenssimp(x)
-        var = getvar(OM)
-        ℬ = getbasis(OM)
-        aᵢ = ntuple(i -> ∂(OM, coords[i]), dim)
-        basis = Basis(hcat(components_canon.(aᵢ)...))
-        e = Tensor{2,dim}(hcat(components.(aᵢ)...))
-        E = sd.(inv(e)')
-        aⁱ = ntuple(i -> Tensnd(E[:, i], ℬ, invvar.(var)), dim)
-        eᵢ = ntuple(i -> aᵢ[i] / norm(aᵢ[i]), dim)
-        bnorm = Basis(sd.(hcat(components_canon.(eᵢ)...)))
-        eᵢ = ntuple(i -> change_tens(sdt(eᵢ[i]), bnorm, (:cov,)), dim)
-        aᵢ = ntuple(i -> change_tens(sdt(aᵢ[i]), bnorm, (:cov,)), dim)
-        aⁱ = ntuple(i -> change_tens(sdt(aⁱ[i]), bnorm, (:cont,)), dim)
-        eⁱ = ntuple(i -> sdt(aⁱ[i] / norm(aⁱ[i])), dim)
-        new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ, eⁱ)
-    end
-end
-
-getcoords(CS::CoorSystemSym) = CS.coords
-getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
-
-getOM(CS::CoorSystemSym) = CS.OM
-
-getbasis(CS::CoorSystemSym) = CS.basis
-
-getbnorm(CS::CoorSystemSym) = CS.bnorm
-
-vecbasis(CS::CoorSystemSym,::Val{:cov}) = CS.aᵢ
-vecbasis(CS::CoorSystemSym,::Val{:cont}) = CS.aⁱ
-vecbasis(CS::CoorSystemSym, var = :cov) = vecbasis(CS, Val(var))
-vecbasis(CS::CoorSystemSym, i::Int, var = :cov) = vecbasis(CS, var)[i]
-
-vecbnorm(CS::CoorSystemSym,::Val{:cov}) = CS.eᵢ
-vecbnorm(CS::CoorSystemSym,::Val{:cont}) = CS.eⁱ
-vecbnorm(CS::CoorSystemSym, var = :cov) = vecbnorm(CS, Val(var))
-vecbnorm(CS::CoorSystemSym, i::Int, var = :cov) = vecbnorm(CS, var)[i]
-
-GRAD(T::Union{Sym,AbstractTensnd{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order, dim} = sum([∂(T, getcoords(CS,i)) ⊗ vecbasis(CS, i, :cont) for i in 1:dim])
-
-DIV(T::Union{AbstractTensnd{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order, dim} = sum([∂(T, getcoords(CS,i)) ⋅ vecbasis(CS, i, :cont) for i in 1:dim])

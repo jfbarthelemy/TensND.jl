@@ -246,8 +246,8 @@ function components(
         for v1 ∈ (:cov, :cont), v2 ∈ (:cov, :cont)
             if v1 ∈ getvar(t) && v2 ∈ var
                 bb[v1, v2] =
-                    Tensor{2,3}(vecbasis(getbasis(t), invvar(v1)))' ⋅
-                    Tensor{2,3}(vecbasis(ℬ, v2))
+                    Tensor{2,dim}(vecbasis(getbasis(t), invvar(v1)))' ⋅
+                    Tensor{2,dim}(vecbasis(ℬ, v2))
             end
         end
         m = Array(getdata(t))
@@ -281,7 +281,7 @@ function components(
     if ℬ == getbasis(t)
         return getdata(t)
     else
-        bb = Tensor{2,3}(vecbasis(getbasis(t)))' ⋅ Tensor{2,3}(vecbasis(ℬ))
+        bb = Tensor{2,dim}(vecbasis(getbasis(t)))' ⋅ Tensor{2,dim}(vecbasis(ℬ))
         m = Array(getdata(t))
         ec1 = ntuple(i -> i, order)
         newcp = order + 1
@@ -671,11 +671,6 @@ LinearAlgebra.dot(t::TensndOrthonormal{2,dim}) where {dim} = dot(getdata(t))
 LinearAlgebra.norm(u::AbstractTensnd{1,dim}) where {dim} = √(dot(u, u))
 
 LinearAlgebra.norm(t::AbstractTensnd{2,dim}) where {dim} = √(dot(t, t))
-
-LinearAlgebra.dot(u::TensndOrthonormal{1,dim}) where {dim} = √(dot(u))
-
-LinearAlgebra.dot(t::TensndOrthonormal{2,dim}) where {dim} = √(dot(t))
-
 
 function contract(t::AbstractArray{T,order}, i::Int, j::Int) where {T,order}
     m = min(i, j)
