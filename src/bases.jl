@@ -100,8 +100,8 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             if isidentity(g)
                 return RotatedBasis(e)
             else
-                G = inv(g)
-                E = e ⋅ G'
+                G = inv(g) ; if T == Sym G = SymmetricTensor{2,dim}(simplify.(G)) end
+                E = e ⋅ G' ; if T == Sym E = Tensor{2,dim}(simplify.(E)) end
                 new{dim,T}(e, E, g, G)
             end
         end
@@ -119,8 +119,8 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             if isidentity(G)
                 return RotatedBasis(E)
             else
-                g = inv(G)
-                e = E ⋅ g'
+                g = inv(G) ; if T == Sym g = SymmetricTensor{2,dim}(simplify.(g)) end
+                e = E ⋅ g' ; if T == Sym e = Tensor{2,dim}(simplify.(e)) end
                 new{dim,T}(e, E, g, G)
             end
         end

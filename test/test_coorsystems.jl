@@ -29,6 +29,7 @@
 
         # Cylindrical
         Cylindrical, rθz, (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = CS_cylindrical()
+        r, θ, z = rθz
         𝐯 = Tensnd(Vec{3}(i -> SymFunction("v$(rθz[i])", real = true)(rθz...)), ℬᶜ)
         vʳ, vᶿ, vᶻ = getdata(𝐯)
         @test simplify(DIV(𝐯, Cylindrical)) ==

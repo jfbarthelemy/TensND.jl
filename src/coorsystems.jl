@@ -37,47 +37,54 @@ TensND.TensndRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
     OM::AbstractTensnd{1,dim,Sym}
     coords::NTuple{dim,Sym}
-    basis::AbstractBasis{dim,Sym}
     bnorm::AbstractBasis{dim,Sym}
     aᵢ::NTuple{dim,AbstractTensnd}
+    χᵢ::NTuple{dim}
     aⁱ::NTuple{dim,AbstractTensnd}
     eᵢ::NTuple{dim,AbstractTensnd}
-    eⁱ::NTuple{dim,AbstractTensnd}
     rules::Dict
+    tmp_var::Dict
+    to_coords::Dict
     function CoorSystemSym(
         OM::AbstractTensnd{1,dim,Sym},
         coords::NTuple{dim,Sym};
         rules::Dict = Dict(),
+        tmp_var::Dict = Dict(),
+        to_coords::Dict = Dict(),
     ) where {dim}
-        sd =
-            length(rules) > 0 ? x -> simplify(subs(simplify(x), rules...)) :
-            x -> simplify(x)
-        sdt =
-            length(rules) > 0 ? x -> tenssimp(tenssubs(tenssimp(x), rules)) :
-            x -> tenssimp(x)
-        var = getvar(OM)
-        ℬ = getbasis(OM)
-        aᵢ = ntuple(i -> ∂(OM, coords[i]), dim)
-        basis = Basis(hcat(components_canon.(aᵢ)...))
-        e = Tensor{2,dim}(hcat(components.(aᵢ)...))
-        E = sd.(inv(e)')
-        aⁱ = ntuple(i -> Tensnd(E[:, i], ℬ, invvar.(var)), dim)
-        eᵢ = ntuple(i -> aᵢ[i] / norm(aᵢ[i]), dim)
-        bnorm = Basis(sd.(hcat(components_canon.(eᵢ)...)))
-        eᵢ = ntuple(i -> sdt(change_tens(sdt(eᵢ[i]), bnorm, (:cov,))), dim)
-        aᵢ = ntuple(i -> sdt(change_tens(sdt(aᵢ[i]), bnorm, (:cov,))), dim)
-        aⁱ = ntuple(i -> sdt(change_tens(sdt(aⁱ[i]), bnorm, (:cont,))), dim)
-        eⁱ = ntuple(i -> sdt(aⁱ[i] / norm(aⁱ[i])), dim)
-        new{dim}(OM, coords, basis, bnorm, aᵢ, aⁱ, eᵢ, eⁱ, rules)
+        simp(t) =
+            length(rules) > 0 ? tenssimp(tenssubs(tenssimp(t), rules...)) : tenssimp(t)
+        chvar(t, d) = length(d) > 0 ? tenssubs(t, d...) : t
+        OMc = chvar(OM, to_coords)
+        aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dim)
+        χᵢ = ntuple(i -> simp(norm(aᵢ[i])), dim)
+        eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dim)
+        χᵢ = ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dim)
+        eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dim)
+        bnorm = Basis(tenssimp(hcat(components_canon.(eᵢ)...)))
+        eᵢ = ntuple(
+            i -> Tensnd(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
+            dim,
+        )
+        aᵢ = ntuple(
+            i -> Tensnd(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
+            dim,
+        )
+        aⁱ = ntuple(
+            i -> Tensnd(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
+            dim,
+        )
+        new{dim}(OMc, coords, bnorm, aᵢ, χᵢ, aⁱ, eᵢ, rules, tmp_var, to_coords)
     end
 end
+
+with_tmp_var(CS::CoorSystemSym, t) = length(CS.tmp_var) > 0 ? tenssubs(t, CS.tmp_var...) : t
+only_coords(CS::CoorSystemSym, t) = length(CS.to_coords) > 0 ? tenssubs(t, CS.to_coords...) : t
 
 getcoords(CS::CoorSystemSym) = CS.coords
 getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
 
 getOM(CS::CoorSystemSym) = CS.OM
-
-getbasis(CS::CoorSystemSym) = CS.basis
 
 getbnorm(CS::CoorSystemSym) = CS.bnorm
 
@@ -86,25 +93,23 @@ natvec(CS::CoorSystemSym, ::Val{:cont}) = CS.aⁱ
 natvec(CS::CoorSystemSym, var = :cov) = natvec(CS, Val(var))
 natvec(CS::CoorSystemSym, i::Int, var = :cov) = natvec(CS, var)[i]
 
-unitvec(CS::CoorSystemSym, ::Val{:cov}) = CS.eᵢ
-unitvec(CS::CoorSystemSym, ::Val{:cont}) = CS.eⁱ
-unitvec(CS::CoorSystemSym, var = :cov) = unitvec(CS, Val(var))
-unitvec(CS::CoorSystemSym, i::Int, var = :cov) = unitvec(CS, var)[i]
+unitvec(CS::CoorSystemSym) = CS.eᵢ
+unitvec(CS::CoorSystemSym, i::Int) = unitvec(CS)[i]
 
 
 
 GRAD(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
     CS::CoorSystemSym{dim},
-) where {order,dim} = sum([∂(T, getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim])
+) where {order,dim} = tenssimp(sum([∂(only_coords(CS,T), getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim]))
 
 SYMGRAD(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
     CS::CoorSystemSym{dim},
-) where {order,dim} = sum([∂(T, getcoords(CS, i)) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
+) where {order,dim} = tenssimp(sum([∂(only_coords(CS,T), getcoords(CS, i)) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim]))
 
 DIV(T::Union{AbstractTensnd{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order,dim} =
-    sum([∂(T, getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim])
+    tenssimp(sum([∂(only_coords(CS,T), getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim]))
 
 LAPLACE(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
