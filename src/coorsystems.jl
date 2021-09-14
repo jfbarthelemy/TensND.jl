@@ -33,7 +33,41 @@ TensND.TensndRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 ∂(t::Sym, xᵢ...) = diff(t, xᵢ...)
 
 
+"""
+    CoorSystemSym(OM::AbstractTensnd{1,dim,Sym},coords::NTuple{dim,Sym},bnorm::AbstractBasis{dim,Sym},χᵢ::NTuple{dim},
+                  tmp_coords::NTuple = (),params::NTuple = ();rules::Dict = Dict(),tmp_var::Dict = Dict(),to_coords::Dict = Dict()) where {dim}
+    CoorSystemSym(OM::AbstractTensnd{1,dim,Sym},coords::NTuple{dim,Sym},
+                  tmp_coords::NTuple = (),params::NTuple = ();rules::Dict = Dict(),tmp_var::Dict = Dict(),to_coords::Dict = Dict()) where {dim}
 
+Defines a new coordinate system either from
+1. the position vector `OM`, the coordinates `coords`, the basis of unit vectors (`𝐞ᵢ`) `bnorm` and the Lamé coefficients `χᵢ`
+
+    In this case the natural basis is formed by the vectors `𝐚ᵢ = χᵢ 𝐞ᵢ` directly calculated from the input data.
+
+1. or the position vector `OM` and the coordinates `coords`
+
+    In this case the natural basis is formed by the vectors `𝐚ᵢ = ∂ᵢOM` i.e. by the derivative of the position vector with respect to the `iᵗʰ` coordinate
+
+Optional parameters can be provided:
+- `tmp_coords` contains temporary variables depending on coordinates (in order to allow symbolic simplifications)
+- `params` contains possible parameters involved in `OM`
+- `rules` contains a `Dict` with substitution rules to facilitate the simplification of formulas
+- `tmp_var` contains a `Dict` with substitution of coordinates by temporary variables
+- `to_coords` indicates how to eliminate the temporary variables to come back to the actual coordinates before derivation for Examples
+
+# Examples
+```julia
+julia> ϕ, p = symbols("ϕ p", real = true) ;
+
+julia> p̄, q, q̄, c = symbols("p̄ q q̄ c", positive = true) ;
+
+julia> coords = (ϕ, p, q) ; tmp_coords = (p̄, q̄) ; params = (c,) ;
+
+julia> OM = Tensnd(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q]) ;
+
+julia> Spheroidal = CoorSystemSym(OM, coords, tmp_coords, params; tmp_var = Dict(1-p^2 => p̄^2, q^2-1 => q̄^2), to_coords = Dict(p̄ => √(1-p^2), q̄ => √(q^2-1))) ;
+```
+"""
 struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
     OM::AbstractTensnd{1,dim,Sym}
     coords::NTuple{dim,Sym}
@@ -42,12 +76,54 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
     χᵢ::NTuple{dim}
     aⁱ::NTuple{dim,AbstractTensnd}
     eᵢ::NTuple{dim,AbstractTensnd}
+    tmp_coords::NTuple
+    params::NTuple
     rules::Dict
     tmp_var::Dict
     to_coords::Dict
     function CoorSystemSym(
         OM::AbstractTensnd{1,dim,Sym},
-        coords::NTuple{dim,Sym};
+        coords::NTuple{dim,Sym},
+        bnorm::AbstractBasis{dim,Sym},
+        χᵢ::NTuple{dim},
+        tmp_coords::NTuple = (),
+        params::NTuple = ();
+        rules::Dict = Dict(),
+        tmp_var::Dict = Dict(),
+        to_coords::Dict = Dict(),
+    ) where {dim}
+        eᵢ = ntuple(
+            i -> Tensnd(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
+            dim,
+        )
+        aᵢ = ntuple(
+            i -> Tensnd(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
+            dim,
+        )
+        aⁱ = ntuple(
+            i -> Tensnd(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
+            dim,
+        )
+        new{dim}(
+            OM,
+            coords,
+            bnorm,
+            aᵢ,
+            χᵢ,
+            aⁱ,
+            eᵢ,
+            tmp_coords,
+            params,
+            rules,
+            tmp_var,
+            to_coords,
+        )
+    end
+    function CoorSystemSym(
+        OM::AbstractTensnd{1,dim,Sym},
+        coords::NTuple{dim,Sym},
+        tmp_coords::NTuple = (),
+        params::NTuple = ();
         rules::Dict = Dict(),
         tmp_var::Dict = Dict(),
         to_coords::Dict = Dict(),
@@ -74,19 +150,33 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
             i -> Tensnd(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
             dim,
         )
-        new{dim}(OMc, coords, bnorm, aᵢ, χᵢ, aⁱ, eᵢ, rules, tmp_var, to_coords)
+        new{dim}(
+            OMc,
+            coords,
+            bnorm,
+            aᵢ,
+            χᵢ,
+            aⁱ,
+            eᵢ,
+            tmp_coords,
+            params,
+            rules,
+            tmp_var,
+            to_coords,
+        )
     end
 end
 
 with_tmp_var(CS::CoorSystemSym, t) = length(CS.tmp_var) > 0 ? tenssubs(t, CS.tmp_var...) : t
-only_coords(CS::CoorSystemSym, t) = length(CS.to_coords) > 0 ? tenssubs(t, CS.to_coords...) : t
+only_coords(CS::CoorSystemSym, t) =
+    length(CS.to_coords) > 0 ? tenssubs(t, CS.to_coords...) : t
 
 getcoords(CS::CoorSystemSym) = CS.coords
 getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
 
 getOM(CS::CoorSystemSym) = CS.OM
 
-getbnorm(CS::CoorSystemSym) = CS.bnorm
+getbasis(CS::CoorSystemSym) = CS.bnorm
 
 natvec(CS::CoorSystemSym, ::Val{:cov}) = CS.aᵢ
 natvec(CS::CoorSystemSym, ::Val{:cont}) = CS.aⁱ
@@ -97,25 +187,55 @@ unitvec(CS::CoorSystemSym) = CS.eᵢ
 unitvec(CS::CoorSystemSym, i::Int) = unitvec(CS)[i]
 
 
+"""
+    GRAD(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
 
+Calculates the gradient of `T` with respect to the coordinate system `CS`
+"""
 GRAD(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
     CS::CoorSystemSym{dim},
-) where {order,dim} = tenssimp(sum([∂(only_coords(CS,T), getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim]))
+) where {order,dim} = tenssimp(
+    sum([∂(only_coords(CS, T), getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim]),
+)
 
+"""
+    SYMGRAD(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+
+Calculates the symmetrized gradient of `T` with respect to the coordinate system `CS`
+"""
 SYMGRAD(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
     CS::CoorSystemSym{dim},
-) where {order,dim} = tenssimp(sum([∂(only_coords(CS,T), getcoords(CS, i)) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim]))
+) where {order,dim} = tenssimp(
+    sum([∂(only_coords(CS, T), getcoords(CS, i)) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim]),
+)
 
-DIV(T::Union{AbstractTensnd{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order,dim} =
-    tenssimp(sum([∂(only_coords(CS,T), getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim]))
+"""
+    DIV(T::AbstractTensnd{order,dim,Sym},CS::CoorSystemSym{dim}) where {order,dim}
 
+Calculates the divergence  of `T` with respect to the coordinate system `CS`
+"""
+DIV(T::AbstractTensnd{order,dim,Sym}, CS::CoorSystemSym{dim}) where {order,dim} =
+    tenssimp(
+        sum([∂(only_coords(CS, T), getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim]),
+    )
+
+"""
+    LAPLACE(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+
+Calculates the Laplace operator of `T` with respect to the coordinate system `CS`
+"""
 LAPLACE(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
     CS::CoorSystemSym{dim},
 ) where {order,dim} = DIV(GRAD(T, CS), CS)
 
+"""
+    HESS(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+
+Calculates the Hessian of `T` with respect to the coordinate system `CS`
+"""
 HESS(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
     CS::CoorSystemSym{dim},
@@ -145,11 +265,11 @@ init_cartesian(dim::Int) = init_cartesian(Val(dim))
 """
     CS_cartesian(coords = symbols("x y z", real = true))
 
-Returns the cartesian coordinate system, coordinates, unit vectors and basis
+Returns the cartesian coordinate system
 
 # Examples
 ```julia
-julia> CScar, 𝐗, 𝐄, ℬ = CS_cartesian() ;
+julia> Cartesian = CS_cartesian() ; 𝐗 = getcoords(Cartesian) ; 𝐄 = unitvec(Cartesian) ; ℬ = getbasis(Cartesian)
 
 julia> 𝛔 = Tensnd(SymmetricTensor{2,3}((i, j) -> SymFunction("σ\$i\$j", real = true)(𝐗...))) ;
 
@@ -167,10 +287,11 @@ TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
 ``` 
 """
 function CS_cartesian(coords = symbols("x y z", real = true))
-    (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ = init_cartesian(coords)
-    OM = x * 𝐞₁ + y * 𝐞₂ + z * 𝐞₃
-    CS = CoorSystemSym(OM, coords)
-    return CS, (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ
+    dim = length(coords)
+    𝐗, 𝐄, ℬ = init_cartesian(coords)
+    OM = sum([𝐗[i] * 𝐄[i] for i = 1:dim])
+    χᵢ = ntuple(_ -> one(Sym), dim)
+    return CoorSystemSym(OM, coords, ℬ, χᵢ)
 end
 
 
@@ -192,11 +313,11 @@ init_polar(
 """
     CS_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
 
-Returns the polar coordinate system, coordinates, unit vectors and basis
+Returns the polar coordinate system
 
 # Examples
 ```julia
-julia> Polar, (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = CS_polar() ;
+julia> Polar = CS_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ; ℬᵖ = getbasis(Polar)
 
 julia> f = SymFunction("f", real = true)(r, θ) ;
 
@@ -219,8 +340,7 @@ function CS_polar(
 )
     (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = init_polar(coords, canonical = canonical)
     OM = r * 𝐞ʳ
-    CS = CoorSystemSym(OM, coords)
-    return CS, (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ
+    return CoorSystemSym(OM, coords, ℬᵖ, (one(Sym), r))
 end
 
 """
@@ -247,11 +367,11 @@ CylindricalBasis(coords[2])
 """
     CS_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
 
-Returns the cylindrical coordinate system, coordinates, unit vectors and basis
+Returns the cylindrical coordinate system
 
 # Examples
 ```julia
-julia> Cylindrical, rθz, (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = CS_cylindrical() ;
+julia> Cylindrical = CS_cylindrical() ; rθz = getcoords(Cylindrical) ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical) ; ℬᶜ = getbasis(Cylindrical)
 
 julia> 𝐯 = Tensnd(Vec{3}(i -> SymFunction("v\$(rθz[i])", real = true)(rθz...)), ℬᶜ) ;
 
@@ -273,10 +393,21 @@ function CS_cylindrical(
 )
     (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical(coords, canonical = canonical)
     OM = r * 𝐞ʳ + z * 𝐞ᶻ
-    CS = CoorSystemSym(OM, coords)
-    return CS, (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ
+    return CoorSystemSym(OM, coords, ℬᶜ, (one(Sym), r, one(Sym)))
 end
-
+# function CS_cylindrical(
+#     coords = (
+#         symbols("r", positive = true),
+#         symbols("θ", real = true),
+#         symbols("z", real = true),
+#     );
+#     canonical = false,
+# )
+#     (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical(coords, canonical = canonical)
+#     OM = r * 𝐞ʳ + z * 𝐞ᶻ
+#     CS = CoorSystemSym(OM, coords)
+#     return CS, (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ
+# end
 
 
 """
@@ -306,11 +437,11 @@ SphericalBasis(coords[1:2]...)
 """
     CS_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
 
-Returns the spherical coordinate system, coordinates, unit vectors and basis
+Returns the spherical coordinate system
 
 # Examples
 ```julia
-julia> Spherical, (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = CS_spherical() ;
+julia> Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
 
 julia> for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ") @eval \$(Symbol(σⁱʲ)) = SymFunction(\$σⁱʲ, real = true)(\$r) end ;
 
@@ -345,10 +476,72 @@ function CS_spherical(
     (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical(coords, canonical = canonical)
     OM = r * 𝐞ʳ
     rules = Dict(abs(sin(θ)) => sin(θ))
-    CS = CoorSystemSym(OM, coords; rules = rules)
-    return CS, (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ
+    return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(Sym)); rules = rules)
 end
 
+
+"""
+    CS_spheroidal(coords = (symbols("ϕ", real = true),symbols("p", real = true),symbols("q", positive = true),),
+                            c = symbols("c", positive = true),tmp_coords = (symbols("p̄ q̄", positive = true)...,),)
+
+Returns the spheroidal coordinate system
+
+# Examples
+```julia
+julia> Spheroidal = CS_spheroidal() ; OM = getOM(Spheroidal)
+TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
+# data: 3-element Vec{3, Sym}:
+ c⋅p̄⋅q̄⋅cos(ϕ)
+ c⋅p̄⋅q̄⋅sin(ϕ)
+          c⋅p⋅q
+# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+# var: (:cont,)
+
+julia> LAPLACE(OM[1]^2, Spheroidal)
+2
+``` 
+"""
+function CS_spheroidal(
+    coords = (
+        symbols("ϕ", real = true),
+        symbols("p", real = true),
+        symbols("q", positive = true),
+    ),
+    c = symbols("c", positive = true),
+    tmp_coords = (symbols("p̄ q̄", positive = true)...,),
+)
+    ϕ, p, q = coords
+    params = (c,)
+    p̄, q̄ = tmp_coords
+    OM = Tensnd(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q])
+    ℬ = RotatedBasis(
+        Sym[
+            -sin(ϕ) -p*sqrt(q^2 - 1)*cos(ϕ)/sqrt(q^2 - p^2) q*sqrt(1 - p^2)*cos(ϕ)/sqrt(q^2 - p^2)
+            cos(ϕ) -p*sqrt(q^2 - 1)*sin(ϕ)/sqrt(q^2 - p^2) q*sqrt(1 - p^2)*sin(ϕ)/sqrt(q^2 - p^2)
+            0 q*sqrt(1 - p^2)/sqrt(q^2 - p^2) p*sqrt(q^2 - 1)/sqrt(q^2 - p^2)
+        ],
+    )
+    χᵢ = (
+        c * sqrt(1 - p^2) * sqrt(q^2 - 1),
+        c * sqrt(q^2 - p^2) / sqrt(1 - p^2),
+        c * sqrt(q^2 - p^2) / sqrt(q^2 - 1),
+    )
+    tmp_var = Dict(1 - p^2 => p̄^2, q^2 - 1 => q̄^2)
+    to_coords = Dict(p̄ => √(1 - p^2), q̄ => √(q^2 - 1))
+    return CoorSystemSym(
+        OM,
+        coords,
+        ℬ,
+        χᵢ,
+        tmp_coords,
+        params;
+        tmp_var = tmp_var,
+        to_coords = to_coords,
+    )
+end
 
 
 """

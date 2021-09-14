@@ -14,7 +14,7 @@ export isorthogonal, isorthonormal
 export Tensnd, components, components_canon, change_tens, change_tens_canon, tenssimp, tenssubs
 export KM, invKM
 export contract, qcontract, otimesul, ⊙, ⊠, ⊠ˢ, ⊗ˢ
-export getdata, getbasis, getvar, natvec, unitvec
+export getdata, getbasis, getvar, natvec, unitvec, getcoords, getOM
 
 export LeviCivita
 export tensId2, tensId4, tensId4s, tensJ4, tensK4
@@ -25,7 +25,7 @@ export rot2, rot3, rot6
 
 export ∂, CoorSystemSym, GRAD, SYMGRAD, DIV, LAPLACE, HESS
 export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
-export CS_cartesian, CS_polar, CS_cylindrical, CS_spherical
+export CS_cartesian, CS_polar, CS_cylindrical, CS_spherical, CS_spheroidal
 
 
 include("bases.jl")

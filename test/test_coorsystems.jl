@@ -16,19 +16,19 @@
 
     @testsection "Coordinate systems" begin
         # Cartesian
-        Cartesian, 𝐗, 𝐄, ℬ = CS_cartesian()
+        Cartesian = CS_cartesian() ; 𝐗 = getcoords(Cartesian) ; 𝐄 = unitvec(Cartesian) ; ℬ = getbasis(Cartesian)
         𝛔 = Tensnd(SymmetricTensor{2,3}((i, j) -> SymFunction("σ$i$j", real = true)(𝐗...)))
         @test DIV(𝛔, Cartesian) ==
               sum([sum([∂(𝛔[i, j], 𝐗[j]) for j ∈ 1:3]) * 𝐄[i] for i ∈ 1:3])
 
         # Polar
-        Polar, (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = CS_polar()
+        Polar = CS_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ; ℬᵖ = getbasis(Polar)
         f = SymFunction("f", real = true)(r, θ)
         @test simplify(LAPLACE(f, Polar)) ==
               simplify(∂(r * ∂(f, r), r) / r + ∂(f, θ, θ) / r^2)
 
         # Cylindrical
-        Cylindrical, rθz, (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = CS_cylindrical()
+        Cylindrical = CS_cylindrical() ; rθz = getcoords(Cylindrical) ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical) ; ℬᶜ = getbasis(Cylindrical)
         r, θ, z = rθz
         𝐯 = Tensnd(Vec{3}(i -> SymFunction("v$(rθz[i])", real = true)(rθz...)), ℬᶜ)
         vʳ, vᶿ, vᶻ = getdata(𝐯)
@@ -36,16 +36,16 @@
               simplify(∂(vʳ, r) + vʳ / r + ∂(vᶿ, θ) / r + ∂(vᶻ, z))
 
         # Spherical
-        Spherical, (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = CS_spherical()
+        Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
         for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ")
             @eval $(Symbol(σⁱʲ)) = SymFunction($σⁱʲ, real = true)($r)
         end
         𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ
         div𝛔 = DIV(𝛔, Spherical)
-        @test simplify(div𝛔 ⋅ 𝐞ʳ) == simplify(∂(σʳʳ, r) + (2 * σʳʳ - σᶿᶿ - σᵠᵠ) / r)
+        @test simplify(div𝛔 ⋅ 𝐞ʳ) == simplify(∂(σʳʳ, r) + (2σʳʳ - σᶿᶿ - σᵠᵠ) / r)
 
         # Concentric sphere - hydrostatic part
-        Spherical, (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = CS_spherical()
+        Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
         𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic()
         k, μ = symbols("k μ", positive = true)
         ℂ = 3k * 𝕁 + 2μ * 𝕂
@@ -53,9 +53,12 @@
         𝐮 = u * 𝐞ʳ
         𝛆 = SYMGRAD(𝐮, Spherical)
         𝛔 = ℂ ⊡ 𝛆
-        @test dsolve(simplify(DIV(𝛔, Spherical) ⋅ 𝐞ʳ), u) ==
+        @test dsolve(factor(simplify(DIV(𝛔, Spherical) ⋅ 𝐞ʳ)), u) ==
               Eq(u, symbols("C1") / r^2 + symbols("C2") * r)
 
+        # Spheroidal
+        Spheroidal = CS_spheroidal() ; OM = getOM(Spheroidal)
+        @test simplify(LAPLACE(OM[1]^2, Spheroidal)) == 2
 
 
     end
