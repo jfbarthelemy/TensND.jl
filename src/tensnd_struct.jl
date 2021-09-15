@@ -89,9 +89,9 @@ for order ∈ (2, 4)
         if Tensors.issymmetric(newtab)
             newtab = convert(SymmetricTensor{$order,dim}, newtab)
         end
-        if T == Sym
-            newtab = Tensors.get_base(typeof(newtab))(sympy.trigsimp.(newtab))
-        end
+        # if T == Sym
+        #     newtab = Tensors.get_base(typeof(newtab))(sympy.trigsimp.(newtab))
+        # end
         return newtab
     end
 end
@@ -225,9 +225,9 @@ function components(
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
                 m = einsum(EinCode((ec1, ec2), ec3), (m, g_or_G))
-                if T == Sym
-                    m = sympy.trigsimp.(m)
-                end
+                # if T == Sym
+                #     m = sympy.trigsimp.(m)
+                # end
             end
         end
         return m
@@ -259,9 +259,9 @@ function components(
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
                 m = einsum(EinCode((ec1, ec2), ec3), (m, c))
-                if T == Sym
-                    m = sympy.trigsimp.(m)
-                end
+                # if T == Sym
+                #     m = sympy.trigsimp.(m)
+                # end
             end
         end
         return m
@@ -290,9 +290,9 @@ function components(
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
                 m = einsum(EinCode((ec1, ec2), ec3), (m, bb))
-                if T == Sym
-                    m = sympy.trigsimp.(m)
-                end
+                # if T == Sym
+                #     m = simplify.(m)
+                # end
             end
         end
         return m
@@ -422,6 +422,9 @@ change_tens_canon(t::AbstractTensnd) = change_tens(t, CanonicalBasis{getdim(t),e
 tenssimp(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(simplify.(getdata(t)), getbasis(t), getvar(t))
 tenssimp(t) = simplify.(t)
 
+tensfactor(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(factor.(getdata(t)), getbasis(t), getvar(t))
+tensfactor(t) = factor.(t)
+
 tenssubs(t::AbstractTensnd{order,dim,Sym}, d...) where {order,dim} = Tensnd(subs.(getdata(t), d...), getbasis(t), getvar(t))
 tenssubs(t, d...) = subs.(t, d...)
 
@@ -430,16 +433,39 @@ tenssubs(t, d...) = subs.(t, d...)
 # Operations #
 ##############
 
+choose_best_basis(ℬ::AbstractBasis, ::AbstractBasis) = ℬ
+choose_best_basis(ℬ::OrthonormalBasis, ::AbstractBasis) = ℬ
+choose_best_basis(::AbstractBasis, ℬ::OrthonormalBasis) = ℬ
+choose_best_basis(::CanonicalBasis, ℬ::OrthonormalBasis) = ℬ
+choose_best_basis(ℬ::OrthonormalBasis, ::CanonicalBasis) = ℬ
+choose_best_basis(ℬ::CanonicalBasis, ::CanonicalBasis) = ℬ
+choose_best_basis(ℬ::OrthonormalBasis, ::OrthonormalBasis) = ℬ
 
-same_basis(
+function same_basis(
     t1::AbstractTensnd{order1,dim},
     t2::AbstractTensnd{order2,dim},
-) where {order1,order2,dim} = t1, change_tens(t2, getbasis(t1))
+) where {order1,order2,dim}
+ℬ = choose_best_basis(getbasis(t1), getbasis(t2))
+return change_tens(t1, ℬ), change_tens(t2, ℬ)
+end
 
-same_basis_same_var(
+function same_basis_same_var(
     t1::AbstractTensnd{order1,dim},
     t2::AbstractTensnd{order2,dim},
-) where {order1,order2,dim} = t1, change_tens(t2, getbasis(t1), getvar(t1))
+) where {order1,order2,dim}
+ℬ = choose_best_basis(getbasis(t1), getbasis(t2))
+return change_tens(t1, ℬ, getvar(t1)), change_tens(t2, ℬ, getvar(t1))
+end
+
+# same_basis(
+#     t1::AbstractTensnd{order1,dim},
+#     t2::AbstractTensnd{order2,dim},
+# ) where {order1,order2,dim} = t1, change_tens(t2, getbasis(t1))
+
+# same_basis_same_var(
+#     t1::AbstractTensnd{order1,dim},
+#     t2::AbstractTensnd{order2,dim},
+# ) where {order1,order2,dim} = t1, change_tens(t2, getbasis(t1), getvar(t1))
 
 
 for OP in (:(==), :(!=))

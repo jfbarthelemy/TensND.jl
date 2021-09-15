@@ -71,8 +71,8 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
         g::AbstractArray{T,2},
         G::AbstractArray{T,2},
     ) where {T}
-        dim = size(v, 1)
-        @assert dim == size(v, 2) "v should be a square matrix"
+        dim = size(e, 1)
+        @assert dim == size(e, 2) "v should be a square matrix"
         if isidentity(e)
             return CanonicalBasis{dim,T}()
         else
@@ -281,6 +281,7 @@ vecbasis(::CanonicalBasis{dim,T}, ::Val{:cont}) where {dim,T} = LazyIdentity{dim
 
 vecbasis(ℬ::AbstractBasis, var) = vecbasis(ℬ, Val(var))
 vecbasis(ℬ::AbstractBasis) = vecbasis(ℬ, :cov)
+vecbasis(ℬ::AbstractBasis, i::Int, j::Int, var = :cov) = vecbasis(ℬ, Val(var))[i,j]
 
 invvar(::Val{:cov}) = :cont
 invvar(::Val{:cont}) = :cov
@@ -298,6 +299,7 @@ metric(::OrthonormalBasis{dim,T}, ::Val{:cont}) where {dim,T} = LazyIdentity{dim
 
 metric(ℬ::AbstractBasis, var) = metric(ℬ, Val(var))
 metric(ℬ::AbstractBasis) = metric(ℬ, :cov)
+metric(ℬ::AbstractBasis, i::Int, j::Int, var = :cov) = metric(ℬ, Val(var))[i,j]
 
 """
     normalize(ℬ::AbstractBasis, var = cov)

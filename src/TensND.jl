@@ -11,7 +11,7 @@ export angles
 export eltype
 export vecbasis, metric
 export isorthogonal, isorthonormal
-export Tensnd, components, components_canon, change_tens, change_tens_canon, tenssimp, tenssubs
+export Tensnd, components, components_canon, change_tens, change_tens_canon, tenssimp, tensfactor, tenssubs
 export KM, invKM
 export contract, qcontract, otimesul, ⊙, ⊠, ⊠ˢ, ⊗ˢ
 export getdata, getbasis, getvar, natvec, unitvec, getcoords, getOM

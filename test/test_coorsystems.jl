@@ -8,10 +8,10 @@
     end
 
     @testsection "Partial derivatives" begin
-        @test ∂(𝐞ʳ, θ) == 𝐞ᶿ
-        @test ∂(𝐞ʳ, ϕ) == sin(θ) * 𝐞ᵠ
-        @test ∂(𝐞ᵠ ⊗ 𝐞ᶿ, ϕ) == ∂(𝐞ᵠ, ϕ) ⊗ 𝐞ᶿ + 𝐞ᵠ ⊗ ∂(𝐞ᶿ, ϕ)
-        @test ∂(𝐞ʳ ⊗ˢ 𝐞ᵠ, ϕ) == ∂(𝐞ʳ, ϕ) ⊗ˢ 𝐞ᵠ + 𝐞ʳ ⊗ˢ ∂(𝐞ᵠ, ϕ)
+        @test tenssimp(∂(𝐞ʳ, θ)) == tenssimp(𝐞ᶿ)
+        @test tenssimp(∂(𝐞ʳ, ϕ)) == tenssimp(sin(θ) * 𝐞ᵠ)
+        @test tenssimp(∂(𝐞ᵠ ⊗ 𝐞ᶿ, ϕ)) == tenssimp(∂(𝐞ᵠ, ϕ) ⊗ 𝐞ᶿ + 𝐞ᵠ ⊗ ∂(𝐞ᶿ, ϕ))
+        @test tenssimp(∂(𝐞ʳ ⊗ˢ 𝐞ᵠ, ϕ)) == tenssimp(∂(𝐞ʳ, ϕ) ⊗ˢ 𝐞ᵠ + 𝐞ʳ ⊗ˢ ∂(𝐞ᵠ, ϕ))
     end
 
     @testsection "Coordinate systems" begin
@@ -33,7 +33,7 @@
         𝐯 = Tensnd(Vec{3}(i -> SymFunction("v$(rθz[i])", real = true)(rθz...)), ℬᶜ)
         vʳ, vᶿ, vᶻ = getdata(𝐯)
         @test simplify(DIV(𝐯, Cylindrical)) ==
-              simplify(∂(vʳ, r) + vʳ / r + ∂(vᶿ, θ) / r + ∂(vᶻ, z))
+              ∂(vʳ, r) + vʳ / r + ∂(vᶿ, θ) / r + ∂(vᶻ, z)
 
         # Spherical
         Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
@@ -48,11 +48,13 @@
         Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
         𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic()
         k, μ = symbols("k μ", positive = true)
+        λ = k - 2μ/3
         ℂ = 3k * 𝕁 + 2μ * 𝕂
         u = SymFunction("u", real = true)(r)
         𝐮 = u * 𝐞ʳ
         𝛆 = SYMGRAD(𝐮, Spherical)
-        𝛔 = ℂ ⊡ 𝛆
+        # 𝛔 = ℂ ⊡ 𝛆
+        𝛔 = tenssimp(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
         @test dsolve(factor(simplify(DIV(𝛔, Spherical) ⋅ 𝐞ʳ)), u) ==
               Eq(u, symbols("C1") / r^2 + symbols("C2") * r)
 
