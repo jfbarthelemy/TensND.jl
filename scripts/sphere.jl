@@ -4,18 +4,18 @@ sympy.init_printing(use_unicode=true)
 Spherical = CS_spherical()
 θ, ϕ, r = getcoords(Spherical)
 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical)
+ℬˢ = getbasis(Spherical)
 𝐱 = getOM(Spherical)
 𝐞₁, 𝐞₂, 𝐞₃ = unitvec(CS_cartesian())
-
-𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic()
+𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic(basis = ℬˢ)
 k, μ = symbols("k μ", positive = true)
 λ = k -2μ/3
 
 u = SymFunction("u", real = true)
 𝐮ˢᵖʰ = u(r) * 𝐞ʳ
-𝛆ˢᵖʰ = tenssimp(SYMGRAD(𝐮ˢᵖʰ, Spherical))
-𝛔ˢᵖʰ = tenssimp(λ * tr(𝛆ˢᵖʰ) * 𝟏 + 2μ * 𝛆ˢᵖʰ)
-𝐓ˢᵖʰ = tenssimp(𝛔ˢᵖʰ ⋅ 𝐞ʳ)
+𝛆ˢᵖʰ = simplify(SYMGRAD(𝐮ˢᵖʰ, Spherical))
+𝛔ˢᵖʰ = simplify(λ * tr(𝛆ˢᵖʰ) * 𝟏 + 2μ * 𝛆ˢᵖʰ)
+𝐓ˢᵖʰ = simplify(𝛔ˢᵖʰ ⋅ 𝐞ʳ)
 div𝛔ˢᵖʰ = DIV(𝛔ˢᵖʰ, Spherical) ;
 eqˢᵖʰ = factor(simplify(div𝛔ˢᵖʰ ⋅ 𝐞ʳ))
 solˢᵖʰ = dsolve(eqˢᵖʰ, u(r))
@@ -27,13 +27,13 @@ fᶿ = 𝐞ᶿ ⋅ 𝐄 ⋅ 𝐞ʳ
 fʳ = 𝐞ʳ ⋅ 𝐄 ⋅ 𝐞ʳ
 uᶿ = SymFunction("uᶿ", real = true)
 uʳ = SymFunction("uʳ", real = true)
-𝐮ᵈᵉᵛ = uᶿ(r)* fᶿ * 𝐞ᶿ + uʳ(r)* fʳ * 𝐞ʳ
-𝛆ᵈᵉᵛ = tenssimp(SYMGRAD(𝐮ᵈᵉᵛ, Spherical))
-𝛔ᵈᵉᵛ = tenssimp(λ * tr(𝛆ᵈᵉᵛ) * 𝟏 + 2μ * 𝛆ᵈᵉᵛ)
-𝐓ᵈᵉᵛ = tenssimp(𝛔ᵈᵉᵛ ⋅ 𝐞ʳ)
+𝐮ᵈᵉᵛ = uᶿ(r) * fᶿ * 𝐞ᶿ + uʳ(r) * fʳ * 𝐞ʳ
+𝛆ᵈᵉᵛ = simplify(SYMGRAD(𝐮ᵈᵉᵛ, Spherical))
+𝛔ᵈᵉᵛ = simplify(λ * tr(𝛆ᵈᵉᵛ) * 𝟏 + 2μ * 𝛆ᵈᵉᵛ)
+𝐓ᵈᵉᵛ = simplify(𝛔ᵈᵉᵛ ⋅ 𝐞ʳ)
 div𝛔ᵈᵉᵛ = DIV(𝛔ᵈᵉᵛ, Spherical) ;
-eqᶿᵈᵉᵛ = factor(simplify(div𝛔ᵈᵉᵛ ⋅ 𝐞ᶿ / fᶿ))
-eqʳᵈᵉᵛ = factor(simplify(div𝛔ᵈᵉᵛ ⋅ 𝐞ʳ / fʳ))
+eqᶿᵈᵉᵛ = div𝛔ᵈᵉᵛ ⋅ 𝐞ᶿ / fᶿ ;
+eqʳᵈᵉᵛ = div𝛔ᵈᵉᵛ ⋅ 𝐞ʳ / fʳ ;
 α, Λ = symbols("α Λ", real = true)
 eqᵈᵉᵛ = simplify.(subs.([eqᶿᵈᵉᵛ,eqʳᵈᵉᵛ], uᶿ(r) => r^α, uʳ(r) => Λ*r^α))
 αΛ = solve(eqᵈᵉᵛ, [α, Λ])

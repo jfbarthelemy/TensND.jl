@@ -107,10 +107,11 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
             dim,
         )
         Γ = compute_Christoffel(coords, χᵢ, metric(bnorm, :cov), metric(bnorm, :cont))
-        nate = Tensor{2, dim}((i,j) -> vecbasis(bnorm, i, j, :cov) * χᵢ[j])
-        natE = Tensor{2, dim}((i,j) -> vecbasis(bnorm, i, j, :cont) / χᵢ[j])
-        natg = SymmetricTensor{2, dim}((i,j) -> metric(bnorm, i, j, :cov) * χᵢ[i] * χᵢ[j])
-        natG = SymmetricTensor{2, dim}((i,j) -> metric(bnorm, i, j, :cont) / (χᵢ[i] * χᵢ[j]))
+        nate = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cov) * χᵢ[j])
+        natE = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cont) / χᵢ[j])
+        natg = SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cov) * χᵢ[i] * χᵢ[j])
+        natG =
+            SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cont) / (χᵢ[i] * χᵢ[j]))
         natbasis = Basis(nate, natE, natg, natG)
         new{dim}(
             OM,
@@ -139,15 +140,15 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         to_coords::Dict = Dict(),
     ) where {dim}
         simp(t) =
-            length(rules) > 0 ? tenssimp(tenssubs(tenssimp(t), rules...)) : tenssimp(t)
-        chvar(t, d) = length(d) > 0 ? tenssubs(t, d...) : t
+            length(rules) > 0 ? simplify(subs(simplify(t), rules...)) : simplify(t)
+        chvar(t, d) = length(d) > 0 ? subs(t, d...) : t
         OMc = chvar(OM, to_coords)
         aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dim)
         χᵢ = ntuple(i -> simp(norm(aᵢ[i])), dim)
         eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dim)
         χᵢ = ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dim)
         eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dim)
-        bnorm = Basis(tenssimp(hcat(components_canon.(eᵢ)...)))
+        bnorm = Basis(simplify(hcat(components_canon.(eᵢ)...)))
         eᵢ = ntuple(
             i -> Tensnd(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
             dim,
@@ -161,10 +162,11 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
             dim,
         )
         Γ = compute_Christoffel(coords, χᵢ, metric(bnorm, :cov), metric(bnorm, :cont))
-        nate = Tensor{2, dim}((i,j) -> vecbasis(bnorm, i, j, :cov) * χᵢ[j])
-        natE = Tensor{2, dim}((i,j) -> vecbasis(bnorm, i, j, :cont) / χᵢ[j])
-        natg = SymmetricTensor{2, dim}((i,j) -> metric(bnorm, i, j, :cov) * χᵢ[i] * χᵢ[j])
-        natG = SymmetricTensor{2, dim}((i,j) -> metric(bnorm, i, j, :cont) / (χᵢ[i] * χᵢ[j]))
+        nate = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cov) * χᵢ[j])
+        natE = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cont) / χᵢ[j])
+        natg = SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cov) * χᵢ[i] * χᵢ[j])
+        natG =
+            SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cont) / (χᵢ[i] * χᵢ[j]))
         natbasis = Basis(nate, natE, natg, natG)
         new{dim}(
             OMc,
@@ -185,9 +187,9 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
     end
 end
 
-with_tmp_var(CS::CoorSystemSym, t) = length(CS.tmp_var) > 0 ? tenssubs(t, CS.tmp_var...) : t
+with_tmp_var(CS::CoorSystemSym, t) = length(CS.tmp_var) > 0 ? subs(t, CS.tmp_var...) : t
 only_coords(CS::CoorSystemSym, t) =
-    length(CS.to_coords) > 0 ? tenssubs(t, CS.to_coords...) : t
+    length(CS.to_coords) > 0 ? subs(t, CS.to_coords...) : t
 
 getcoords(CS::CoorSystemSym) = CS.coords
 getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
@@ -211,10 +213,11 @@ unitvec(CS::CoorSystemSym, i::Int) = unitvec(CS)[i]
 
 function compute_Christoffel(coords, χ, γ, invγ)
     dim = length(χ)
-    g = [γ[i,j]*χ[i]*χ[j] for i ∈ 1:dim, j ∈ 1:dim]
-    G = [invγ[i,j]/(χ[i]*χ[j]) for i ∈ 1:dim, j ∈ 1:dim]
-    ∂g = [diff(g[i,j], coords[k]) for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
-    Γᵢⱼₖ = [(∂g[i,k,j] + ∂g[j,k,i] - ∂g[i,j,k])/2 for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
+    g = [γ[i, j] * χ[i] * χ[j] for i ∈ 1:dim, j ∈ 1:dim]
+    G = [invγ[i, j] / (χ[i] * χ[j]) for i ∈ 1:dim, j ∈ 1:dim]
+    ∂g = [diff(g[i, j], coords[k]) for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
+    Γᵢⱼₖ =
+        [(∂g[i, k, j] + ∂g[j, k, i] - ∂g[i, j, k]) / 2 for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
     return ein"ijl,lk->ijk"(Γᵢⱼₖ, G)
 end
 
@@ -228,18 +231,17 @@ Calculates the gradient of `T` with respect to the coordinate system `CS`
 GRAD(
     T::Union{Sym,AbstractTensnd{order,dim,Sym}},
     CS::CoorSystemSym{dim},
-) where {order,dim} = tenssimp(
-    sum([∂(only_coords(CS, T), getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim]),
-)
+) where {order,dim} = 
+    sum([∂(only_coords(CS, T), getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim])
 
 # GRAD(
 #     T::Sym,
 #     CS::CoorSystemSym{dim},
-# ) where {order,dim} = tenssimp(
+# ) where {order,dim} = simplify(
 #     sum([∂(only_coords(CS, T), getcoords(CS, i)) * natvec(CS, i, :cont) for i = 1:dim]),
 # )
 
-# function GRAD(
+# function oGRAD(
 #     T::AbstractTensnd{order,dim,Sym},
 #     CS::CoorSystemSym{dim},
 # ) where {order,dim}
@@ -259,7 +261,7 @@ GRAD(
 #             data[ntuple(_ -> (:), order)..., i] += einsum(EinCode((ec1,ec2), ec3), (t, view(Γ, i, :, :)))
 #         end
 #     end
-#     return tenssimp(change_tens(Tensnd(data, ℬ, varfin), getbasis(CS), varfin))
+#     return simplify(change_tens(Tensnd(data, ℬ, varfin), getbasis(CS), varfin))
 # end
 
 
@@ -274,13 +276,15 @@ SYMGRAD(
 ) where {order,dim} = 
     sum([∂(only_coords(CS, T), getcoords(CS, i)) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
 
+
 """
     DIV(T::AbstractTensnd{order,dim,Sym},CS::CoorSystemSym{dim}) where {order,dim}
 
 Calculates the divergence  of `T` with respect to the coordinate system `CS`
 """
 DIV(T::AbstractTensnd{order,dim,Sym}, CS::CoorSystemSym{dim}) where {order,dim} =
-        sum([∂(only_coords(CS, T), getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim])
+    sum([∂(only_coords(CS, T), getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim])
+
 
 
 """

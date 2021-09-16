@@ -50,8 +50,8 @@ julia> 𝟏.data
  0  0  1
 ```  
 """
-tensId2(T::Type{<:Number} = Sym, dim = 3) =
-    Tensnd(one(SymmetricTensor{2,dim,T}), CanonicalBasis{dim,T}())
+tensId2(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
+    Tensnd(one(SymmetricTensor{2,dim,T}), basis)
 
 """
     tensId4(T::Type{<:Number} = Sym, dim = 3)
@@ -74,8 +74,8 @@ julia> 𝟙 = t𝟙() ; KM(𝟙)
  0  0  0  0  0  0  0  0  1
 ``` 
 """
-tensId4(T::Type{<:Number} = Sym, dim = 3) =
-    Tensnd(one(Tensor{4,dim,T}), CanonicalBasis{dim,T}())
+tensId4(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
+    Tensnd(one(Tensor{4,dim,T}), basis)
 
 """
     tensId4s(T::Type{<:Number} = Sym, dim = 3)
@@ -95,8 +95,8 @@ julia> 𝕀 = t𝕀() ; KM(𝕀)
  0  0  0  0  0  1
 ``` 
 """
-tensId4s(T::Type{<:Number} = Sym, dim = 3) =
-    Tensnd(one(SymmetricTensor{4,dim,T}), CanonicalBasis{dim,T}())
+tensId4s(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
+    Tensnd(one(SymmetricTensor{4,dim,T}), basis)
 
 """
     tensJ4(T::Type{<:Number} = Sym, dim = 3)
@@ -116,9 +116,9 @@ julia> 𝕁 = t𝕁() ; KM(𝕁)
    0    0    0  0  0  0
 ``` 
 """
-function tensJ4(T::Type{<:Number} = Sym, dim = 3)
+function tensJ4(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}())
     δ = one(SymmetricTensor{2,dim,T})
-    return Tensnd(δ ⊗ δ / dim, CanonicalBasis{dim,T}())
+    return Tensnd(δ ⊗ δ / dim, basis)
 end
 
 """
@@ -139,7 +139,7 @@ julia> 𝕂 = t𝕂() ; KM(𝕂)
     0     0     0  0  0  1
 ``` 
 """
-tensK4(T::Type{<:Number} = Sym, dim = 3) = tensId4s(T, dim) - tensJ4(T, dim)
+tensK4(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) = tensId4s(T, dim; basis = basis) - tensJ4(T, dim ; basis = basis)
 
 
 """
@@ -316,7 +316,8 @@ Returns the isotropic tensors
 julia> 𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic() ;
 ``` 
 """
-init_isotropic(T::Type{<:Number} = Sym) = t𝟏(T), t𝟙(T), t𝕀(T), t𝕁(T), t𝕂(T)
+init_isotropic(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
+t𝟏(T, dim ; basis = basis), t𝟙(T, dim ; basis = basis), t𝕀(T, dim ; basis = basis), t𝕁(T, dim ; basis = basis), t𝕂(T, dim ; basis = basis)
 
 
 """

@@ -1,5 +1,5 @@
 @testsection "Coordinate systems" begin
-
+    s∂ = simplify ∘ ∂
     (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ = init_cartesian()
     (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical()
 
@@ -8,10 +8,10 @@
     end
 
     @testsection "Partial derivatives" begin
-        @test tenssimp(∂(𝐞ʳ, θ)) == tenssimp(𝐞ᶿ)
-        @test tenssimp(∂(𝐞ʳ, ϕ)) == tenssimp(sin(θ) * 𝐞ᵠ)
-        @test tenssimp(∂(𝐞ᵠ ⊗ 𝐞ᶿ, ϕ)) == tenssimp(∂(𝐞ᵠ, ϕ) ⊗ 𝐞ᶿ + 𝐞ᵠ ⊗ ∂(𝐞ᶿ, ϕ))
-        @test tenssimp(∂(𝐞ʳ ⊗ˢ 𝐞ᵠ, ϕ)) == tenssimp(∂(𝐞ʳ, ϕ) ⊗ˢ 𝐞ᵠ + 𝐞ʳ ⊗ˢ ∂(𝐞ᵠ, ϕ))
+        @test s∂(𝐞ʳ, θ) == 𝐞ᶿ
+        @test s∂(𝐞ʳ, ϕ) == sin(θ) * 𝐞ᵠ
+        @test s∂(𝐞ᵠ ⊗ 𝐞ᶿ, ϕ) == s∂(𝐞ᵠ, ϕ) ⊗ 𝐞ᶿ + 𝐞ᵠ ⊗ s∂(𝐞ᶿ, ϕ)
+        @test s∂(𝐞ʳ ⊗ˢ 𝐞ᵠ, ϕ) == s∂(𝐞ʳ, ϕ) ⊗ˢ 𝐞ᵠ + 𝐞ʳ ⊗ˢ s∂(𝐞ᵠ, ϕ)
     end
 
     @testsection "Coordinate systems" begin
@@ -41,20 +41,20 @@
             @eval $(Symbol(σⁱʲ)) = SymFunction($σⁱʲ, real = true)($r)
         end
         𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ
-        div𝛔 = DIV(𝛔, Spherical)
+        div𝛔 = simplify(DIV(𝛔, Spherical))
         @test simplify(div𝛔 ⋅ 𝐞ʳ) == simplify(∂(σʳʳ, r) + (2σʳʳ - σᶿᶿ - σᵠᵠ) / r)
 
         # Concentric sphere - hydrostatic part
         Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
-        𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic()
+        𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic(basis = ℬˢ)
         k, μ = symbols("k μ", positive = true)
         λ = k - 2μ/3
         ℂ = 3k * 𝕁 + 2μ * 𝕂
         u = SymFunction("u", real = true)(r)
         𝐮 = u * 𝐞ʳ
-        𝛆 = SYMGRAD(𝐮, Spherical)
-        # 𝛔 = ℂ ⊡ 𝛆
-        𝛔 = tenssimp(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
+        𝛆 = simplify(SYMGRAD(𝐮, Spherical))
+        # 𝛔 = simplify(ℂ ⊡ 𝛆)
+        𝛔 = simplify(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
         @test dsolve(factor(simplify(DIV(𝛔, Spherical) ⋅ 𝐞ʳ)), u) ==
               Eq(u, symbols("C1") / r^2 + symbols("C2") * r)
 

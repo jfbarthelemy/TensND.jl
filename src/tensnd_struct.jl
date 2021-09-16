@@ -90,7 +90,7 @@ for order ∈ (2, 4)
             newtab = convert(SymmetricTensor{$order,dim}, newtab)
         end
         # if T == Sym
-        #     newtab = Tensors.get_base(typeof(newtab))(sympy.trigsimp.(newtab))
+        #     newtab = Tensors.get_base(typeof(newtab))(simplify.(Tensors.get_data(newtab)))
         # end
         return newtab
     end
@@ -225,11 +225,11 @@ function components(
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
                 m = einsum(EinCode((ec1, ec2), ec3), (m, g_or_G))
-                # if T == Sym
-                #     m = sympy.trigsimp.(m)
-                # end
             end
         end
+        # if T == Sym
+        #     m = simplify.(m)
+        # end
         return m
     end
 end
@@ -259,11 +259,11 @@ function components(
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
                 m = einsum(EinCode((ec1, ec2), ec3), (m, c))
-                # if T == Sym
-                #     m = sympy.trigsimp.(m)
-                # end
             end
         end
+        # if T == Sym
+        #     m = simplify.(m)
+        # end
         return m
     end
 end
@@ -290,11 +290,11 @@ function components(
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, order)
                 m = einsum(EinCode((ec1, ec2), ec3), (m, bb))
-                # if T == Sym
-                #     m = simplify.(m)
-                # end
             end
         end
+        # if T == Sym
+        #     m = simplify.(m)
+        # end
         return m
     end
 end
@@ -419,14 +419,17 @@ TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
 change_tens_canon(t::AbstractTensnd) = change_tens(t, CanonicalBasis{getdim(t),eltype(t)}())
 
 
-tenssimp(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(simplify.(getdata(t)), getbasis(t), getvar(t))
-tenssimp(t) = simplify.(t)
+SymPy.simplify(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(simplify(getdata(t)), getbasis(t), getvar(t))
+SymPy.simplify(t::AbstractArray{Sym}) = simplify.(t)
+SymPy.simplify(t::Tensors.AllTensors{dim, Sym}) where {dim} = Tensors.get_base(typeof(t))(simplify.(Tensors.get_data(t)))
 
-tensfactor(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(factor.(getdata(t)), getbasis(t), getvar(t))
-tensfactor(t) = factor.(t)
+SymPy.factor(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(factor(getdata(t)), getbasis(t), getvar(t))
+SymPy.factor(t::AbstractArray{Sym}) = factor.(t)
+SymPy.factor(t::Tensors.AllTensors{dim, Sym}) where {dim} = Tensors.get_base(typeof(t))(factor.(Tensors.get_data(t)))
 
-tenssubs(t::AbstractTensnd{order,dim,Sym}, d...) where {order,dim} = Tensnd(subs.(getdata(t), d...), getbasis(t), getvar(t))
-tenssubs(t, d...) = subs.(t, d...)
+SymPy.subs(t::AbstractTensnd{order,dim,Sym}, d...) where {order,dim} = Tensnd(subs(getdata(t), d...), getbasis(t), getvar(t))
+SymPy.subs(t::AbstractArray{Sym}, d...) = subs.(t, d...)
+SymPy.subs(t::Tensors.AllTensors{dim, Sym}, d...) where {dim} = Tensors.get_base(typeof(t))(subs.(Tensors.get_data(t), d...))
 
 
 ##############

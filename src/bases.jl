@@ -94,14 +94,13 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             e = Tensor{2,dim}(v)
-            ete = e' ⋅ e
-            if T == Sym ete = simplify.(ete) end
-            g = SymmetricTensor{2,dim}(ete)
+            g = SymmetricTensor{2,dim}(e' ⋅ e)
+            if T == Sym g = SymmetricTensor{2,dim}(simplify.(Tensors.get_data(g))) end
             if isidentity(g)
                 return RotatedBasis(e)
             else
-                G = inv(g) ; if T == Sym G = SymmetricTensor{2,dim}(simplify.(G)) end
-                E = e ⋅ G' ; if T == Sym E = Tensor{2,dim}(simplify.(E)) end
+                G = inv(g) ; if T == Sym G = SymmetricTensor{2,dim}(simplify.(Tensors.get_data(G))) end
+                E = e ⋅ G' ; if T == Sym E = Tensor{2,dim}(simplify.(Tensors.get_data(E))) end
                 new{dim,T}(e, E, g, G)
             end
         end
@@ -113,14 +112,13 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             E = Tensor{2,dim}(v)
-            EtE = E' ⋅ E
-            if T == Sym EtE = simplify.(EtE) end
-            G = SymmetricTensor{2,dim}(EtE)
+            G = SymmetricTensor{2,dim}(E' ⋅ E)
+            if T == Sym G = SymmetricTensor{2,dim}(simplify.(Tensors.get_data(G))) end
             if isidentity(G)
                 return RotatedBasis(E)
             else
-                g = inv(G) ; if T == Sym g = SymmetricTensor{2,dim}(simplify.(g)) end
-                e = E ⋅ g' ; if T == Sym e = Tensor{2,dim}(simplify.(e)) end
+                g = inv(G) ; if T == Sym g = SymmetricTensor{2,dim}(simplify.(Tensors.get_data(g))) end
+                e = E ⋅ g' ; if T == Sym e = Tensor{2,dim}(simplify.(Tensors.get_data(e))) end
                 new{dim,T}(e, E, g, G)
             end
         end
