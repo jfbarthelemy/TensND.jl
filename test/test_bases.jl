@@ -1,3 +1,8 @@
+opequal(x,y) = x ≈ y
+opequal(x::Sym,y) = x == y
+opequal(x::AbstractArray{Sym},y) = x == y
+
+
 @testsection "Bases" begin
     for T ∈ (Sym, Float64)
         @testsection "type $T" begin
@@ -9,48 +14,64 @@
             @test vecbasis(bv, :cont) == T[1 0 0; 0 1 -1; 0 0 1]
             @test metric(bv) == T[1 0 0; 0 2 1; 0 1 1]
             @test metric(bv, :cont) == bv.G == T[1 0 0; 0 1 -1; 0 -1 2]
-            @test simplify.(vecbasis(bv, :cont)' ⋅ vecbasis(bv, :cov)) == I
-            @test simplify.(metric(bv, :cont)' ⋅ metric(bv, :cov)) == I
+            @test vecbasis(bv, :cont)' * vecbasis(bv, :cov) == I
+            @test metric(bv, :cont)' * metric(bv, :cov) == I
             @test !isorthogonal(bv)
 
-            bw = Basis(bv.E, :cont)
+            bw = Basis(vecbasis(bv, :cont), :cont)
             @test eltype(bw) == T
             @test vecbasis(bw) == T[1 0 0; 0 1 0; 0 1 1]
             @test vecbasis(bw, :cont) == T[1 0 0; 0 1 -1; 0 0 1]
             @test metric(bw) == T[1 0 0; 0 2 1; 0 1 1]
             @test metric(bw, :cont) == T[1 0 0; 0 1 -1; 0 -1 2]
-            @test simplify.(vecbasis(bw, :cont)' ⋅ vecbasis(bw, :cov)) == I
-            @test simplify.(metric(bw, :cont)' ⋅ metric(bw, :cov)) == I
+            @test vecbasis(bw, :cont)' * vecbasis(bw, :cov) == I
+            @test metric(bw, :cont)' * metric(bw, :cov) == I
             @test !isorthogonal(bw)
 
             nb = normalize(bv)
+            @test opequal(vecbasis(nb), vecbasis(nb, :cov))
+            @test opequal(vecbasis(nb), T[1 0 0; 0 sq2/2 0; 0 sq2/2 1])
+            θ, ϕ, ψ = T == Sym ? symbols("θ, ϕ, ψ", real = true) : rand(T, 3)
+            br = Basis(θ, ϕ, ψ)
+            @test br isa RotatedBasis
+            @test opequal(metric(br), I)
+            @test opequal(vecbasis(br, :cont), vecbasis(br, :cov))
             if T == Sym
-                @test vecbasis(nb) == vecbasis(nb, :cov) == T[1 0 0; 0 sq2/2 0; 0 sq2/2 1]
-                θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true)
-                br = Basis(θ, ϕ, ψ)
-                @test metric(br) == I
-                @test vecbasis(br, :cont) == vecbasis(br, :cov)
                 @test angles(br) == (θ = θ, ϕ = ϕ, ψ = ψ)
-                br = Basis(θ)
-                @test metric(br) == I
-                @test vecbasis(br, :cont) == vecbasis(br, :cov)
-                @test angles(br) == (θ = θ,)
             else
-                @test vecbasis(nb) ≈ nb.e ≈ T[1 0 0; 0 sq2/2 0; 0 sq2/2 1]
-                θ, ϕ, ψ = rand(T, 3)
-                br = Basis(θ, ϕ, ψ)
-                @test metric(br) ≈ I
-                @test vecbasis(br, :cont) == vecbasis(br, :cov)
                 angbr = angles(br)
                 @test angbr.θ ≈ θ && angbr.ϕ ≈ ϕ && angbr.ψ ≈ ψ
                 angbr = angles(Array(br))
                 @test angbr.θ ≈ θ && angbr.ϕ ≈ ϕ && angbr.ψ ≈ ψ
-                br = Basis(θ)
-                @test metric(br) ≈ I
-                @test vecbasis(br, :cont) == vecbasis(br, :cov)
+            end                
+            λ = T == Sym ? [symbols("λ$i", real = true) for i in 1:dim(br)] : rand(dim(br))
+            e = vecbasis(br, :cov) .* λ'
+            bo = Basis(e)
+            @test bo isa OrthogonalBasis
+            @test bo isa AllOrthogonalBasis
+
+            br = Basis(θ)
+            @test opequal(metric(br), I)
+            @test opequal(vecbasis(br, :cont), vecbasis(br, :cov))
+            if T == Sym
+                @test angles(br) == (θ = θ,)
+            else
                 @test angles(br).θ ≈ θ
                 @test angles(Array(br)).θ ≈ θ
             end
+            λ = T == Sym ? [symbols("λ$i", real = true) for i in 1:dim(br)] : rand(dim(br))
+            e = vecbasis(br, :cov) .* λ'
+            bo = Basis(e)
+            @test bo isa OrthogonalBasis
+            @test bo isa AllOrthogonalBasis
+
+
+            b2 = Basis(zero(T))
+            @test b2 isa CanonicalBasis
+            @test dim(b2) == 2
+            b3 = Basis(zero(T), zero(T), zero(T))
+            @test b3 isa CanonicalBasis
+            @test dim(b3) == 3
 
             if T ≠ Sym
                 v = rand(T, 3, 3)
@@ -58,9 +79,9 @@
                     v = rand(T, 3, 3)
                 end
                 @test eltype(bv) == T
-                @test simplify.(vecbasis(bv, :cont)' ⋅ vecbasis(bv, :cov)) == I
-                @test simplify.(metric(bv, :cont)' ⋅ metric(bv, :cov)) == I
-                end
+                @test vecbasis(bv, :cont)' * vecbasis(bv, :cov) == I
+                @test metric(bv, :cont)' * metric(bv, :cov) == I
+            end
 
         end
     end

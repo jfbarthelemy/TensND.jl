@@ -1,15 +1,16 @@
-abstract type AbstractTensnd{order,dim,T<:Number,A<:AbstractArray} <: AbstractArray{T,order} end
-abstract type TensndOrthonormal{order,dim,T<:Number,A<:AbstractArray} <:
-              AbstractTensnd{order,dim,T,A} end
+abstract type AbstractTens{order,dim,T<:Number,A<:AbstractArray} <: AbstractArray{T,order} end
 
-Base.size(t::AbstractTensnd) = size(getdata(t))
+Base.size(t::AbstractTens) = size(array(t))
 
-Base.getindex(t::AbstractTensnd, ind...) = getindex(getdata(t), ind...)
+Base.getindex(t::AbstractTens, ind...) = getindex(array(t), ind...)
 
-@pure Base.eltype(::AbstractTensnd{order,dim,T,A}) where {order,dim,T,A} = T
-@pure getdim(::AbstractTensnd{order,dim,T,A}) where {order,dim,T,A} = dim
-@pure getorder(::AbstractTensnd{order,dim,T,A}) where {order,dim,T,A} = order
-@pure getdatatype(::AbstractTensnd{order,dim,T,A}) where {order,dim,T,A} = A
+@pure Base.eltype(::AbstractTens{order,dim,T,A}) where {order,dim,T,A} = T
+@pure dim(::AbstractTens{order,dim,T,A}) where {order,dim,T,A} = dim
+@pure ndims(::AbstractTens{order,dim,T,A}) where {order,dim,T,A} = order
+@pure arraytype(::AbstractTens{order,dim,T,A}) where {order,dim,T,A} = A
+
+
+
 
 """
     Tensnd{order,dim,T,A<:AbstractArray,B<:AbstractBasis}
@@ -42,7 +43,7 @@ julia> components(T,(:cont,:cov),b)
  0  0  1
 ```
 """
-struct Tensnd{order,dim,T,A} <: AbstractTensnd{order,dim,T,A}
+struct Tens{order,dim,T,A,B} <: AbstractTens{order,dim,T,A}
     data::A
     basis::Basis
     var::NTuple{order,Symbol}
@@ -59,6 +60,7 @@ struct Tensnd{order,dim,T,A} <: AbstractTensnd{order,dim,T,A}
     Tensnd(data::AbstractArray, args...) = TensndCanonical(data)
     Tensnd(data::AbstractArray, var::NTuple, ℬ::AbstractBasis) = Tensnd(data, ℬ, var)
 end
+
 
 struct TensndRotated{order,dim,T,A} <: TensndOrthonormal{order,dim,T,A}
     data::A
@@ -101,8 +103,8 @@ tensor_or_array(tab::AbstractArray) = tab
 ##############################
 # Utility/Accessor Functions #
 ##############################
-getdata(t::AbstractTensnd) = t.data
-getbasis(t::AbstractTensnd) = t.basis
+array(t::AbstractTensnd) = t.data
+basis(t::AbstractTensnd) = t.basis
 
 getvar(t::Tensnd) = t.var
 getvar(t::Tensnd, i::Int) = getvar(t)[i]
@@ -311,10 +313,10 @@ components(
 Extracts the components of a tensor in the canonical basis
 """
 components_canon(t::AbstractTensnd) =
-    components(t, CanonicalBasis{getdim(t),eltype(t)}(), getvar(t))
+    components(t, CanonicalBasis{dim(t),eltype(t)}(), getvar(t))
 
 components_canon(t::TensndOrthonormal) =
-    components(t, CanonicalBasis{getdim(t),eltype(t)}())
+    components(t, CanonicalBasis{dim(t),eltype(t)}())
 
 """
     change_tens(t::AbstractTensnd{order,dim,T},ℬ::AbstractBasis{dim},var::NTuple{order,Symbol})
@@ -416,20 +418,38 @@ TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
 # var: (:cont,)
 ```
 """
-change_tens_canon(t::AbstractTensnd) = change_tens(t, CanonicalBasis{getdim(t),eltype(t)}())
+change_tens_canon(t::AbstractTensnd) = change_tens(t, CanonicalBasis{dim(t),eltype(t)}())
 
 
-SymPy.simplify(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(simplify(getdata(t)), getbasis(t), getvar(t))
-SymPy.simplify(t::AbstractArray{Sym}) = simplify.(t)
-SymPy.simplify(t::Tensors.AllTensors{dim, Sym}) where {dim} = Tensors.get_base(typeof(t))(simplify.(Tensors.get_data(t)))
+for OP in (:(simplify), :(factor), :(subs))
+    @eval SymPy.$OP(t::AbstractTensnd{order,dim, Sym}, args... ; kwargs...) where {order,dim} = Tensnd($OP(getdata(t); kwargs...), getbasis(t), getvar(t))
+    @eval SymPy.$OP(t::AbstractArray{Sym}, args... ; kwargs...) = $OP.(t, args...; kwargs...)
+    @eval SymPy.$OP(t::Tensors.AllTensors{dim, Sym}, args... ; kwargs...) where {dim} = Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args... ; kwargs...))
+end
 
-SymPy.factor(t::AbstractTensnd{order,dim,Sym}) where {order,dim} = Tensnd(factor(getdata(t)), getbasis(t), getvar(t))
-SymPy.factor(t::AbstractArray{Sym}) = factor.(t)
-SymPy.factor(t::Tensors.AllTensors{dim, Sym}) where {dim} = Tensors.get_base(typeof(t))(factor.(Tensors.get_data(t)))
+for OP in (:(trigsimp), :(expand_trig))
+    @eval $OP(t::AbstractTensnd{order,dim}, args... ; kwargs...) where {order,dim} = Tensnd($OP(getdata(t); kwargs...), getbasis(t), getvar(t))
+    @eval $OP(t::AbstractArray{Sym}, args... ; kwargs...) = sympy.$OP.(t, args...; kwargs...)
+    @eval $OP(t::Tensors.AllTensors{dim, Sym}, args... ; kwargs...) where {dim} = Tensors.get_base(typeof(t))(sympy.$OP.(Tensors.get_data(t), args... ; kwargs...))
+    @eval $OP(t::Sym, args... ; kwargs...) = sympy.$OP.(t, args...; kwargs...)
+end
 
-SymPy.subs(t::AbstractTensnd{order,dim,Sym}, d...) where {order,dim} = Tensnd(subs(getdata(t), d...), getbasis(t), getvar(t))
-SymPy.subs(t::AbstractArray{Sym}, d...) = subs.(t, d...)
-SymPy.subs(t::Tensors.AllTensors{dim, Sym}, d...) where {dim} = Tensors.get_base(typeof(t))(subs.(Tensors.get_data(t), d...))
+
+# SymPy.simplify(t::AbstractTensnd{order,dim,Sym}; kwargs...) where {order,dim} = Tensnd(simplify(getdata(t); kwargs...), getbasis(t), getvar(t))
+# SymPy.simplify(t::AbstractArray{Sym}; kwargs...) = simplify.(t; kwargs...)
+# SymPy.simplify(t::Tensors.AllTensors{dim, Sym}; kwargs...) where {dim} = Tensors.get_base(typeof(t))(simplify.(Tensors.get_data(t); kwargs...))
+
+# sympy.trigsimp(t::AbstractTensnd{order,dim,Sym}; kwargs...) where {order,dim} = Tensnd(trigsimp(getdata(t); kwargs...), getbasis(t), getvar(t))
+# sympy.trigsimp(t::AbstractArray{Sym}; kwargs...) = trigsimp.(t; kwargs...)
+# sympy.trigsimp(t::Tensors.AllTensors{dim, Sym}; kwargs...) where {dim} = Tensors.get_base(typeof(t))(trigsimp.(Tensors.get_data(t); kwargs...))
+
+# SymPy.factor(t::AbstractTensnd{order,dim,Sym}; kwargs...) where {order,dim} = Tensnd(factor(getdata(t); kwargs...), getbasis(t), getvar(t))
+# SymPy.factor(t::AbstractArray{Sym}; kwargs...) = factor.(t; kwargs...)
+# SymPy.factor(t::Tensors.AllTensors{dim, Sym}; kwargs...) where {dim} = Tensors.get_base(typeof(t))(factor.(Tensors.get_data(t); kwargs...))
+
+# SymPy.subs(t::AbstractTensnd{order,dim,Sym}, d...; kwargs...) where {order,dim} = Tensnd(subs(getdata(t), d...; kwargs...), getbasis(t), getvar(t))
+# SymPy.subs(t::AbstractArray{Sym}, d...; kwargs...) = subs.(t, d...; kwargs...)
+# SymPy.subs(t::Tensors.AllTensors{dim, Sym}, d...; kwargs...) where {dim} = Tensors.get_base(typeof(t))(subs.(Tensors.get_data(t), d...; kwargs...))
 
 
 ##############

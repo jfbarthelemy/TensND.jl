@@ -241,28 +241,28 @@ GRAD(
 #     sum([∂(only_coords(CS, T), getcoords(CS, i)) * natvec(CS, i, :cont) for i = 1:dim]),
 # )
 
-# function oGRAD(
-#     T::AbstractTensnd{order,dim,Sym},
-#     CS::CoorSystemSym{dim},
-# ) where {order,dim}
-#     T = only_coords(CS, T)
-#     ℬ = getnatbasis(CS)
-#     var = ntuple(_ -> :cont, order)
-#     varfin = ntuple(i -> i <= order ? :cont : :cov, order + 1)
-#     t = simplify.(Array(components(T, ℬ, var)))
-#     Γ = getChristoffel(CS)
-#     data = zeros(Sym, ntuple(_ -> dim, order + 1)...)
-#     for i ∈ 1:dim
-#         data[ntuple(_ -> (:), order)..., i] = diff.(t, getcoords(CS, i))
-#         for o ∈ 1:order
-#             ec1 = ntuple(j -> j == o ? order + 1 : j, order)
-#             ec2 = (order + 1, o)
-#             ec3 = ntuple(j -> j, order)
-#             data[ntuple(_ -> (:), order)..., i] += einsum(EinCode((ec1,ec2), ec3), (t, view(Γ, i, :, :)))
-#         end
-#     end
-#     return simplify(change_tens(Tensnd(data, ℬ, varfin), getbasis(CS), varfin))
-# end
+function oGRAD(
+    T::AbstractTensnd{order,dim,Sym},
+    CS::CoorSystemSym{dim},
+) where {order,dim}
+    T = only_coords(CS, T)
+    ℬ = getnatbasis(CS)
+    var = ntuple(_ -> :cont, order)
+    varfin = ntuple(i -> i <= order ? :cont : :cov, order + 1)
+    t = Array(components(T, ℬ, var))
+    Γ = getChristoffel(CS)
+    data = zeros(Sym, ntuple(_ -> dim, order + 1)...)
+    for i ∈ 1:dim
+        data[ntuple(_ -> (:), order)..., i] = diff.(t, getcoords(CS, i))
+        for o ∈ 1:order
+            ec1 = ntuple(j -> j == o ? order + 1 : j, order)
+            ec2 = (order + 1, o)
+            ec3 = ntuple(j -> j, order)
+            data[ntuple(_ -> (:), order)..., i] += einsum(EinCode((ec1,ec2), ec3), (t, view(Γ, i, :, :)))
+        end
+    end
+    return change_tens(Tensnd(data, ℬ, varfin), getbasis(CS), varfin)
+end
 
 
 """
