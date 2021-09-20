@@ -9,7 +9,7 @@ using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 export Id2, Isotropic2, Id4, I4, J4, K4, Isotropic4
 
 export Basis, CanonicalBasis, RotatedBasis, CylindricalBasis, SphericalBasis, OrthogonalBasis, AllOrthogonalBasis
-export dim, vecbasis, metric, angles, isorthogonal, isorthonormal, isidentity
+export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal, isidentity
 
 # export Tens
 # export ndims, arraytype, array, basis

@@ -3,7 +3,7 @@ abstract type OrthonormalBasis{dim,T<:Number} <: AbstractBasis{dim,T} end
 @pure Base.size(::AbstractBasis{dim}) where {dim} = (dim, dim)
 Base.getindex(b::AbstractBasis, i::Integer, j::Integer) = getindex(vecbasis(b, :cov), i, j)
 @pure Base.eltype(::AbstractBasis{dim,T}) where {dim,T} = T
-@pure dim(::AbstractBasis{d}) where {d} = d
+@pure getdim(::AbstractBasis{dim}) where {dim} = dim
 
 
 """

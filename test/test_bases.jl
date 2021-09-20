@@ -44,7 +44,7 @@ opequal(x::AbstractArray{Sym},y) = x == y
                 angbr = angles(Array(br))
                 @test angbr.θ ≈ θ && angbr.ϕ ≈ ϕ && angbr.ψ ≈ ψ
             end                
-            λ = T == Sym ? [symbols("λ$i", real = true) for i in 1:dim(br)] : rand(dim(br))
+            λ = T == Sym ? [symbols("λ$i", real = true) for i in 1:getdim(br)] : rand(getdim(br))
             e = vecbasis(br, :cov) .* λ'
             bo = Basis(e)
             @test bo isa OrthogonalBasis
@@ -59,19 +59,18 @@ opequal(x::AbstractArray{Sym},y) = x == y
                 @test angles(br).θ ≈ θ
                 @test angles(Array(br)).θ ≈ θ
             end
-            λ = T == Sym ? [symbols("λ$i", real = true) for i in 1:dim(br)] : rand(dim(br))
+            λ = T == Sym ? [symbols("λ$i", real = true) for i in 1:getdim(br)] : rand(getdim(br))
             e = vecbasis(br, :cov) .* λ'
             bo = Basis(e)
             @test bo isa OrthogonalBasis
             @test bo isa AllOrthogonalBasis
 
-
             b2 = Basis(zero(T))
             @test b2 isa CanonicalBasis
-            @test dim(b2) == 2
+            @test getdim(b2) == 2
             b3 = Basis(zero(T), zero(T), zero(T))
             @test b3 isa CanonicalBasis
-            @test dim(b3) == 3
+            @test getdim(b3) == 3
 
             if T ≠ Sym
                 v = rand(T, 3, 3)

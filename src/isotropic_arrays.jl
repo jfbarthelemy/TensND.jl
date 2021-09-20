@@ -96,8 +96,8 @@ const AllIsotropic4{dim,T} = Union{I4{dim,T},J4{dim,T},K4{dim,T},Isotropic4{dim,
 
 aJ(A::Isotropic4) = A.aJ
 aK(A::Isotropic4) = A.aK
-aJ(::Id4{dim,T}) where {dim,T} = one(T)
-aK(::Id4{dim,T}) where {dim,T} = one(T)
+aJ(::I4{dim,T}) where {dim,T} = one(T)
+aK(::I4{dim,T}) where {dim,T} = one(T)
 aJ(::J4{dim,T}) where {dim,T} = one(T)
 aK(::J4{dim,T}) where {dim,T} = zero(T)
 aJ(::K4{dim,T}) where {dim,T} = zero(T)
