@@ -6,17 +6,21 @@ import LinearAlgebra: normalize, dot
 
 using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 
+export contract, qcontract, otimesu, otimesul, sboxtimes, sotimes, ⊙, ⊠, ⊠ˢ, ⊗ˢ
+
 export Id2, Isotropic2, Id4, I4, J4, K4, Isotropic4
+export KM
 
 export Basis, CanonicalBasis, RotatedBasis, CylindricalBasis, SphericalBasis, OrthogonalBasis, AllOrthogonalBasis
 export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal, isidentity
+
+
 
 # export Tens
 # export ndims, arraytype, array, basis
 # export components, components_canon, change_tens, change_tens_canon
 # export trigsimp, expand_trig
 # export KM, invKM
-# export contract, qcontract, otimesul, ⊙, ⊠, ⊠ˢ, ⊗ˢ
 # export getdata, getbasis, getvar, natvec, unitvec, getcoords, getOM
 
 # export LeviCivita
@@ -31,6 +35,7 @@ export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal, isidentity
 # export CS_cartesian, CS_polar, CS_cylindrical, CS_spherical, CS_spheroidal
 
 
+include("array_utils.jl")
 include("isotropic_arrays.jl")
 include("bases.jl")
 # include("tens.jl")
