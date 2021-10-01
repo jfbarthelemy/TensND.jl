@@ -26,7 +26,7 @@ opequal(x::AbstractArray{Sym},y) = x == y
 
 include("test_isotropic_arrays.jl")
 include("test_bases.jl")
-# include("test_tens.jl")
+include("test_tens.jl")
 # include("test_special_tens.jl")
 # include("test_coorsystems.jl")
 

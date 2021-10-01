@@ -119,8 +119,8 @@ end
     end)
 end
 
-otimes(α::Number, t::AbstractArray) = α * t
-otimes(t::AbstractArray, α::Number) = α * t
+Tensors.otimes(α::Number, t::AbstractArray) = α * t
+Tensors.otimes(t::AbstractArray, α::Number) = α * t
 
 sotimes(α::Number, t::AbstractArray) = α * t
 sotimes(t::AbstractArray, α::Number) = α * t

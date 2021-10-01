@@ -14,14 +14,14 @@ export KM
 export Basis, CanonicalBasis, RotatedBasis, CylindricalBasis, SphericalBasis, OrthogonalBasis, AllOrthogonalBasis
 export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal, isidentity
 
+export Tens
+export getorder, arraytype, getarray, getbasis, getvar
+export components, components_canon, change_tens, change_tens_canon
+export trigsimp, expand_trig
+export KM, invKM
+export getbasis, getvar
 
-
-# export Tens
-# export ndims, arraytype, array, basis
-# export components, components_canon, change_tens, change_tens_canon
-# export trigsimp, expand_trig
-# export KM, invKM
-# export getdata, getbasis, getvar, natvec, unitvec, getcoords, getOM
+# natvec, unitvec, getcoords, getOM
 
 # export LeviCivita
 # export tensId2, tensId4, tensId4s, tensJ4, tensK4
@@ -38,7 +38,7 @@ export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal, isidentity
 include("array_utils.jl")
 include("isotropic_arrays.jl")
 include("bases.jl")
-# include("tens.jl")
+include("tens.jl")
 # include("special_tens.jl")
 # include("coorsystems.jl")
 

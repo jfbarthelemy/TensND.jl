@@ -1,5 +1,5 @@
 abstract type AbstractBasis{dim,T<:Number} <: AbstractMatrix{T} end
-abstract type OrthonormalBasis{dim,T<:Number} <: AbstractBasis{dim,T} end
+
 @pure Base.size(::AbstractBasis{dim}) where {dim} = (dim, dim)
 Base.getindex(b::AbstractBasis, i::Integer, j::Integer) = getindex(vecbasis(b, :cov), i, j)
 @pure Base.eltype(::AbstractBasis{dim,T}) where {dim,T} = T
@@ -185,7 +185,7 @@ CanonicalBasis{2, Float64}
  0.0  1.0
 ```
 """
-struct CanonicalBasis{dim,T} <: OrthonormalBasis{dim,T} end
+struct CanonicalBasis{dim,T} <: AbstractBasis{dim,T} end
 CanonicalBasis() = CanonicalBasis{3,Sym}()
 
 
@@ -204,7 +204,7 @@ julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; ℬʳ = RotatedBasis(θ
                         -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
 ```
 """
-struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
+struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
     e::Matrix{T} # Primal basis `eᵢ=e[:,i]`
     E::Matrix{T} # Dual basis `eⁱ=E[:,i]`
     angles::NamedTuple
@@ -252,6 +252,8 @@ struct RotatedBasis{dim,T} <: OrthonormalBasis{dim,T}
     end
 end
 
+const OrthonormalBasis{dim,T} = Union{CanonicalBasis{dim,T}, RotatedBasis{dim,T}}
+
 struct OrthogonalBasis{dim,T} <: AbstractBasis{dim,T}
     parent::OrthonormalBasis{dim,T}
     λ::Vector{T}
@@ -261,7 +263,7 @@ struct OrthogonalBasis{dim,T} <: AbstractBasis{dim,T}
     G::Diagonal{T,Vector{T}}
     function OrthogonalBasis(parent::OrthonormalBasis{dim,T}, λ::Vector) where {dim,T}
         λ = T.(λ)
-        if λ == [one(T) for _ in 1:dim]
+        if λ == one.(λ)
             return parent
         else
             e = [λ[j] * parent[i,j] for i ∈ 1:dim, j ∈ 1:dim]
