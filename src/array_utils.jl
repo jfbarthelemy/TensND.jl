@@ -1,3 +1,23 @@
+δkron(T::Type{<:Number}, i::Integer, j::Integer) = i == j ? one(T) : zero(T)
+
+struct Id2{dim,T<:Number} <: AbstractMatrix{T} end
+@pure Base.size(::Id2{dim}) where {dim} = (dim, dim)
+Base.getindex(::Id2{dim,T}, i::Integer, j::Integer) where {dim,T} = δkron(T, i, j)
+function Base.replace_in_print_matrix(::Id2, i::Integer, j::Integer, s::AbstractString)
+    i == j ? s : Base.replace_with_centered_mark(s)
+end
+
+isidentity(a::AbstractMatrix{T}) where {T} = a ≈ Id2{size(a, 1),T}()
+isidentity(a::AbstractMatrix{Sym}) = a == Id2{size(a, 1),Sym}()
+
+isdiagonal(a::AbstractMatrix{T}) where {T} = norm(a - Diagonal(a)) <= eps(T)
+isdiagonal(a::AbstractMatrix{Sym}) = isdiag(a)
+
+simplifyif(x) = x
+simplifyif(x::Sym) = simplify(x)
+simplifyif(m::Matrix{Sym}) = simplify.(m)
+simplifyif(m::Symmetric{Sym}) = Symmetric(simplify.(m))
+
 function Tensors.otimes(
     t1::AbstractArray{T1,order1},
     t2::AbstractArray{T2,order2},

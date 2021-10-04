@@ -316,6 +316,7 @@ invvar(::Val{:cov}) = :cont
 invvar(::Val{:cont}) = :cov
 invvar(var) = invvar(Val(var))
 
+
 """
     vecbasis(ℬ::AbstractBasis, var = :cov)
 

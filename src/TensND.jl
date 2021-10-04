@@ -36,7 +36,7 @@ export getbasis, getvar
 
 
 include("array_utils.jl")
-include("isotropic_arrays.jl")
+# include("isotropic_arrays.jl")
 include("bases.jl")
 include("tens.jl")
 # include("special_tens.jl")

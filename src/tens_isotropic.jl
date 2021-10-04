@@ -1,11 +1,46 @@
-δkron(T::Type{<:Number}, i::Integer, j::Integer) = i == j ? one(T) : zero(T)
+struct TensISO{order,dim,T,N} <: AbstractTens{order,dim,T}
+    data::NTuple{N,T}
+    TensISO{dim}(λ::T) where {dim,T} = new{2,dim,T,1}((λ,))
+    TensISO{dim}(α::T1, β::T2) where {dim,T1,T2} =
+        new{4,dim,promote_type(T1, T2),2}((α, β))
+    TensISO{dim}(data::NTuple{N,T}) where {dim,N,T} = TensISO{dim}(data...)
+    TensISO{order,dim,T}() where {order,dim,T} =
+        new{order,dim,T,order ÷ 2}(ntuple(_ -> one(T), Val(order ÷ 2)))
+end
 
-struct Id2{dim,T<:Number} <: AbstractMatrix{T} end
-@pure Base.size(::Id2{dim}) where {dim} = (dim, dim)
-Base.getindex(::Id2{dim,T}, i::Integer, j::Integer) where {dim,T} = δkron(T, i, j)
-function Base.replace_in_print_matrix(::Id2, i::Integer, j::Integer, s::AbstractString)
+@pure Base.size(::TensISO{order,dim}) where {order,dim} = ntuple(_ -> dim, Val(order))
+Base.getindex(t::TensISO{2}, i::Integer, j::Integer) = t.data[1] * I[i, j]
+Base.getindex(
+    t::TensISO{4,dim},
+    i::Integer,
+    j::Integer,
+    k::Integer,
+    l::Integer,
+) where {dim} =
+    (t.data[1] - t.data[2]) * I[i, j] * I[k, l] / dim +
+    t.data[2] * (I[i, k] * I[j, l] + I[i, l] * I[j, k]) / 2
+function Base.replace_in_print_matrix(
+    ::TensISO{2},
+    i::Integer,
+    j::Integer,
+    s::AbstractString,
+)
     i == j ? s : Base.replace_with_centered_mark(s)
 end
+
+TensId2(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{2, dim, T}()
+TensId4(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{4, dim, T}()
+TensJ4(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{dim}(one(T),zero(T))
+TensK4(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{dim}(zero(T),one(T))
+BaseISO(dim::Integer = 3, T::Type{<:Number} = Sym) = TensId4(dim,T), TensJ4(dim,T), TensK4(dim,T)
+
+getdata(t::TensISO) = t.data
+
+
+
+
+
+
 
 struct Isotropic2{dim,T<:Number} <: AbstractMatrix{T}
     λ::T
@@ -52,16 +87,7 @@ Base.getindex(::Id4{dim,T}, i::Integer, j::Integer, k::Integer, l::Integer) wher
     δkron(T, i, k) * δkron(T, j, l)
 Base.Matrix(::Id4{dim,T}) where {dim,T} = Id2{dim * dim,T}()
 
-fI4(T::Type{<:Number}, i::Integer, j::Integer, k::Integer, l::Integer) =
-    (δkron(T, i, k) * δkron(T, j, l) + δkron(T, i, l) * δkron(T, j, k)) / 2
-struct I4{dim,T<:Number} <: AbstractArray{T,4} end
-@pure Base.size(::I4{dim}) where {dim} = (dim, dim, dim, dim)
-Base.getindex(::I4{dim,T}, i::Integer, j::Integer, k::Integer, l::Integer) where {dim,T} =
-    fI4(T, i, j, k, l)
 
-
-fJ4(T::Type{<:Number}, i::Integer, j::Integer, k::Integer, l::Integer) =
-    δkron(T, i, j) * δkron(T, k, l)
 
 struct J4{dim,T<:Number} <: AbstractArray{T,4} end
 @pure Base.size(::J4{dim}) where {dim} = (dim, dim, dim, dim)
@@ -155,11 +181,9 @@ end
 function Base.display(A::AllIsotropic4{dim,T}) where {dim,T}
     aj = aJ(A)
     ak = aK(A)
-    # res = aj != zero(T) ? "($(aj)) 𝕁" : ""
-    # res *= ak != zero(T) ? " + ($(ak)) 𝕂" : ""
-    # print(res)
     print("($(aj)) 𝕁 + ($(ak)) 𝕂")
 end
+
 
 
 for OP in (:(simplify), :(factor), :(subs))
@@ -215,45 +239,37 @@ Tensors.dcontract(A::AllIsotropic4{dim}, B::AbstractArray) where {dim} =
 Tensors.dcontract(A::AbstractArray, B::AllIsotropic4{dim}) where {dim} =
     A * aK(B) + tr(A) * (aJ(B) - aK(B)) * I / dim
 
+
 for order ∈ (2, 4)
     for OP ∈ (:+, :-, :*)
         @eval @inline Base.$OP(
             A1::AbstractTensor{$order,dim,T},
-            A2::UniformScaling{T},
+            A2::UniformScaling,
         ) where {dim,T<:Number} = $OP(A1, A2.λ * one(A1))
         @eval @inline Base.$OP(
-            A1::UniformScaling{T},
+            A1::UniformScaling,
             A2::AbstractTensor{$order,dim,T},
         ) where {dim,T<:Number} = $OP(A1.λ * one(A2), A2)
         @eval @inline Base.$OP(
             A1::AbstractTensor{$order,dim,Sym},
-            A2::UniformScaling{Sym},
+            A2::UniformScaling,
         ) where {dim} = $OP(A1, A2.λ * one(A1))
         @eval @inline Base.$OP(
-            A1::UniformScaling{Sym},
+            A1::UniformScaling,
             A2::AbstractTensor{$order,dim,Sym},
         ) where {dim} = $OP(A1.λ * one(A2), A2)
     end
 end
 
-Tensors.dotdot(
-    v1::AbstractVector,
-    S::AllIsotropic2{dim},
-    v2::AbstractVector,
-) where {dim} = λ(S) * v1 ⋅ v2
+Tensors.dotdot(v1::AbstractVector, S::AllIsotropic2{dim}, v2::AbstractVector) where {dim} =
+    λ(S) * v1 ⋅ v2
 
 
-Tensors.dotdot(
-    v1::AbstractVector,
-    S::AllIsotropic4{dim},
-    v2::AbstractVector,
-) where {dim} = (aJ(S) - aK(S)) * (v1 ⊗ v2) / dim + aK(S) * (v2 ⊗ v1 + v1 ⋅ v2 * I) / 2
+Tensors.dotdot(v1::AbstractVector, S::AllIsotropic4{dim}, v2::AbstractVector) where {dim} =
+    (aJ(S) - aK(S)) * (v1 ⊗ v2) / dim + aK(S) * (v2 ⊗ v1 + v1 ⋅ v2 * I) / 2
 
-Tensors.dotdot(
-    a1::AbstractMatrix,
-    S::AllIsotropic4{dim},
-    a2::AbstractMatrix,
-) where {dim} = (aJ(S) - aK(S)) * tr(a1) * tr(a2) / dim + aK(S) * a1 ⊡ a2
+Tensors.dotdot(a1::AbstractMatrix, S::AllIsotropic4{dim}, a2::AbstractMatrix) where {dim} =
+    (aJ(S) - aK(S)) * tr(a1) * tr(a2) / dim + aK(S) * a1 ⊡ a2
 
 qcontract(A::AllIsotropic4{dim}, B::AllIsotropic4{dim}) where {dim} =
     aJ(A) * aJ(B) + 5 * aK(A) * aK(B)
