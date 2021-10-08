@@ -14,8 +14,8 @@ export KM
 export Basis, CanonicalBasis, RotatedBasis, CylindricalBasis, SphericalBasis, OrthogonalBasis, AllOrthogonalBasis
 export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal, isidentity
 
-export Tens
-export getorder, arraytype, getarray, getbasis, getvar
+export AbstractTens, Tens
+export getorder, arraytype, getdata, getarray, getbasis, getvar
 export components, components_canon, change_tens, change_tens_canon
 export trigsimp, expand_trig
 export KM, invKM

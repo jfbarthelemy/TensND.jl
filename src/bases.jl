@@ -388,13 +388,13 @@ for OP in (:show, :print, :display)
     @eval begin
         function Base.$OP(ℬ::AbstractBasis)
             $OP(typeof(ℬ))
-            print("# basis: ")
+            print("→ basis: ")
             $OP(vecbasis(ℬ, :cov))
-            print("# dual basis: ")
+            print("→ dual basis: ")
             $OP(vecbasis(ℬ, :cont))
-            print("# covariant metric tensor: ")
+            print("→ covariant metric tensor: ")
             $OP(metric(ℬ, :cov))
-            print("# contravariant metric tensor: ")
+            print("→ contravariant metric tensor: ")
             $OP(metric(ℬ, :cont))
         end
     end

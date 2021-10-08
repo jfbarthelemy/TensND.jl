@@ -8,6 +8,11 @@ struct TensISO{order,dim,T,N} <: AbstractTens{order,dim,T}
         new{order,dim,T,order ÷ 2}(ntuple(_ -> one(T), Val(order ÷ 2)))
 end
 
+@pure getorder(::TensISO{order}) where {order} = order
+@pure getdim(::TensISO{order,dim}) where {order,dim} = dim
+@pure Base.eltype(::TensISO{order,dim,T}) where {order,dim,T} = T
+@pure Base.length(::TensISO{order,dim,T,N}) where {order,dim,T,N} = dim^order
+@pure datanumber(::TensISO{order,dim,T,N}) where {order,dim,T,N} = N
 @pure Base.size(::TensISO{order,dim}) where {order,dim} = ntuple(_ -> dim, Val(order))
 Base.getindex(t::TensISO{2}, i::Integer, j::Integer) = t.data[1] * I[i, j]
 Base.getindex(
@@ -28,178 +33,61 @@ function Base.replace_in_print_matrix(
     i == j ? s : Base.replace_with_centered_mark(s)
 end
 
-TensId2(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{2, dim, T}()
-TensId4(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{4, dim, T}()
-TensJ4(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{dim}(one(T),zero(T))
-TensK4(dim::Integer = 3, T::Type{<:Number} = Sym) = TensISO{dim}(zero(T),one(T))
-BaseISO(dim::Integer = 3, T::Type{<:Number} = Sym) = TensId4(dim,T), TensJ4(dim,T), TensK4(dim,T)
+TensId2(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{2, dim, T}()
+TensId4(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{4, dim, T}()
+TensJ4(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{dim}(one(T),zero(T))
+TensK4(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{dim}(zero(T),one(T))
+ISO(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensId4(Val(dim),Val(T)), TensJ4(Val(dim),Val(T)), TensK4(Val(dim),Val(T))
+
+for f ∈ (:TensId2, :TensId4, :TensJ4, :TensJ4, :BaseISO)
+    @eval $f() = $f(Val(3), Val(Sym))
+end
 
 getdata(t::TensISO) = t.data
+getarray(t::TensISO) = Array(t)
+getbasis(::TensISO{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
+getvar(::TensISO{order}) where {order} = ntuple(_ -> :cont, Val(order))
+getvar(::TensISO, i::Int) = :cont
 
-
-
-
-
-
-
-struct Isotropic2{dim,T<:Number} <: AbstractMatrix{T}
-    λ::T
-    Isotropic2{dim}(λ::T) where {dim,T} = λ == one(T) ? Id2{dim,T}() : new{dim,T}(λ)
-end
-@pure Base.size(::Isotropic2{dim}) where {dim} = (dim, dim)
-Base.getindex(A::Isotropic2{dim,T}, i::Integer, j::Integer) where {dim,T} =
-    i == j ? A.λ : zero(T)
-function Base.replace_in_print_matrix(
-    ::Isotropic2,
-    i::Integer,
-    j::Integer,
-    s::AbstractString,
-)
-    i == j ? s : Base.replace_with_centered_mark(s)
-end
-
-const AllIsotropic2{dim,T} = Union{Id2{dim,T},Isotropic2{dim,T}}
-
-λ(A::Isotropic2) = A.λ
-λ(::Id2{dim,T}) where {dim,T} = one(T)
-
-@inline Base.:*(α::Number, A::AllIsotropic2{dim}) where {dim} = Isotropic2{dim}(α * λ(A))
-@inline Base.:*(A::AllIsotropic2{dim}, α::Number) where {dim} = Isotropic2{dim}(λ(A) * α)
-@inline Base.:/(A::AllIsotropic2{dim}, α::Number) where {dim} = Isotropic2{dim}(λ(A) / α)
+@inline Base.:*(α::Number, A::TensISO{order,dim}) where {order,dim} = TensISO{dim}(α .* getdata(A))
+@inline Base.:*(A::TensISO{order,dim}, α::Number) where {order,dim} = TensISO{dim}(getdata(A) .* α)
+@inline Base.:/(A::TensISO{order,dim}, α::Number) where {order,dim} = TensISO{dim}(getdata(A) ./ α)
 for OP in (:+, :-, :*)
-    @eval @inline Base.$OP(A1::AllIsotropic2{dim}, A2::AllIsotropic2{dim}) where {dim} =
-        Isotropic2{dim}($OP(λ(A1), λ(A2)))
-    @eval @inline Base.$OP(A1::AllIsotropic2{dim}, A2::UniformScaling) where {dim} =
-        Isotropic2{dim}($OP(λ(A1), A2.λ))
-    @eval @inline Base.$OP(A1::UniformScaling, A2::AllIsotropic2{dim}) where {dim} =
-        Isotropic2{dim}($OP(A1.λ, λ(A2)))
+    @eval @inline Base.$OP(A1::TensISO{order,dim}, A2::TensISO{order,dim}) where {order, dim} =
+        TensISO{dim}($OP.(getdata(A1), getdata(A2)))
+    @eval @inline Base.$OP(A1::TensISO{order,dim, T, N}, A2::UniformScaling) where {order, dim, T, N} =
+        TensISO{dim}($OP.(getdata(A1), ntuple(_ -> A2.λ, N)))
+    @eval @inline Base.$OP(A1::UniformScaling, A2::TensISO{order,dim}) where {order, dim, T, N} =
+        TensISO{dim}($OP.(ntuple(_ -> A1.λ, N), getdata(A1)))
 end
 for OP in (:(==), :(<=), :(>=), :(<), :(>))
-    @eval @inline Base.$OP(A1::AllIsotropic2{dim}, A2::AllIsotropic2{dim}) where {dim} =
-        $OP(λ(A1), λ(A2))
+    @eval @inline Base.$OP(A1::TensISO{order,dim}, A2::TensISO{order,dim}) where {order, dim} =
+        all($OP.(getdata(A1), getdata(A2)))
 end
-@inline Base.inv(A::AllIsotropic2{dim,T}) where {dim,T} = Isotropic2{dim}(one(T) / λ(A))
+@inline Base.inv(A::TensISO{order,dim, T}) where {order,dim,T} = TensISO{dim}(one(T) ./ getdata(A))
+@inline Base.one(A::TensISO{order,dim, T}) where {order,dim,T} = TensISO{dim}(one.(getdata(A)))
 
+@inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{-1}) = inv(A)
+@inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{0}) = one(A)
+@inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{1}) = A
+@inline Base.literal_pow(::typeof(^), A::TensISO{order,dim,T}, ::Val{p}) where {order,dim,T,p} =
+    TensISO{dim}(getdata(A).^(p))
 
-struct Id4{dim,T<:Number} <: AbstractArray{T,4} end
-@pure Base.size(::Id4{dim}) where {dim} = (dim, dim, dim, dim)
-Base.getindex(::Id4{dim,T}, i::Integer, j::Integer, k::Integer, l::Integer) where {dim,T} =
-    δkron(T, i, k) * δkron(T, j, l)
-Base.Matrix(::Id4{dim,T}) where {dim,T} = Id2{dim * dim,T}()
+@inline Base.transpose(A::TensISO) = A
+@inline Base.adjoint(A::TensISO) = A
 
-
-
-struct J4{dim,T<:Number} <: AbstractArray{T,4} end
-@pure Base.size(::J4{dim}) where {dim} = (dim, dim, dim, dim)
-Base.getindex(::J4{dim,T}, i::Integer, j::Integer, k::Integer, l::Integer) where {dim,T} =
-    fJ4(T, i, j, k, l) / dim
-
-struct K4{dim,T<:Number} <: AbstractArray{T,4} end
-@pure Base.size(::K4{dim}) where {dim} = (dim, dim, dim, dim)
-Base.getindex(::K4{dim,T}, i::Integer, j::Integer, k::Integer, l::Integer) where {dim,T} =
-    fI4(T, i, j, k, l) - fJ4(T, i, j, k, l) / dim
-
-
-struct Isotropic4{dim,T<:Number} <: AbstractArray{T,4}
-    aJ::T
-    aK::T
-    function Isotropic4{dim}(aJ::T, aK::T) where {dim,T}
-        if aJ == one(T) && aK == one(T)
-            return I4{dim,T}()
-        elseif aJ == one(T) && aK == zero(T)
-            return J4{dim,T}()
-        elseif aJ == zero(T) && aK == one(T)
-            return K4{dim,T}()
-        else
-            return new{dim,T}(aJ, aK)
-        end
-    end
-end
-@pure Base.size(::Isotropic4{dim}) where {dim} = (dim, dim, dim, dim)
-Base.getindex(
-    A::Isotropic4{dim,T},
-    i::Integer,
-    j::Integer,
-    k::Integer,
-    l::Integer,
-) where {dim,T} = (A.aJ - A.aK) * fJ4(T, i, j, k, l) / dim + A.aK * fI4(T, i, j, k, l)
-
-const AllIsotropic4{dim,T} = Union{I4{dim,T},J4{dim,T},K4{dim,T},Isotropic4{dim,T}}
-const AllIsotropic{dim,T} = Union{AllIsotropic2{dim,T},AllIsotropic4{dim,T}}
-
-aJ(A::Isotropic4) = A.aJ
-aK(A::Isotropic4) = A.aK
-aJ(::I4{dim,T}) where {dim,T} = one(T)
-aK(::I4{dim,T}) where {dim,T} = one(T)
-aJ(::J4{dim,T}) where {dim,T} = one(T)
-aK(::J4{dim,T}) where {dim,T} = zero(T)
-aJ(::K4{dim,T}) where {dim,T} = zero(T)
-aK(::K4{dim,T}) where {dim,T} = one(T)
-
-@inline Base.:*(α::Number, A::AllIsotropic4{dim}) where {dim} =
-    Isotropic4{dim}(α * aJ(A), α * aK(A))
-@inline Base.:*(A::AllIsotropic4{dim}, α::Number) where {dim} =
-    Isotropic4{dim}(aJ(A) * α, aK(A) * α)
-@inline Base.:/(A::AllIsotropic4{dim}, α::Number) where {dim} =
-    Isotropic4{dim}(aJ(A) / α, aK(A) / α)
-for OP in (:+, :-, :*)
-    @eval @inline Base.$OP(A1::AllIsotropic4{dim}, A2::AllIsotropic4{dim}) where {dim} =
-        Isotropic4{dim}($OP(aJ(A1), aJ(A2)), $OP(aK(A1), aK(A2)))
-    @eval @inline Base.$OP(A1::AllIsotropic4{dim}, A2::UniformScaling) where {dim} =
-        Isotropic4{dim}($OP(aJ(A1), A2.λ), $OP(aK(A1), A2.λ))
-    @eval @inline Base.$OP(A1::UniformScaling, A2::AllIsotropic4{dim}) where {dim} =
-        Isotropic4{dim}($OP(A1.λ, aJ(A2)), $OP(A1.λ, aK(A2)))
-end
-for OP in (:(==), :(<=), :(>=), :(<), :(>))
-    @eval @inline Base.$OP(A1::AllIsotropic4{dim}, A2::AllIsotropic4{dim}) where {dim} =
-        $OP(aJ(A1), aJ(A2)) && $OP(aK(A1), aK(A2))
-end
-@inline Base.inv(A::AllIsotropic4{dim,T}) where {dim,T} =
-    Isotropic4{dim}(one(T) / aJ(A), one(T) / aK(A))
-
-
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic4, ::Val{-1}) = inv(A)
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic4, ::Val{0}) = one(A)
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic4, ::AllIsotropic{1}) = A
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic4{dim,T}, ::Val{p}) where {dim,T,p} =
-    Isotropic4{dim}(aJ(A)^(p), aK(A)^(p))
-
-
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic2, ::Val{-1}) = inv(A)
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic2, ::Val{0}) = one(A)
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic2, ::AllIsotropic{1}) = A
-@inline Base.literal_pow(::typeof(^), A::AllIsotropic2{dim,T}, ::Val{p}) where {dim,T,p} =
-    Isotropic2{dim}(λ(A)^(p))
-
-@inline Base.transpose(A::AllIsotropic{dim}) where {dim} = A
-@inline Base.adjoint(A::AllIsotropic{dim}) where {dim} = A
-
-@pure order(::AllIsotropic2) = 2
-@pure order(::AllIsotropic4) = 4
-
-
-function Base.display(A::AllIsotropic4{dim,T}) where {dim,T}
-    aj = aJ(A)
-    ak = aK(A)
-    print("($(aj)) 𝕁 + ($(ak)) 𝕂")
+function Base.display(A::TensISO{4,dim,T}) where {dim,T}
+    print("(",A.data[1],") 𝕁 + (",A.data[2],") 𝕂")
 end
 
-
-
-for OP in (:(simplify), :(factor), :(subs))
-    @eval SymPy.$OP(A::AllIsotropic2{dim,Sym}, args...; kwargs...) where {dim} =
-        Isotropic2{dim}($OP(λ(A), args...; kwargs...))
-    @eval SymPy.$OP(A::AllIsotropic4{dim,Sym}, args...; kwargs...) where {dim} =
-        Isotropic4{dim}($OP(aJ(A), args...; kwargs...), $OP(aK(A), args...; kwargs...))
+for OP in (:(simplify), :(factor), :(subs), :(diff))
+    @eval SymPy.$OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+        TensISO{dim}($OP.(getdata(A), args...; kwargs...))
 end
 
 for OP in (:(trigsimp), :(expand_trig))
-    @eval $OP(A::AllIsotropic2{dim,Sym}, args...; kwargs...) where {dim} =
-        Isotropic2{dim}(sympy.$OP(λ(A), args...; kwargs...))
-    @eval $OP(A::AllIsotropic4{dim,Sym}, args...; kwargs...) where {dim} = Isotropic4{dim}(
-        sympy.$OP(aJ(A), args...; kwargs...),
-        sympy.$OP(aK(A), args...; kwargs...),
-    )
+    @eval $OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+        TensISO{dim}(sympy.$OP.(getdata(A), args...; kwargs...))
 end
 
 """
@@ -207,14 +95,12 @@ end
 
 Kelvin-Mandel vector or matrix representation
 """
-KM(A::AllIsotropic{dim}) where {dim} = tomandel(SymmetricTensor{order(A),dim}(A))
+KM(A::TensISO{order,dim}) where {order,dim} = tomandel(SymmetricTensor{order,dim}(A))
 
-@inline Base.one(::AllIsotropic2{dim,T}) where {dim,T} = Id2{dim,T}()
-@inline Base.one(::AllIsotropic4{dim,T}) where {dim,T} = I4{dim,T}()
+TO BE CONTINUED
 
-
-Tensors.otimes(A::AllIsotropic2{dim}, B::AllIsotropic2{dim}) where {dim} =
-    Isotropic4{dim}(dim * λ(A) * λ(B), zero(eltype(A)))
+Tensors.otimes(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
+    TensISO{dim}(dim * λ(A) * λ(B), zero(eltype(A)))
 
 scontract(A::AllIsotropic2{dim}, B::AllIsotropic2{dim}) where {dim} =
     Isotropic2{dim}(λ(A) * λ(B))
