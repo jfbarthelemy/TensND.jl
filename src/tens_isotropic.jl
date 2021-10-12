@@ -1,8 +1,7 @@
 struct TensISO{order,dim,T,N} <: AbstractTens{order,dim,T}
     data::NTuple{N,T}
     TensISO{dim}(λ::T) where {dim,T} = new{2,dim,T,1}((λ,))
-    TensISO{dim}(α::T1, β::T2) where {dim,T1,T2} =
-        new{4,dim,promote_type(T1, T2),2}((α, β))
+    TensISO{dim}(α::T1, β::T2) where {dim,T1,T2} = new{4,dim,promote_type(T1, T2),2}((α, β))
     TensISO{dim}(data::NTuple{N,T}) where {dim,N,T} = TensISO{dim}(data...)
     TensISO{order,dim,T}() where {order,dim,T} =
         new{order,dim,T,order ÷ 2}(ntuple(_ -> one(T), Val(order ÷ 2)))
@@ -33,51 +32,166 @@ function Base.replace_in_print_matrix(
     i == j ? s : Base.replace_with_centered_mark(s)
 end
 
-TensId2(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{2, dim, T}()
-TensId4(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{4, dim, T}()
-TensJ4(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{dim}(one(T),zero(T))
-TensK4(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensISO{dim}(zero(T),one(T))
-ISO(::Val{dim}, ::Val{T}) where {dim,T<:Number} = TensId4(Val(dim),Val(T)), TensJ4(Val(dim),Val(T)), TensK4(Val(dim),Val(T))
+"""
+    tensId2(::Val{dim}, ::Val{T}) where {dim,T<:Number}
+    t𝟏(::Val{dim}, ::Val{T}) where {dim,T<:Number}
 
-for f ∈ (:TensId2, :TensId4, :TensJ4, :TensJ4, :BaseISO)
-    @eval $f() = $f(Val(3), Val(Sym))
-end
+Identity tensor of second order `𝟏ᵢⱼ = δᵢⱼ = 1 if i=j otherwise 0`
+
+# Examples
+```julia
+julia> 𝟏 = t𝟏() ; KM(𝟏)
+6-element Vector{Sym}:
+ 1
+ 1
+ 1
+ 0
+ 0
+ 0
+
+julia> 𝟏.data
+3×3 SymmetricTensor{2, 3, Sym, 6}:
+ 1  0  0
+ 0  1  0
+ 0  0  1
+```  
+"""
+tensId2(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} = TensISO{2,dim,T}()
+
+"""
+    tensId4(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
+    t𝕀(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
+
+Symmetric identity tensor of fourth order  `𝕀 = 𝟏 ⊠ˢ 𝟏` i.e. `(𝕀)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2`
+
+# Examples
+```julia
+julia> 𝕀 = t𝕀() ; KM(𝕀)
+6×6 Matrix{Sym}:
+ 1  0  0  0  0  0
+ 0  1  0  0  0  0
+ 0  0  1  0  0  0
+ 0  0  0  1  0  0
+ 0  0  0  0  1  0
+ 0  0  0  0  0  1
+``` 
+"""
+tensId4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} = TensISO{4,dim,T}()
+
+"""
+    tensJ4(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
+    t𝕁(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
+
+Spherical projector of fourth order  `𝕁 = (𝟏 ⊗ 𝟏) / dim` i.e. `(𝕁)ᵢⱼₖₗ = δᵢⱼδₖₗ/dim`
+
+# Examples
+```julia
+julia> 𝕁 = t𝕁() ; KM(𝕁)
+6×6 Matrix{Sym}:
+ 1/3  1/3  1/3  0  0  0
+ 1/3  1/3  1/3  0  0  0
+ 1/3  1/3  1/3  0  0  0
+   0    0    0  0  0  0
+   0    0    0  0  0  0
+   0    0    0  0  0  0
+``` 
+"""
+tensJ4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} =
+    TensISO{dim}(one(T), zero(T))
+
+"""
+    tensK4(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
+    t𝕂(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
+
+Deviatoric projector of fourth order  `𝕂 = 𝕀 - 𝕁` i.e. `(𝕂)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2 - δᵢⱼδₖₗ/dim`
+
+# Examples
+```julia
+julia> 𝕂 = t𝕂() ; KM(𝕂)
+6×6 Matrix{Sym}:
+  2/3  -1/3  -1/3  0  0  0
+ -1/3   2/3  -1/3  0  0  0
+ -1/3  -1/3   2/3  0  0  0
+    0     0     0  1  0  0
+    0     0     0  0  1  0
+    0     0     0  0  0  1
+``` 
+"""
+tensK4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} =
+    TensISO{dim}(zero(T), one(T))
+
+
+"""
+    ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
+
+Returns the three fourth-order isotropic tensors `𝕀, 𝕁, 𝕂`
+
+# Examples
+```julia
+julia> 𝕀, 𝕁, 𝕂 = ISO() ;
+``` 
+"""
+ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} =
+    tensId4(Val(dim), Val(T)), tensJ4(Val(dim), Val(T)), tensK4(Val(dim), Val(T))
+
+const t𝟏 = tensId2
+const t𝕀 = tensId4
+const t𝕁 = tensJ4
+const t𝕂 = tensK4
 
 getdata(t::TensISO) = t.data
 getarray(t::TensISO) = Array(t)
 getbasis(::TensISO{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
 getvar(::TensISO{order}) where {order} = ntuple(_ -> :cont, Val(order))
 getvar(::TensISO, i::Int) = :cont
+components(t::TensISO) = getarray(t)
+components(t::TensISO, ::NTuple) = getarray(t)
 
-@inline Base.:*(α::Number, A::TensISO{order,dim}) where {order,dim} = TensISO{dim}(α .* getdata(A))
-@inline Base.:*(A::TensISO{order,dim}, α::Number) where {order,dim} = TensISO{dim}(getdata(A) .* α)
-@inline Base.:/(A::TensISO{order,dim}, α::Number) where {order,dim} = TensISO{dim}(getdata(A) ./ α)
+@inline Base.:*(α::Number, A::TensISO{order,dim}) where {order,dim} =
+    TensISO{dim}(α .* getdata(A))
+@inline Base.:*(A::TensISO{order,dim}, α::Number) where {order,dim} =
+    TensISO{dim}(getdata(A) .* α)
+@inline Base.:/(A::TensISO{order,dim}, α::Number) where {order,dim} =
+    TensISO{dim}(getdata(A) ./ α)
 for OP in (:+, :-, :*)
-    @eval @inline Base.$OP(A1::TensISO{order,dim}, A2::TensISO{order,dim}) where {order, dim} =
-        TensISO{dim}($OP.(getdata(A1), getdata(A2)))
-    @eval @inline Base.$OP(A1::TensISO{order,dim, T, N}, A2::UniformScaling) where {order, dim, T, N} =
-        TensISO{dim}($OP.(getdata(A1), ntuple(_ -> A2.λ, N)))
-    @eval @inline Base.$OP(A1::UniformScaling, A2::TensISO{order,dim}) where {order, dim, T, N} =
-        TensISO{dim}($OP.(ntuple(_ -> A1.λ, N), getdata(A1)))
+    @eval @inline Base.$OP(
+        A1::TensISO{order,dim},
+        A2::TensISO{order,dim},
+    ) where {order,dim} = TensISO{dim}($OP.(getdata(A1), getdata(A2)))
+    @eval @inline Base.$OP(
+        A1::TensISO{order,dim,T,N},
+        A2::UniformScaling,
+    ) where {order,dim,T,N} = TensISO{dim}($OP.(getdata(A1), ntuple(_ -> A2.λ, N)))
+    @eval @inline Base.$OP(
+        A1::UniformScaling,
+        A2::TensISO{order,dim},
+    ) where {order,dim,T,N} = TensISO{dim}($OP.(ntuple(_ -> A1.λ, N), getdata(A2)))
 end
 for OP in (:(==), :(<=), :(>=), :(<), :(>))
-    @eval @inline Base.$OP(A1::TensISO{order,dim}, A2::TensISO{order,dim}) where {order, dim} =
-        all($OP.(getdata(A1), getdata(A2)))
+    @eval @inline Base.$OP(
+        A1::TensISO{order,dim},
+        A2::TensISO{order,dim},
+    ) where {order,dim} = all($OP.(getdata(A1), getdata(A2)))
 end
-@inline Base.inv(A::TensISO{order,dim, T}) where {order,dim,T} = TensISO{dim}(one(T) ./ getdata(A))
-@inline Base.one(A::TensISO{order,dim, T}) where {order,dim,T} = TensISO{dim}(one.(getdata(A)))
+@inline Base.inv(A::TensISO{order,dim,T}) where {order,dim,T} =
+    TensISO{dim}(one(T) ./ getdata(A))
+@inline Base.one(A::TensISO{order,dim,T}) where {order,dim,T} =
+    TensISO{dim}(one.(getdata(A)))
 
 @inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{-1}) = inv(A)
 @inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{0}) = one(A)
 @inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{1}) = A
-@inline Base.literal_pow(::typeof(^), A::TensISO{order,dim,T}, ::Val{p}) where {order,dim,T,p} =
-    TensISO{dim}(getdata(A).^(p))
+@inline Base.literal_pow(
+    ::typeof(^),
+    A::TensISO{order,dim,T},
+    ::Val{p},
+) where {order,dim,T,p} = TensISO{dim}(getdata(A) .^ (p))
 
 @inline Base.transpose(A::TensISO) = A
 @inline Base.adjoint(A::TensISO) = A
 
 function Base.display(A::TensISO{4,dim,T}) where {dim,T}
-    print("(",A.data[1],") 𝕁 + (",A.data[2],") 𝕂")
+    print("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
 end
 
 for OP in (:(simplify), :(factor), :(subs), :(diff))
@@ -97,65 +211,108 @@ Kelvin-Mandel vector or matrix representation
 """
 KM(A::TensISO{order,dim}) where {order,dim} = tomandel(SymmetricTensor{order,dim}(A))
 
-TO BE CONTINUED
-
 Tensors.otimes(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
-    TensISO{dim}(dim * λ(A) * λ(B), zero(eltype(A)))
+    TensISO{dim}(dim * getdata(A)[1] * getdata(B)[1], zero(eltype(A)))
 
-scontract(A::AllIsotropic2{dim}, B::AllIsotropic2{dim}) where {dim} =
-    Isotropic2{dim}(λ(A) * λ(B))
-scontract(A::AllIsotropic2{dim}, B::AbstractArray) where {dim} = λ(A) * B
-scontract(A::AbstractArray, B::AllIsotropic2{dim}) where {dim} = A * λ(B)
+scontract(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
+    TensISO{dim}(getdata(A)[1] * getdata(B)[1])
 
-LinearAlgebra.dot(A::AllIsotropic2{dim}, B::AllIsotropic2{dim}) where {dim} =
-    scontract(A, B)
-LinearAlgebra.dot(A::AllIsotropic2{dim}, B::AbstractArray) where {dim} = scontract(A, B)
-LinearAlgebra.dot(A::AbstractArray, B::AllIsotropic2{dim}) where {dim} = scontract(A, B)
+scontract(A::TensISO{2,dim}, B::AbstractArray) where {dim} = getdata(A)[1] * B
+scontract(A::AbstractArray, B::TensISO{2,dim}) where {dim} = A * getdata(B)[1]
+|
+LinearAlgebra.dot(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} = scontract(A, B)
+LinearAlgebra.dot(A::TensISO{2,dim}, B::AbstractArray) where {dim} = scontract(A, B)
+LinearAlgebra.dot(A::AbstractArray, B::TensISO{2,dim}) where {dim} = scontract(A, B)
+LinearAlgebra.dot(A::TensISO{2,dim}, B::AbstractTens) where {dim} = scontract(A, B)
+LinearAlgebra.dot(A::AbstractTens, B::TensISO{2,dim}) where {dim} = scontract(A, B)
 
-Tensors.dcontract(A::AllIsotropic2{dim}, B::AllIsotropic2{dim}) where {dim} =
-    dim * λ(A) * λ(B)
-Tensors.dcontract(A::AllIsotropic4{dim}, B::AllIsotropic2{dim}) where {dim} =
-    Isotropic2{dim}(aJ(A) * λ(B))
-Tensors.dcontract(A::AllIsotropic2{dim}, B::AllIsotropic4{dim}) where {dim} =
-    Isotropic2{dim}(λ(A) * aJ(B))
-Tensors.dcontract(A::AllIsotropic4{dim}, B::AllIsotropic4{dim}) where {dim} =
-    Isotropic4{dim}(aJ(A) * aJ(B), aK(A) * aK(B))
-Tensors.dcontract(A::AllIsotropic4{dim}, B::AbstractArray) where {dim} =
-    aK(A) * B + (aJ(A) - aK(A)) * tr(B) * I / dim
-Tensors.dcontract(A::AbstractArray, B::AllIsotropic4{dim}) where {dim} =
-    A * aK(B) + tr(A) * (aJ(B) - aK(B)) * I / dim
+Tensors.dcontract(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
+    dim * getdata(A)[1] * getdata(B)[1]
+Tensors.dcontract(A::TensISO{4,dim}, B::TensISO{2,dim}) where {dim} =
+    TensISO{dim}(getdata(A)[1] * getdata(B)[1])
+Tensors.dcontract(A::TensISO{2,dim}, B::TensISO{4,dim}) where {dim} =
+    TensISO{dim}(getdata(A)[1] * getdata(B)[1])
+Tensors.dcontract(A::TensISO{4,dim}, B::TensISO{4,dim}) where {dim} =
+    TensISO{dim}(getdata(A)[1] * getdata(B)[1], getdata(A)[2] * getdata(B)[2])
+Tensors.dcontract(A::TensISO{2,dim}, B::AbstractMatrix) where {dim} = getdata(A)[1] * tr(B)
+Tensors.dcontract(A::AbstractMatrix, B::TensISO{2,dim}) where {dim} = tr(A) * getdata(B)[1]
+Tensors.dcontract(A::TensISO{2,dim}, B::AbstractTens{2}) where {dim} = getdata(A)[1] * tr(B)
+Tensors.dcontract(A::AbstractTens{2}, B::TensISO{2,dim}) where {dim} = tr(A) * getdata(B)[1]
+Tensors.dcontract(A::TensISO{4,dim}, B::AbstractMatrix) where {dim} =
+    getdata(A)[2] * B + (getdata(A)[1] - getdata(A)[2]) * tr(B) * I / dim
+Tensors.dcontract(A::AbstractMatrix, B::TensISO{4,dim}) where {dim} =
+    A * getdata(B)[2] + tr(A) * (getdata(B)[1] - getdata(B)[2]) * I / dim
+Tensors.dcontract(A::TensISO{4,dim}, B::AbstractTens{2}) where {dim} =
+    getdata(A)[2] * B + (getdata(A)[1] - getdata(A)[2]) * tr(B) * I / dim
+Tensors.dcontract(A::AbstractTens{2}, B::TensISO{4,dim}) where {dim} =
+    A * getdata(B)[2] + tr(A) * (getdata(B)[1] - getdata(B)[2]) * I / dim
 
 
 for order ∈ (2, 4)
     for OP ∈ (:+, :-, :*)
         @eval @inline Base.$OP(
             A1::AbstractTensor{$order,dim,T},
-            A2::UniformScaling,
+            A2::UniformScaling{T},
         ) where {dim,T<:Number} = $OP(A1, A2.λ * one(A1))
         @eval @inline Base.$OP(
-            A1::UniformScaling,
+            A1::UniformScaling{T},
             A2::AbstractTensor{$order,dim,T},
         ) where {dim,T<:Number} = $OP(A1.λ * one(A2), A2)
         @eval @inline Base.$OP(
             A1::AbstractTensor{$order,dim,Sym},
-            A2::UniformScaling,
+            A2::UniformScaling{Sym},
         ) where {dim} = $OP(A1, A2.λ * one(A1))
         @eval @inline Base.$OP(
-            A1::UniformScaling,
+            A1::UniformScaling{Sym},
             A2::AbstractTensor{$order,dim,Sym},
         ) where {dim} = $OP(A1.λ * one(A2), A2)
     end
 end
 
-Tensors.dotdot(v1::AbstractVector, S::AllIsotropic2{dim}, v2::AbstractVector) where {dim} =
-    λ(S) * v1 ⋅ v2
+Tensors.dotdot(v1::AbstractVector, S::TensISO{2,dim}, v2::AbstractVector) where {dim} =
+    getdata(S)[1] * v1 ⋅ v2
 
 
-Tensors.dotdot(v1::AbstractVector, S::AllIsotropic4{dim}, v2::AbstractVector) where {dim} =
-    (aJ(S) - aK(S)) * (v1 ⊗ v2) / dim + aK(S) * (v2 ⊗ v1 + v1 ⋅ v2 * I) / 2
+Tensors.dotdot(v1::AbstractVector, S::TensISO{4,dim}, v2::AbstractVector) where {dim} =
+    (getdata(S)[1] - getdata(S)[2]) * (v1 ⊗ v2) / dim +
+    getdata(S)[2] * (v2 ⊗ v1 + v1 ⋅ v2 * I) / 2
 
-Tensors.dotdot(a1::AbstractMatrix, S::AllIsotropic4{dim}, a2::AbstractMatrix) where {dim} =
-    (aJ(S) - aK(S)) * tr(a1) * tr(a2) / dim + aK(S) * a1 ⊡ a2
+Tensors.dotdot(a1::AbstractMatrix, S::TensISO{4,dim}, a2::AbstractMatrix) where {dim} =
+    (getdata(S)[1] - getdata(S)[2]) * tr(a1) * tr(a2) / dim + getdata(S)[2] * a1 ⊡ a2
 
-qcontract(A::AllIsotropic4{dim}, B::AllIsotropic4{dim}) where {dim} =
-    aJ(A) * aJ(B) + 5 * aK(A) * aK(B)
+qcontract(A::TensISO{4,dim}, B::TensISO{4,dim}) where {dim} =
+    getdata(A)[1] * getdata(B)[1] + 5 * getdata(A)[2] * getdata(B)[2]
+
+qcontract(A::AbstractArray{T,4}, B::TensISO{4,dim}) where {T,dim} =
+    (ein"ijij->"(A) + ein"ijji->"(A)) * getdata(B)[2] / 2 +
+    ein"iijj->"(A) * (getdata(B)[1] - getdata(B)[2]) / dim
+
+qcontract(A::TensISO{4,dim}, B::AbstractArray{T,4}) where {T,dim} =
+    getdata(A)[2] * (ein"ijij->"(B) + ein"ijji->"(B)) / 2 +
+    (getdata(A)[1] - getdata(A)[2]) * ein"iijj->"(B) / dim
+
+isotropify(A::AbstractMatrix) = TensISO{size(A)[1]}(tr(A))
+
+function isotropify(A::AbstractArray{T,4}) where {T}
+    dim = size(A)[1]
+    α = ein"iijj->"(A)[1] / dim
+    β = ((ein"ijij->"(A)[1] + ein"ijji->"(A)[1]) / 2 - α) / 5
+    return TensISO{dim}(α, β)
+end
+
+TensISO(A::AbstractArray) = isotropify(A)
+
+function projTens(::Val{:ISO}, A::AbstractArray)
+    norm = x -> simplify(√(sum(x .^ 2)))
+    nA = norm(A)
+    if nA == zero(eltype(A))
+        return zero(A), nA, nA
+    else
+        B = isotropify(A)
+        d = norm(B - A)
+        return B, d, d / nA
+    end
+end
+
+isISO(A::TensISO) = true
+isISO(A::AbstractArray) = isotropify(A) == A

@@ -25,123 +25,6 @@ julia> ε = LeviCivita(Sym)
 """
 LeviCivita(T::Type{<:Number} = Sym) = [T(T((i - j) * (j - k) * (k - i)) / T(2)) for i = 1:3, j = 1:3, k = 1:3]
 
-
-"""
-    tensId2(T::Type{<:Number} = Sym, dim = 3)
-    t𝟏(T::Type{<:Number} = Sym, dim = 3)
-
-Identity tensor of second order `𝟏ᵢⱼ = δᵢⱼ = 1 if i=j otherwise 0`
-
-# Examples
-```julia
-julia> 𝟏 = t𝟏() ; KM(𝟏)
-6-element Vector{Sym}:
- 1
- 1
- 1
- 0
- 0
- 0
-
-julia> 𝟏.data
-3×3 SymmetricTensor{2, 3, Sym, 6}:
- 1  0  0
- 0  1  0
- 0  0  1
-```  
-"""
-tensId2(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
-    Tensnd(one(SymmetricTensor{2,dim,T}), basis)
-
-"""
-    tensId4(T::Type{<:Number} = Sym, dim = 3)
-    t𝟙(T::Type{<:Number} = Sym, dim = 3)
-
-Identity tensor of fourth order  `𝟙 = 𝟏 ⊠ 𝟏` i.e. `(𝟙)ᵢⱼₖₗ = δᵢₖδⱼₗ`
-
-# Examples
-```julia
-julia> 𝟙 = t𝟙() ; KM(𝟙)
-9×9 Matrix{Sym}:
- 1  0  0  0  0  0  0  0  0
- 0  1  0  0  0  0  0  0  0
- 0  0  1  0  0  0  0  0  0
- 0  0  0  1  0  0  0  0  0
- 0  0  0  0  1  0  0  0  0
- 0  0  0  0  0  1  0  0  0
- 0  0  0  0  0  0  1  0  0
- 0  0  0  0  0  0  0  1  0
- 0  0  0  0  0  0  0  0  1
-``` 
-"""
-tensId4(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
-    Tensnd(one(Tensor{4,dim,T}), basis)
-
-"""
-    tensId4s(T::Type{<:Number} = Sym, dim = 3)
-    t𝕀(T::Type{<:Number} = Sym, dim = 3)
-
-Symmetric identity tensor of fourth order  `𝕀 = 𝟏 ⊠ˢ 𝟏` i.e. `(𝕀)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2`
-
-# Examples
-```julia
-julia> 𝕀 = t𝕀() ; KM(𝕀)
-6×6 Matrix{Sym}:
- 1  0  0  0  0  0
- 0  1  0  0  0  0
- 0  0  1  0  0  0
- 0  0  0  1  0  0
- 0  0  0  0  1  0
- 0  0  0  0  0  1
-``` 
-"""
-tensId4s(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
-    Tensnd(one(SymmetricTensor{4,dim,T}), basis)
-
-"""
-    tensJ4(T::Type{<:Number} = Sym, dim = 3)
-    t𝕁(T::Type{<:Number} = Sym, dim = 3)
-
-Spherical projector of fourth order  `𝕁 = (𝟏 ⊗ 𝟏) / dim` i.e. `(𝕁)ᵢⱼₖₗ = δᵢⱼδₖₗ/dim`
-
-# Examples
-```julia
-julia> 𝕁 = t𝕁() ; KM(𝕁)
-6×6 Matrix{Sym}:
- 1/3  1/3  1/3  0  0  0
- 1/3  1/3  1/3  0  0  0
- 1/3  1/3  1/3  0  0  0
-   0    0    0  0  0  0
-   0    0    0  0  0  0
-   0    0    0  0  0  0
-``` 
-"""
-function tensJ4(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}())
-    δ = one(SymmetricTensor{2,dim,T})
-    return Tensnd(δ ⊗ δ / dim, basis)
-end
-
-"""
-    tensK4(T::Type{<:Number} = Sym, dim = 3)
-    t𝕂(T::Type{<:Number} = Sym, dim = 3)
-
-Deviatoric projector of fourth order  `𝕂 = 𝕀 - 𝕁` i.e. `(𝕂)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2 - δᵢⱼδₖₗ/dim`
-
-# Examples
-```julia
-julia> 𝕂 = t𝕂() ; KM(𝕂)
-6×6 Matrix{Sym}:
-  2/3  -1/3  -1/3  0  0  0
- -1/3   2/3  -1/3  0  0  0
- -1/3  -1/3   2/3  0  0  0
-    0     0     0  1  0  0
-    0     0     0  0  1  0
-    0     0     0  0  0  1
-``` 
-"""
-tensK4(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) = tensId4s(T, dim; basis = basis) - tensJ4(T, dim ; basis = basis)
-
-
 """
     𝐞(i::Int, dim::Int = 3, T::Type{<:Number} = Sym)
 
@@ -162,8 +45,8 @@ Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
  0  0  1
 ``` 
 """
-𝐞(i::Int, dim::Int = 3, T::Type{<:Number} = Sym) =
-    Tensnd(Vec{dim}(j -> j == i ? one(T) : zero(T)))
+𝐞(::Val{i}, ::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {i, dim, T<:Number} =
+    Tens(Vec{dim}(j -> j == i ? one(T) : zero(T)))
 
 """
     𝐞ᵖ(i::Int, θ::T = zero(Sym); canonical = false)
@@ -301,23 +184,9 @@ function 𝐞ˢ(
 end
 
 
-for eb in (:𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
+for eb in (:𝐞, :𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
     @eval $eb(i::Int, args...; kwargs...) = $eb(Val(i), args...; kwargs...)
 end
-
-
-"""
-    init_isotropic(T::Type{<:Number} = Sym)
-
-Returns the isotropic tensors
-
-# Examples
-```julia
-julia> 𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic() ;
-``` 
-"""
-init_isotropic(T::Type{<:Number} = Sym, dim = 3 ; basis = CanonicalBasis{dim,T}()) =
-t𝟏(T, dim ; basis = basis), t𝟙(T, dim ; basis = basis), t𝕀(T, dim ; basis = basis), t𝕁(T, dim ; basis = basis), t𝕂(T, dim ; basis = basis)
 
 
 """
@@ -414,15 +283,8 @@ true
 ```
 """
 function rot6(θ, ϕ = 0, ψ = 0)
-    R = Tensnd(rot3(θ, ϕ, ψ))
+    R = TensCanonical(rot3(θ, ϕ, ψ))
     return sboxtimes(R, R)
 end
 
 
-
-
-const t𝟏 = tensId2
-const t𝟙 = tensId4
-const t𝕀 = tensId4s
-const t𝕁 = tensJ4
-const t𝕂 = tensK4

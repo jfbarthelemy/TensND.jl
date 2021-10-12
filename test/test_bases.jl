@@ -1,8 +1,3 @@
-opequal(x,y) = x ≈ y
-opequal(x::Sym,y) = x == y
-opequal(x::AbstractArray{Sym},y) = x == y
-
-
 @testsection "Bases" begin
     for T ∈ (Sym, Float64)
         @testsection "type $T" begin

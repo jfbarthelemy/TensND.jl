@@ -1,6 +1,7 @@
 @testsection "Special tensors" begin
     # Isotropic stiffness and compliance tensors
-    𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic()
+    𝟏 = t𝟏()
+    𝕀, 𝕁, 𝕂 = ISO()
     E, ν = symbols("E ν", real = true)
     λ = E * ν / ((1 + ν) * (1 - 2ν))
     μ = E / (2(1 + ν))
@@ -17,7 +18,7 @@
     @test invKM(KM(𝕊)) == 𝕊
     
     # Acoustic tensor
-    n = Tensnd(Sym[0, 0, 1])
+    n = Tens(Sym[0, 0, 1])
     Eᵒᵉᵈᵒ = E * (1 - ν) / ((1 + ν) * (1 - 2ν))
     Kref = simplify.([μ 0 0; 0 μ 0; 0 0 Eᵒᵉᵈᵒ])
     @test factor.(n ⋅ ℂ ⋅ n) == factor.(dotdot(n, ℂ, n)) == Kref
@@ -25,12 +26,11 @@
     for i ∈ 1:3, j ∈ 1:3
         @eval $(Symbol("ε$i$j")) = symbols($"ε$i$j", real = true)
     end
-    𝛆 = Tensnd(SymmetricTensor{2,3}((i, j) -> eval(Symbol("ε$i$j"))))
+    𝛆 = Tens(SymmetricTensor{2,3}((i, j) -> eval(Symbol("ε$i$j"))))
     𝛔 = ℂ ⊡ 𝛆
-    @test factor.(𝛔) == factor.(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
+    @test factor(𝛔) == factor(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
     @test factor(simplify(𝛔 ⊡ 𝛆)) == factor(simplify(λ * tr(𝛆)^2 + 2μ * 𝛆 ⊡ 𝛆))
 
-    @test 𝟙 == 𝟏 ⊠ 𝟏
     @test 𝕀 == 𝟏 ⊠ˢ 𝟏
     @test 3𝕁 == 𝟏 ⊗ 𝟏
     @test 𝕀 ⊙ 𝕀 == 6
@@ -45,7 +45,7 @@
     θ, ϕ, ψ = symbols("θ ϕ ψ", real = true) ;
     cθ, cϕ, cψ, sθ, sϕ, sψ = symbols("cθ cϕ cψ sθ sϕ sψ", real = true) ;
     d = Dict(cos(θ) => cθ, cos(ϕ) => cϕ, cos(ψ) => cψ, sin(θ) => sθ, sin(ϕ) => sϕ, sin(ψ) => sψ) ;
-    R = Tensnd(subs.(rot3(θ, ϕ, ψ),d...)) ;
+    R = Tens(subs.(rot3(θ, ϕ, ψ),d...)) ;
     R6 = invKM(subs.(KM(rot6(θ, ϕ, ψ)),d...)) ;
     @test R6 == R ⊠ˢ R
 
