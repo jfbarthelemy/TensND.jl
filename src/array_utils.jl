@@ -1,3 +1,5 @@
+const AbstractArray4{T} = AbstractArray{T,4}
+
 δkron(T::Type{<:Number}, i::Integer, j::Integer) = i == j ? one(T) : zero(T)
 
 struct Id2{dim,T<:Number} <: AbstractMatrix{T} end

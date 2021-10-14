@@ -144,8 +144,9 @@ getarray(t::TensISO) = Array(t)
 getbasis(::TensISO{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
 getvar(::TensISO{order}) where {order} = ntuple(_ -> :cont, Val(order))
 getvar(::TensISO, i::Int) = :cont
-components(t::TensISO) = getarray(t)
-components(t::TensISO, ::NTuple) = getarray(t)
+components(t::TensISO{order, dim, T}) where {order, dim, T} = getarray(t)
+components(t::TensISO{order, dim, T}, ::OrthonormalBasis{dim, T}, ::NTuple{order, Symbol}) where {order, dim, T} = getarray(t)
+components(t::TensISO{order, dim, T}, ::NTuple{order, Symbol}) where {order, dim, T} = getarray(t)
 
 @inline Base.:*(α::Number, A::TensISO{order,dim}) where {order,dim} =
     TensISO{dim}(α .* getdata(A))
@@ -219,12 +220,12 @@ scontract(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
 
 scontract(A::TensISO{2,dim}, B::AbstractArray) where {dim} = getdata(A)[1] * B
 scontract(A::AbstractArray, B::TensISO{2,dim}) where {dim} = A * getdata(B)[1]
-|
+
 LinearAlgebra.dot(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} = scontract(A, B)
-LinearAlgebra.dot(A::TensISO{2,dim}, B::AbstractArray) where {dim} = scontract(A, B)
-LinearAlgebra.dot(A::AbstractArray, B::TensISO{2,dim}) where {dim} = scontract(A, B)
-LinearAlgebra.dot(A::TensISO{2,dim}, B::AbstractTens) where {dim} = scontract(A, B)
-LinearAlgebra.dot(A::AbstractTens, B::TensISO{2,dim}) where {dim} = scontract(A, B)
+for T ∈ (AbstractArray, AbstractTens)
+    @eval LinearAlgebra.dot(A::TensISO{2,dim}, B::$T) where {dim} = scontract(A, B)
+    @eval LinearAlgebra.dot(A::$T, B::TensISO{2,dim}) where {dim} = scontract(A, B)
+end
 
 Tensors.dcontract(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
     dim * getdata(A)[1] * getdata(B)[1]
@@ -234,18 +235,21 @@ Tensors.dcontract(A::TensISO{2,dim}, B::TensISO{4,dim}) where {dim} =
     TensISO{dim}(getdata(A)[1] * getdata(B)[1])
 Tensors.dcontract(A::TensISO{4,dim}, B::TensISO{4,dim}) where {dim} =
     TensISO{dim}(getdata(A)[1] * getdata(B)[1], getdata(A)[2] * getdata(B)[2])
-Tensors.dcontract(A::TensISO{2,dim}, B::AbstractMatrix) where {dim} = getdata(A)[1] * tr(B)
-Tensors.dcontract(A::AbstractMatrix, B::TensISO{2,dim}) where {dim} = tr(A) * getdata(B)[1]
-Tensors.dcontract(A::TensISO{2,dim}, B::AbstractTens{2}) where {dim} = getdata(A)[1] * tr(B)
-Tensors.dcontract(A::AbstractTens{2}, B::TensISO{2,dim}) where {dim} = tr(A) * getdata(B)[1]
-Tensors.dcontract(A::TensISO{4,dim}, B::AbstractMatrix) where {dim} =
-    getdata(A)[2] * B + (getdata(A)[1] - getdata(A)[2]) * tr(B) * I / dim
-Tensors.dcontract(A::AbstractMatrix, B::TensISO{4,dim}) where {dim} =
-    A * getdata(B)[2] + tr(A) * (getdata(B)[1] - getdata(B)[2]) * I / dim
-Tensors.dcontract(A::TensISO{4,dim}, B::AbstractTens{2}) where {dim} =
-    getdata(A)[2] * B + (getdata(A)[1] - getdata(A)[2]) * tr(B) * I / dim
-Tensors.dcontract(A::AbstractTens{2}, B::TensISO{4,dim}) where {dim} =
-    A * getdata(B)[2] + tr(A) * (getdata(B)[1] - getdata(B)[2]) * I / dim
+
+Tensors.dcontract(A::TensISO{2}, B::AbstractTens) = getdata(A)[1] * contract(B, 1, 2)
+Tensors.dcontract(A::AbstractTens{order}, B::TensISO{2}) where {order} = contract(A, order - 1, order) * getdata(B)[1] 
+
+
+# TODO
+# A:ISO for upper orders for order 2 and 4
+# Case of Tensors with abitrary bases
+# Idem for qcontract
+
+
+Tensors.dcontract(A::TensISO{4,dim}, B::AbstractTens) where {dim} =
+        getdata(A)[2] * B + (getdata(A)[1] - getdata(A)[2]) * tr(B) * I / dim
+Tensors.dcontract(A::AbstractTens, B::TensISO{4,dim}) where {dim} =
+        A * getdata(B)[2] + tr(A) * (getdata(B)[1] - getdata(B)[2]) * I / dim
 
 
 for order ∈ (2, 4)
@@ -269,27 +273,27 @@ for order ∈ (2, 4)
     end
 end
 
-Tensors.dotdot(v1::AbstractVector, S::TensISO{2,dim}, v2::AbstractVector) where {dim} =
+Tensors.dotdot(v1::AbstractTens{1}, S::TensISO{2,dim}, v2::AbstractTens{1}) where {dim} =
     getdata(S)[1] * v1 ⋅ v2
-
-
-Tensors.dotdot(v1::AbstractVector, S::TensISO{4,dim}, v2::AbstractVector) where {dim} =
+Tensors.dotdot(v1::AbstractTens{1}, S::TensISO{4,dim}, v2::AbstractTens{1}) where {dim} =
     (getdata(S)[1] - getdata(S)[2]) * (v1 ⊗ v2) / dim +
     getdata(S)[2] * (v2 ⊗ v1 + v1 ⋅ v2 * I) / 2
 
-Tensors.dotdot(a1::AbstractMatrix, S::TensISO{4,dim}, a2::AbstractMatrix) where {dim} =
+Tensors.dotdot(a1::AbstractTens{2}, S::TensISO{4,dim}, a2::AbstractTens{2}) where {dim} =
     (getdata(S)[1] - getdata(S)[2]) * tr(a1) * tr(a2) / dim + getdata(S)[2] * a1 ⊡ a2
+
 
 qcontract(A::TensISO{4,dim}, B::TensISO{4,dim}) where {dim} =
     getdata(A)[1] * getdata(B)[1] + 5 * getdata(A)[2] * getdata(B)[2]
 
-qcontract(A::AbstractArray{T,4}, B::TensISO{4,dim}) where {T,dim} =
-    (ein"ijij->"(A) + ein"ijji->"(A)) * getdata(B)[2] / 2 +
-    ein"iijj->"(A) * (getdata(B)[1] - getdata(B)[2]) / dim
-
-qcontract(A::TensISO{4,dim}, B::AbstractArray{T,4}) where {T,dim} =
-    getdata(A)[2] * (ein"ijij->"(B) + ein"ijji->"(B)) / 2 +
-    (getdata(A)[1] - getdata(A)[2]) * ein"iijj->"(B) / dim
+for T ∈ (AbstractArray4, AbstractTens{4})
+    @eval qcontract(A::$T, B::TensISO{4,dim}) where {dim} =
+        (ein"ijij->"(A) + ein"ijji->"(A)) * getdata(B)[2] / 2 +
+        ein"iijj->"(A) * (getdata(B)[1] - getdata(B)[2]) / dim
+    @eval qcontract(A::TensISO{4,dim}, B::$T) where {dim} =
+        getdata(A)[2] * (ein"ijij->"(B) + ein"ijji->"(B)) / 2 +
+        (getdata(A)[1] - getdata(A)[2]) * ein"iijj->"(B) / dim
+end
 
 isotropify(A::AbstractMatrix) = TensISO{size(A)[1]}(tr(A))
 
@@ -302,7 +306,7 @@ end
 
 TensISO(A::AbstractArray) = isotropify(A)
 
-function projTens(::Val{:ISO}, A::AbstractArray)
+function proj_array(::Val{:ISO}, A::AbstractArray)
     norm = x -> simplify(√(sum(x .^ 2)))
     nA = norm(A)
     if nA == zero(eltype(A))

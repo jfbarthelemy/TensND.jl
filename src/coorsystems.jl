@@ -2,7 +2,7 @@ abstract type AbstractCoorSystem{dim,T<:Number} <: Any end
 
 
 """
-    ∂(t::AbstractTensnd{order,dim,Sym,A},xᵢ::Sym)
+    ∂(t::AbstractTens{order,dim,Sym,A},xᵢ::Sym)
 
 Returns the derivative of the tensor `t` with respect to the variable `x_i`
 
@@ -15,7 +15,7 @@ julia> ∂(𝐞ʳ, ϕ) == sin(θ) * 𝐞ᵠ
 true
 
 julia> ∂(𝐞ʳ ⊗ 𝐞ʳ,θ)
-TensND.TensndRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
+Tens.TensRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 # data: 3×3 SymmetricTensor{2, 3, Sym, 6}:
  0  0  1
  0  0  0
@@ -27,16 +27,16 @@ TensND.TensndRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 # var: (:cont, :cont)
 ```
 """
-∂(t::AbstractTensnd{order,dim,Sym,A}, xᵢ...) where {order,dim,A} =
-    change_tens(Tensnd(diff.(components_canon(t), xᵢ...)), getbasis(t), getvar(t))
+∂(t::AbstractTens{order,dim,Sym,A}, xᵢ...) where {order,dim,A} =
+    change_tens(Tens(diff.(components_canon(t), xᵢ...)), getbasis(t), getvar(t))
 
 ∂(t::Sym, xᵢ...) = diff(t, xᵢ...)
 
 
 """
-    CoorSystemSym(OM::AbstractTensnd{1,dim,Sym},coords::NTuple{dim,Sym},bnorm::AbstractBasis{dim,Sym},χᵢ::NTuple{dim},
+    CoorSystemSym(OM::AbstractTens{1,dim,Sym},coords::NTuple{dim,Sym},bnorm::AbstractBasis{dim,Sym},χᵢ::NTuple{dim},
                   tmp_coords::NTuple = (),params::NTuple = ();rules::Dict = Dict(),tmp_var::Dict = Dict(),to_coords::Dict = Dict()) where {dim}
-    CoorSystemSym(OM::AbstractTensnd{1,dim,Sym},coords::NTuple{dim,Sym},
+    CoorSystemSym(OM::AbstractTens{1,dim,Sym},coords::NTuple{dim,Sym},
                   tmp_coords::NTuple = (),params::NTuple = ();rules::Dict = Dict(),tmp_var::Dict = Dict(),to_coords::Dict = Dict()) where {dim}
 
 Defines a new coordinate system either from
@@ -63,20 +63,20 @@ julia> p̄, q, q̄, c = symbols("p̄ q q̄ c", positive = true) ;
 
 julia> coords = (ϕ, p, q) ; tmp_coords = (p̄, q̄) ; params = (c,) ;
 
-julia> OM = Tensnd(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q]) ;
+julia> OM = Tens(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q]) ;
 
 julia> Spheroidal = CoorSystemSym(OM, coords, tmp_coords, params; tmp_var = Dict(1-p^2 => p̄^2, q^2-1 => q̄^2), to_coords = Dict(p̄ => √(1-p^2), q̄ => √(q^2-1))) ;
 ```
 """
 struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
-    OM::AbstractTensnd{1,dim,Sym}
+    OM::AbstractTens{1,dim,Sym}
     coords::NTuple{dim,Sym}
     bnorm::AbstractBasis{dim,Sym}
     natbasis::AbstractBasis{dim,Sym}
-    aᵢ::NTuple{dim,AbstractTensnd}
+    aᵢ::NTuple{dim,AbstractTens}
     χᵢ::NTuple{dim}
-    aⁱ::NTuple{dim,AbstractTensnd}
-    eᵢ::NTuple{dim,AbstractTensnd}
+    aⁱ::NTuple{dim,AbstractTens}
+    eᵢ::NTuple{dim,AbstractTens}
     Γ::Array{Sym,3}
     tmp_coords::NTuple
     params::NTuple
@@ -84,7 +84,7 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
     tmp_var::Dict
     to_coords::Dict
     function CoorSystemSym(
-        OM::AbstractTensnd{1,dim,Sym},
+        OM::AbstractTens{1,dim,Sym},
         coords::NTuple{dim,Sym},
         bnorm::AbstractBasis{dim,Sym},
         χᵢ::NTuple{dim},
@@ -95,15 +95,15 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         to_coords::Dict = Dict(),
     ) where {dim}
         eᵢ = ntuple(
-            i -> Tensnd(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
             dim,
         )
         aᵢ = ntuple(
-            i -> Tensnd(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
             dim,
         )
         aⁱ = ntuple(
-            i -> Tensnd(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
+            i -> Tens(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
             dim,
         )
         Γ = compute_Christoffel(coords, χᵢ, metric(bnorm, :cov), metric(bnorm, :cont))
@@ -131,7 +131,7 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         )
     end
     function CoorSystemSym(
-        OM::AbstractTensnd{1,dim,Sym},
+        OM::AbstractTens{1,dim,Sym},
         coords::NTuple{dim,Sym},
         tmp_coords::NTuple = (),
         params::NTuple = ();
@@ -150,15 +150,15 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dim)
         bnorm = Basis(simplify(hcat(components_canon.(eᵢ)...)))
         eᵢ = ntuple(
-            i -> Tensnd(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
             dim,
         )
         aᵢ = ntuple(
-            i -> Tensnd(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
             dim,
         )
         aⁱ = ntuple(
-            i -> Tensnd(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
+            i -> Tens(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
             dim,
         )
         Γ = compute_Christoffel(coords, χᵢ, metric(bnorm, :cov), metric(bnorm, :cont))
@@ -224,12 +224,12 @@ end
 
 
 """
-    GRAD(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
 
 Calculates the gradient of `T` with respect to the coordinate system `CS`
 """
 GRAD(
-    T::Union{Sym,AbstractTensnd{order,dim,Sym}},
+    T::Union{Sym,AbstractTens{order,dim,Sym}},
     CS::CoorSystemSym{dim},
 ) where {order,dim} = 
     sum([∂(only_coords(CS, T), getcoords(CS, i)) ⊗ natvec(CS, i, :cont) for i = 1:dim])
@@ -242,7 +242,7 @@ GRAD(
 # )
 
 function oGRAD(
-    T::AbstractTensnd{order,dim,Sym},
+    T::AbstractTens{order,dim,Sym},
     CS::CoorSystemSym{dim},
 ) where {order,dim}
     T = only_coords(CS, T)
@@ -261,49 +261,49 @@ function oGRAD(
             data[ntuple(_ -> (:), order)..., i] += einsum(EinCode((ec1,ec2), ec3), (t, view(Γ, i, :, :)))
         end
     end
-    return change_tens(Tensnd(data, ℬ, varfin), getbasis(CS), varfin)
+    return change_tens(Tens(data, ℬ, varfin), getbasis(CS), varfin)
 end
 
 
 """
-    SYMGRAD(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    SYMGRAD(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
 
 Calculates the symmetrized gradient of `T` with respect to the coordinate system `CS`
 """
 SYMGRAD(
-    T::Union{Sym,AbstractTensnd{order,dim,Sym}},
+    T::Union{Sym,AbstractTens{order,dim,Sym}},
     CS::CoorSystemSym{dim},
 ) where {order,dim} = 
     sum([∂(only_coords(CS, T), getcoords(CS, i)) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
 
 
 """
-    DIV(T::AbstractTensnd{order,dim,Sym},CS::CoorSystemSym{dim}) where {order,dim}
+    DIV(T::AbstractTens{order,dim,Sym},CS::CoorSystemSym{dim}) where {order,dim}
 
 Calculates the divergence  of `T` with respect to the coordinate system `CS`
 """
-DIV(T::AbstractTensnd{order,dim,Sym}, CS::CoorSystemSym{dim}) where {order,dim} =
+DIV(T::AbstractTens{order,dim,Sym}, CS::CoorSystemSym{dim}) where {order,dim} =
     sum([∂(only_coords(CS, T), getcoords(CS, i)) ⋅ natvec(CS, i, :cont) for i = 1:dim])
 
 
 
 """
-    LAPLACE(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    LAPLACE(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
 
 Calculates the Laplace operator of `T` with respect to the coordinate system `CS`
 """
 LAPLACE(
-    T::Union{Sym,AbstractTensnd{order,dim,Sym}},
+    T::Union{Sym,AbstractTens{order,dim,Sym}},
     CS::CoorSystemSym{dim},
 ) where {order,dim} = DIV(GRAD(T, CS), CS)
 
 """
-    HESS(T::Union{Sym,AbstractTensnd{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    HESS(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
 
 Calculates the Hessian of `T` with respect to the coordinate system `CS`
 """
 HESS(
-    T::Union{Sym,AbstractTensnd{order,dim,Sym}},
+    T::Union{Sym,AbstractTens{order,dim,Sym}},
     CS::CoorSystemSym{dim},
 ) where {order,dim} = GRAD(GRAD(T, CS), CS)
 
@@ -337,15 +337,15 @@ Returns the cartesian coordinate system
 ```julia
 julia> Cartesian = CS_cartesian() ; 𝐗 = getcoords(Cartesian) ; 𝐄 = unitvec(Cartesian) ; ℬ = getbasis(Cartesian)
 
-julia> 𝛔 = Tensnd(SymmetricTensor{2,3}((i, j) -> SymFunction("σ\$i\$j", real = true)(𝐗...))) ;
+julia> 𝛔 = Tens(SymmetricTensor{2,3}((i, j) -> SymFunction("σ\$i\$j", real = true)(𝐗...))) ;
 
 julia> DIV(𝛔, CScar)
-TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
+Tens.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 # data: 3-element Vec{3, Sym}:
  Derivative(σ11(x, y, z), x) + Derivative(σ21(x, y, z), y) + Derivative(σ31(x, y, z), z)
  Derivative(σ21(x, y, z), x) + Derivative(σ22(x, y, z), y) + Derivative(σ32(x, y, z), z)
  Derivative(σ31(x, y, z), x) + Derivative(σ32(x, y, z), y) + Derivative(σ33(x, y, z), z)
-# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+# basis: 3×3 Tens.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
@@ -439,7 +439,7 @@ Returns the cylindrical coordinate system
 ```julia
 julia> Cylindrical = CS_cylindrical() ; rθz = getcoords(Cylindrical) ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical) ; ℬᶜ = getbasis(Cylindrical)
 
-julia> 𝐯 = Tensnd(Vec{3}(i -> SymFunction("v\$(rθz[i])", real = true)(rθz...)), ℬᶜ) ;
+julia> 𝐯 = Tens(Vec{3}(i -> SymFunction("v\$(rθz[i])", real = true)(rθz...)), ℬᶜ) ;
 
 julia> DIV(𝐯, Cylindrical)
                                                   ∂
@@ -514,7 +514,7 @@ julia> for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ") @eval \$(Symbol(σⁱ�
 julia> 𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ ;
 
 julia> div𝛔 = DIV(𝛔, Spherical)
-TensND.TensndRotated{1, 3, Sym, Vec{3, Sym}}
+Tens.TensRotated{1, 3, Sym, Vec{3, Sym}}
 # data: 3-element Vec{3, Sym}:
                               (-σᵠᵠ(r) + σᶿᶿ(r))*cos(θ)/(r*sin(θ))
                                                                  0
@@ -555,12 +555,12 @@ Returns the spheroidal coordinate system
 # Examples
 ```julia
 julia> Spheroidal = CS_spheroidal() ; OM = getOM(Spheroidal)
-TensND.TensndCanonical{1, 3, Sym, Vec{3, Sym}}
+Tens.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 # data: 3-element Vec{3, Sym}:
  c⋅p̄⋅q̄⋅cos(ϕ)
  c⋅p̄⋅q̄⋅sin(ϕ)
           c⋅p⋅q
-# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+# basis: 3×3 Tens.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
@@ -582,7 +582,7 @@ function CS_spheroidal(
     ϕ, p, q = coords
     params = (c,)
     p̄, q̄ = tmp_coords
-    OM = Tensnd(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q])
+    OM = Tens(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q])
     ℬ = RotatedBasis(
         Sym[
             -sin(ϕ) -p*sqrt(q^2 - 1)*cos(ϕ)/sqrt(q^2 - p^2) q*sqrt(1 - p^2)*cos(ϕ)/sqrt(q^2 - p^2)

@@ -273,6 +273,11 @@ struct OrthogonalBasis{dim,T} <: AbstractBasis{dim,T}
     end
 end
 
+relevant_OrthonormalBasis(b::OrthogonalBasis) = b.parent
+relevant_OrthonormalBasis(b::OrthonormalBasis) = b
+relevant_OrthonormalBasis(::Basis{dim,T}) where {dim,T} = CanonicalBasis{dim,T}()
+
+
 @inline CylindricalBasis(θ) = RotatedBasis(0, θ, 0)
 
 @inline SphericalBasis(θ, ϕ) = RotatedBasis(θ, ϕ, 0)

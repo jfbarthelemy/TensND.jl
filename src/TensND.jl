@@ -2,7 +2,7 @@ module TensND
 
 import Base.@pure
 import Base: eltype
-import LinearAlgebra: normalize, dot
+import LinearAlgebra: normalize, dot, tr
 
 using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 
@@ -21,7 +21,7 @@ export getbasis, getvar
 export TensISO, tensId2, tensId4, tensJ4, tensK4, ISO, isotropify, isISO
 export t𝟏, t𝕀, t𝕁, t𝕂
 
-export projTens
+export proj_tens
 
 export LeviCivita, 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ, rot2, rot3, rot6
 
