@@ -2,7 +2,7 @@ abstract type AbstractTens{order,dim,T<:Number} <: AbstractArray{T,order} end
 
 @pure getorder(::AbstractTens{getorder,dim,T}) where {getorder,dim,T} = getorder
 @pure getdim(::AbstractTens{order,dim,T}) where {order,dim,T} = dim
-@pure Base.eltype(::AbstractTens{order,dim,T}) where {order,dim,T} = T
+@pure Base.eltype(::Type{AbstractTens{order,dim,T}}) where {order,dim,T} = T
 
 
 

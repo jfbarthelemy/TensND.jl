@@ -9,7 +9,7 @@ end
 
 @pure getorder(::TensISO{order}) where {order} = order
 @pure getdim(::TensISO{order,dim}) where {order,dim} = dim
-@pure Base.eltype(::TensISO{order,dim,T}) where {order,dim,T} = T
+@pure Base.eltype(::Type{TensISO{order,dim,T}}) where {order,dim,T} = T
 @pure Base.length(::TensISO{order,dim,T,N}) where {order,dim,T,N} = dim^order
 @pure datanumber(::TensISO{order,dim,T,N}) where {order,dim,T,N} = N
 @pure Base.size(::TensISO{order,dim}) where {order,dim} = ntuple(_ -> dim, Val(order))

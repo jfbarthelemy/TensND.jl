@@ -2,7 +2,7 @@ abstract type AbstractBasis{dim,T<:Number} <: AbstractMatrix{T} end
 
 @pure Base.size(::AbstractBasis{dim}) where {dim} = (dim, dim)
 Base.getindex(b::AbstractBasis, i::Integer, j::Integer) = getindex(vecbasis(b, :cov), i, j)
-@pure Base.eltype(::AbstractBasis{dim,T}) where {dim,T} = T
+@pure Base.eltype(::Type{AbstractBasis{dim,T}}) where {dim,T} = T
 @pure getdim(::AbstractBasis{dim}) where {dim} = dim
 
 
