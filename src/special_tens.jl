@@ -33,7 +33,7 @@ Vector of the canonical basis
 # Examples
 ```julia
 julia> 𝐞(1)
-Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
+Tens{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
 # data: 3-element Vec{3, Sym}:
  1
  0
@@ -58,7 +58,7 @@ Vector of the polar basis
 julia> θ = symbols("θ", real = true) ;
 
 julia> 𝐞ᵖ(1, θ)
-Tensnd{1, 2, Sym, Sym, Vec{2, Sym}, RotatedBasis{2, Sym}}
+Tens{1, 2, Sym, Sym, Vec{2, Sym}, RotatedBasis{2, Sym}}
 # data: 2-element Vec{2, Sym}:
  1
  0
@@ -69,11 +69,11 @@ Tensnd{1, 2, Sym, Sym, Vec{2, Sym}, RotatedBasis{2, Sym}}
 ``` 
 """
 𝐞ᵖ(::Val{1}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
-    canonical ? Tensnd(Vec{2}([cos(θ), sin(θ)])) :
-    Tensnd(Vec{2}([one(T), zero(T)]), Basis(θ))
+    canonical ? Tens(Vec{2}([cos(θ), sin(θ)])) :
+    Tens(Vec{2}([one(T), zero(T)]), Basis(θ))
 𝐞ᵖ(::Val{2}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
-    canonical ? Tensnd(Vec{2}([-sin(θ), cos(θ)])) :
-    Tensnd(Vec{2}([zero(T), one(T)]), Basis(θ))
+    canonical ? Tens(Vec{2}([-sin(θ), cos(θ)])) :
+    Tens(Vec{2}([zero(T), one(T)]), Basis(θ))
 
 """
     𝐞ᶜ(i::Int, θ::T = zero(Sym); canonical = false)
@@ -85,7 +85,7 @@ Vector of the cylindrical basis
 julia> θ = symbols("θ", real = true) ;
 
 julia> 𝐞ᶜ(1, θ)
-Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
+Tens{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
 # data: 3-element Vec{3, Sym}:
  1
  0
@@ -98,14 +98,14 @@ Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
 ``` 
 """
 𝐞ᶜ(::Val{1}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
-    canonical ? Tensnd(Vec{3}([cos(θ), sin(θ), zero(T)])) :
-    Tensnd(Vec{3}([one(T), zero(T), zero(T)]), CylindricalBasis(θ))
+    canonical ? Tens(Vec{3}([cos(θ), sin(θ), zero(T)])) :
+    Tens(Vec{3}([one(T), zero(T), zero(T)]), CylindricalBasis(θ))
 𝐞ᶜ(::Val{2}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
-    canonical ? Tensnd(Vec{3}([-sin(θ), cos(θ), zero(T)])) :
-    Tensnd(Vec{3}([zero(T), one(T), zero(T)]), CylindricalBasis(θ))
+    canonical ? Tens(Vec{3}([-sin(θ), cos(θ), zero(T)])) :
+    Tens(Vec{3}([zero(T), one(T), zero(T)]), CylindricalBasis(θ))
 𝐞ᶜ(::Val{3}, θ::T = zero(Sym); canonical = false) where {T<:Number} =
-    canonical ? Tensnd(Vec{3}([zero(T), zero(T), one(T)])) :
-    Tensnd(Vec{3}([zero(T), zero(T), one(T)]), CylindricalBasis(θ))
+    canonical ? Tens(Vec{3}([zero(T), zero(T), one(T)])) :
+    Tens(Vec{3}([zero(T), zero(T), one(T)]), CylindricalBasis(θ))
 
 """
     𝐞ˢ(i::Int, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym); canonical = false)
@@ -116,7 +116,7 @@ Vector of the basis rotated with the 3 Euler angles `θ, ϕ, ψ` (spherical if `
 ```julia
 julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ;
 
-Tensnd{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
+Tens{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
 # data: 3-element Vec{3, Sym}:
  1
  0
@@ -136,7 +136,7 @@ function 𝐞ˢ(
     canonical = false,
 ) where {T1<:Number,T2<:Number,T3<:Number}
     if canonical
-        return Tensnd(
+        return Tens(
             Vec{3}([
                 -sin(ψ) * sin(ϕ) + cos(θ) * cos(ψ) * cos(ϕ),
                 sin(ψ) * cos(ϕ) + sin(ϕ) * cos(θ) * cos(ψ),
@@ -145,7 +145,7 @@ function 𝐞ˢ(
         )
     else
         T = promote_type(T1, T2, T3)
-        return Tensnd(Vec{3}([one(T), zero(T), zero(T)]), Basis(θ, ϕ, ψ))
+        return Tens(Vec{3}([one(T), zero(T), zero(T)]), Basis(θ, ϕ, ψ))
     end
 end
 function 𝐞ˢ(
@@ -156,7 +156,7 @@ function 𝐞ˢ(
     canonical = false,
 ) where {T1<:Number,T2<:Number,T3<:Number}
     if canonical
-        return Tensnd(
+        return Tens(
             Vec{3}([
                 -sin(ψ) * cos(θ) * cos(ϕ) - sin(ϕ) * cos(ψ),
                 -sin(ψ) * sin(ϕ) * cos(θ) + cos(ψ) * cos(ϕ),
@@ -165,7 +165,7 @@ function 𝐞ˢ(
         )
     else
         T = promote_type(T1, T2, T3)
-        return Tensnd(Vec{3}([zero(T), one(T), zero(T)]), Basis(θ, ϕ, ψ))
+        return Tens(Vec{3}([zero(T), one(T), zero(T)]), Basis(θ, ϕ, ψ))
     end
 end
 function 𝐞ˢ(
@@ -176,10 +176,10 @@ function 𝐞ˢ(
     canonical = false,
 ) where {T1<:Number,T2<:Number,T3<:Number}
     if canonical
-        return Tensnd(Vec{3}([sin(θ) * cos(ϕ), sin(θ) * sin(ϕ), cos(θ)]))
+        return Tens(Vec{3}([sin(θ) * cos(ϕ), sin(θ) * sin(ϕ), cos(θ)]))
     else
         T = promote_type(T1, T2, T3)
-        return Tensnd(Vec{3}([zero(T), zero(T), one(T)]), Basis(θ, ϕ, ψ))
+        return Tens(Vec{3}([zero(T), zero(T), one(T)]), Basis(θ, ϕ, ψ))
     end
 end
 
@@ -236,20 +236,20 @@ julia> cθ, cϕ, cψ, sθ, sϕ, sψ = symbols("cθ cϕ cψ sθ sϕ sψ", real = 
 
 julia> d = Dict(cos(θ) => cθ, cos(ϕ) => cϕ, cos(ψ) => cψ, sin(θ) => sθ, sin(ϕ) => sϕ, sin(ψ) => sψ) ;
 
-julia> R = Tensnd(subs.(rot3(θ, ϕ, ψ),d...))
-TensND.TensndCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
+julia> R = Tens(subs.(rot3(θ, ϕ, ψ),d...))
+Tens.TensCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
 # data: 3×3 Tensor{2, 3, Sym, 9}:
  cθ⋅cψ⋅cϕ - sψ⋅sϕ  -cθ⋅cϕ⋅sψ - cψ⋅sϕ  cϕ⋅sθ
  cθ⋅cψ⋅sϕ + cϕ⋅sψ  -cθ⋅sψ⋅sϕ + cψ⋅cϕ  sθ⋅sϕ
            -cψ⋅sθ              sθ⋅sψ     cθ
 # var: (:cont, :cont)
-# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+# basis: 3×3 Tens.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
 
 julia> RR = R ⊠ˢ R
-TensND.TensndCanonical{4, 3, Sym, SymmetricTensor{4, 3, Sym, 36}}
+Tens.TensCanonical{4, 3, Sym, SymmetricTensor{4, 3, Sym, 36}}
 # data: 6×6 Matrix{Sym}:
                           (cθ*cψ*cϕ - sψ*sϕ)^2                            (-cθ*cϕ*sψ - cψ*sϕ)^2           cϕ^2*sθ^2                      √2⋅cϕ⋅sθ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)                     √2⋅cϕ⋅sθ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)                                   √2⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)
                           (cθ*cψ*sϕ + cϕ*sψ)^2                            (-cθ*sψ*sϕ + cψ*cϕ)^2           sθ^2*sϕ^2                      √2⋅sθ⋅sϕ⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ)                     √2⋅sθ⋅sϕ⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ)                                   √2⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ)⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ)
@@ -258,13 +258,13 @@ TensND.TensndCanonical{4, 3, Sym, SymmetricTensor{4, 3, Sym, 36}}
              -√2⋅cψ⋅sθ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)                √2⋅sθ⋅sψ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)    √2⋅cθ⋅cϕ⋅sθ                    cθ*(-cθ*cϕ*sψ - cψ*sϕ) + cϕ*sθ^2*sψ                   cθ*(cθ*cψ*cϕ - sψ*sϕ) - cψ*cϕ*sθ^2                            -cψ⋅sθ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ) + sθ⋅sψ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)
  √2⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ)  √2⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ)  sqrt(2)*cϕ*sθ^2*sϕ  cϕ⋅sθ⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ) + sθ⋅sϕ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)  cϕ⋅sθ⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ) + sθ⋅sϕ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)  (cθ*cψ*cϕ - sψ*sϕ)*(-cθ*sψ*sϕ + cψ*cϕ) + (cθ*cψ*sϕ + cϕ*sψ)*(-cθ*cϕ*sψ - cψ*sϕ)
 # var: (:cont, :cont, :cont, :cont)
-# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+# basis: 3×3 Tens.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1
 
 julia> R6 = invKM(subs.(KM(rot6(θ, ϕ, ψ)),d...))
-TensND.TensndCanonical{4, 3, Sym, SymmetricTensor{4, 3, Sym, 36}}
+Tens.TensCanonical{4, 3, Sym, SymmetricTensor{4, 3, Sym, 36}}
 # data: 6×6 Matrix{Sym}:
                           (cθ*cψ*cϕ - sψ*sϕ)^2                            (-cθ*cϕ*sψ - cψ*sϕ)^2           cϕ^2*sθ^2                      √2⋅cϕ⋅sθ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)                     √2⋅cϕ⋅sθ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)                                   √2⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)
                           (cθ*cψ*sϕ + cϕ*sψ)^2                            (-cθ*sψ*sϕ + cψ*cϕ)^2           sθ^2*sϕ^2                      √2⋅sθ⋅sϕ⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ)                     √2⋅sθ⋅sϕ⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ)                                   √2⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ)⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ)
@@ -273,7 +273,7 @@ TensND.TensndCanonical{4, 3, Sym, SymmetricTensor{4, 3, Sym, 36}}
              -√2⋅cψ⋅sθ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)                √2⋅sθ⋅sψ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)    √2⋅cθ⋅cϕ⋅sθ                    cθ*(-cθ*cϕ*sψ - cψ*sϕ) + cϕ*sθ^2*sψ                   cθ*(cθ*cψ*cϕ - sψ*sϕ) - cψ*cϕ*sθ^2                            -cψ⋅sθ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ) + sθ⋅sψ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)
  √2⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ)  √2⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ)  sqrt(2)*cde Liv Lehn ϕ*sθ^2*sϕ  cϕ⋅sθ⋅(-cθ⋅sψ⋅sϕ + cψ⋅cϕ) + sθ⋅sϕ⋅(-cθ⋅cϕ⋅sψ - cψ⋅sϕ)  cϕ⋅sθ⋅(cθ⋅cψ⋅sϕ + cϕ⋅sψ) + sθ⋅sϕ⋅(cθ⋅cψ⋅cϕ - sψ⋅sϕ)  (cθ*cψ*cϕ - sψ*sϕ)*(-cθ*sψ*sϕ + cψ*cϕ) + (cθ*cψ*sϕ + cϕ*sψ)*(-cθ*cϕ*sψ - cψ*sϕ)
 # var: (:cont, :cont, :cont, :cont)
-# basis: 3×3 TensND.LazyIdentity{3, Sym}:
+# basis: 3×3 Tens.LazyIdentity{3, Sym}:
  1  0  0
  0  1  0
  0  0  1

@@ -42,5 +42,19 @@
         a1*b3/2+a3*b1/2 a2*b3/2+a3*b2/2 a3*b3
     ]
 
+    θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true)
+    R = rot3(θ, ϕ, ψ)
+    Λ = [symbols("λ$i", positive = true) for i ∈ 1:3]
+    bg = Basis(R .* Λ')
+    bo = Basis(R)
+    𝕀, 𝕁, 𝕂 = ISO()
+    α, β = symbols("α β", real = true)
+    𝕋 = α * 𝕁 + β * 𝕂
+    @test change_tens(𝕋, bg) == 𝕋
+    @test change_tens(𝕋, bo) == 𝕋
+    A = components(𝕋, bg)
+    𝕋₂ = Tens(A, bg)
+    @test 𝕋₂ == 𝕋
+
 
 end

@@ -58,10 +58,12 @@ struct Tens{order,dim,T,A<:AbstractArray} <: AbstractTens{order,dim,T}
         args...,
     ) where {T} = TensOrthonormal(data, basis)
     Tens(data::AbstractArray, var::NTuple, basis::AbstractBasis) = Tens(data, basis, var)
+    Tens(data::AbstractArray{T,0}, args...) where {T} = T(data[1])
+    Tens(data::T, args...) where {T} = data
 end
 
 
-for order ∈ (2,4)
+for order ∈ (2, 4)
     @eval function proj_tens(
         t::AbstractTens{$order,dim,T},
         args...;
@@ -118,6 +120,7 @@ end
 
 const TensOrthonormal{order,dim,T,A} =
     Union{TensRotated{order,dim,T,A},TensCanonical{order,dim,T,A}}
+const AllTensOrthogonal{order,dim,T,A} = Union{TensOrthonormal{order,dim,T,A}, TensOrthogonal{order,dim,T,A}}
 const TensVar{order,dim,T,A} = Union{Tens{order,dim,T,A},TensOrthogonal{order,dim,T,A}}
 const TensBasis{order,dim,T,A} =
     Union{Tens{order,dim,T,A},TensRotated{order,dim,T,A},TensOrthogonal{order,dim,T,A}}
@@ -132,15 +135,13 @@ TensOrthonormal(data::AbstractArray, basis::RotatedBasis) = TensRotated(data, ba
 TensOrthonormal(data::AbstractArray, ::CanonicalBasis) = TensCanonical(data)
 
 TensOrthonormal(t::TensOrthonormal) = t
-function TensOrthonormal(
-    t::TensOrthogonal{order,dim,T},
-) where {order,dim,T}
+function TensOrthonormal(t::TensOrthogonal{order,dim,T}) where {order,dim,T}
     m = Array(getarray(t))
     ℬ = getbasis(t)
     onℬ = relevant_OrthonormalBasis(ℬ)
-    Λ = Dict(:cov => ℬ.λ, :cont => inv.(ℬ.λ))
+    Λ = Dict(:cov => inv.(ℬ.λ), :cont => ℬ.λ)
     for ind ∈ CartesianIndices(m)
-        m[ind] *= prod([Λ[getvar(t,i)][ind[i]] for i ∈ 1:order])
+        m[ind] *= prod([Λ[getvar(t, i)][ind[i]] for i ∈ 1:order])
     end
     return Tens(m, onℬ)
 end
@@ -284,24 +285,25 @@ function components(
         ℬ = getbasis(t)
         g_or_G = ntuple(i -> getvar(t, i) == var[i] ? I : metric(ℬ, var[i]), order)
         for ind ∈ CartesianIndices(m)
-            m[ind] *= prod([g_or_G[i][ind[i],ind[i]] for i ∈ 1:order])
+            m[ind] *= prod([g_or_G[i][ind[i], ind[i]] for i ∈ 1:order])
         end
         return m
     end
 end
 
-function components(
-    t::TensOrthogonal{order,dim,T},
-    ℬ::AbstractBasis{dim},
-    var::NTuple{order,Symbol},
-) where {order,dim,T}
-    if ℬ == getbasis(t)
-        return components(t,var)
-    else
-        return components(TensOrthonormal(t),ℬ,var)
+for B in (AbstractBasis, OrthogonalBasis, OrthonormalBasis)
+    @eval function components(
+        t::TensOrthogonal{order,dim,T},
+        ℬ::$B{dim},
+        var::NTuple{order,Symbol},
+    ) where {order,dim,T}
+        if ℬ == getbasis(t)
+            return components(t, var)
+        else
+            return components(TensOrthonormal(t), ℬ, var)
+        end
     end
 end
-
 
 function components(t::Tens{order,dim,T}, var::NTuple{order,Symbol}) where {order,dim,T}
     if var == getvar(t)
@@ -321,7 +323,6 @@ function components(t::Tens{order,dim,T}, var::NTuple{order,Symbol}) where {orde
         return m
     end
 end
-
 
 function components(
     t::AbstractTens{order,dim,T},
@@ -360,8 +361,8 @@ function components(
     if ℬ == getbasis(t)
         return components(t, var)
     else
-        m = components(t, relevant_OrthonormalBasis(ℬ))
-        Λ = Dict(:cont => ℬ.λ, :cov => inv.(ℬ.λ))
+        m = Array(components(t, relevant_OrthonormalBasis(ℬ)))
+        Λ = Dict(:cont => inv.(ℬ.λ), :cov => ℬ.λ)
         for ind ∈ CartesianIndices(m)
             m[ind] *= prod([Λ[var[i]][ind[i]] for i ∈ 1:order])
         end
@@ -516,9 +517,9 @@ TensND.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 change_tens_canon(t::AbstractTens) = change_tens(t, CanonicalBasis{getdim(t),eltype(t)}())
 
 
-for OP in (:(simplify), :(factor), :(subs))
+for OP in (:(simplify), :(factor), :(subs), :(diff))
     @eval SymPy.$OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
-        Tens($OP(getarray(t); kwargs...), getbasis(t), getvar(t))
+        Tens($OP(getarray(t), args...; kwargs...), getbasis(t), getvar(t))
     @eval SymPy.$OP(t::AbstractArray{Sym}, args...; kwargs...) = $OP.(t, args...; kwargs...)
     @eval SymPy.$OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
         Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
@@ -619,16 +620,18 @@ for OP in (:+, :-)
         return Tens($OP(getarray(nt1), getarray(nt2)), getbasis(nt1), getvar(nt1))
     end
     @eval function Base.$OP(
-        t1::AbstractTens{order, dim, T},
+        t1::AllTensOrthogonal{order,dim,T},
         t2::UniformScaling{T},
     ) where {order,dim,T<:SymPy.SymbolicObject}
-        return Tens($OP(getarray(t1), t2), getbasis(t1), getvar(t1))
+        nt1 = TensOrthonormal(t1)
+        return Tens($OP(getarray(nt1), t2), getbasis(nt1), getvar(nt1))
     end
     @eval function Base.$OP(
         t1::UniformScaling{T},
-        t2::AbstractTens{2, dim, T},
+        t2::AllTensOrthogonal{order,dim,T},
     ) where {order,dim,T<:SymPy.SymbolicObject}
-        return Tens($OP(t1, getarray(t2)), getbasis(t2), getvar(t2))
+        nt2 = TensOrthonormal(t2)
+        return Tens($OP(t1, getarray(nt2)), getbasis(nt2), getvar(nt2))
     end
 end
 
