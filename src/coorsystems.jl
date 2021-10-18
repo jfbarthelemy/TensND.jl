@@ -27,10 +27,10 @@ Tens.TensRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 # var: (:cont, :cont)
 ```
 """
-∂(t::AbstractTens{order,dim,Sym,A}, xᵢ...) where {order,dim,A} =
-    change_tens(Tens(diff.(components_canon(t), xᵢ...)), getbasis(t), getvar(t))
+∂(t::AbstractTens{order,dim,Sym}, xᵢ...) where {order,dim} =
+    change_tens(Tens(SymPy.diff(components_canon(t), xᵢ...)), getbasis(t), getvar(t))
 
-∂(t::Sym, xᵢ...) = diff(t, xᵢ...)
+∂(t::Sym, xᵢ...) = SymPy.diff(t, xᵢ...)
 
 
 """
@@ -68,15 +68,15 @@ julia> OM = Tens(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q]) ;
 julia> Spheroidal = CoorSystemSym(OM, coords, tmp_coords, params; tmp_var = Dict(1-p^2 => p̄^2, q^2-1 => q̄^2), to_coords = Dict(p̄ => √(1-p^2), q̄ => √(q^2-1))) ;
 ```
 """
-struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
-    OM::AbstractTens{1,dim,Sym}
+struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
+    OM::VEC
     coords::NTuple{dim,Sym}
-    bnorm::AbstractBasis{dim,Sym}
-    natbasis::AbstractBasis{dim,Sym}
-    aᵢ::NTuple{dim,AbstractTens}
+    normalized_basis::BNORM
+    natural_basis::BNAT
+    aᵢ::NTuple{dim,VEC}
     χᵢ::NTuple{dim}
-    aⁱ::NTuple{dim,AbstractTens}
-    eᵢ::NTuple{dim,AbstractTens}
+    aⁱ::NTuple{dim,VEC}
+    eᵢ::NTuple{dim,VEC}
     Γ::Array{Sym,3}
     tmp_coords::NTuple
     params::NTuple
@@ -84,40 +84,40 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
     tmp_var::Dict
     to_coords::Dict
     function CoorSystemSym(
-        OM::AbstractTens{1,dim,Sym},
+        OM::VEC,
         coords::NTuple{dim,Sym},
-        bnorm::AbstractBasis{dim,Sym},
+        normalized_basis::AbstractBasis{dim,Sym},
         χᵢ::NTuple{dim},
         tmp_coords::NTuple = (),
         params::NTuple = ();
         rules::Dict = Dict(),
         tmp_var::Dict = Dict(),
         to_coords::Dict = Dict(),
-    ) where {dim}
+    ) where {VEC,dim}
         eᵢ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), normalized_basis, (:cov,)),
             dim,
         )
         aᵢ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), normalized_basis, (:cov,)),
             dim,
         )
         aⁱ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
+            i -> Tens(Vec{dim}(j -> j == i ? inv(χᵢ[i]) : zero(Sym)), normalized_basis, (:cont,)),
             dim,
         )
-        Γ = compute_Christoffel(coords, χᵢ, metric(bnorm, :cov), metric(bnorm, :cont))
-        nate = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cov) * χᵢ[j])
-        natE = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cont) / χᵢ[j])
-        natg = SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cov) * χᵢ[i] * χᵢ[j])
-        natG =
-            SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cont) / (χᵢ[i] * χᵢ[j]))
-        natbasis = Basis(nate, natE, natg, natG)
-        new{dim}(
+        Γ = compute_Christoffel(coords, χᵢ, metric(normalized_basis, :cov), metric(normalized_basis, :cont))
+        Χ = collect(χᵢ) ; invΧ = inv.(Χ)
+        nateᵢ = vecbasis(normalized_basis, i, j, :cov) .* Χ'
+        nateⁱ = vecbasis(normalized_basis, i, j, :cov) .* invΧ'
+        natgᵢⱼ = Symmetric(Χ .* metric(normalized_basis, :cov) .* Χ')
+        natgⁱʲ = Symmetric(invΧ .* metric(normalized_basis, :cont) .* invΧ')
+        natural_basis = Basis(nateᵢ, nateⁱ, natgᵢⱼ, natgⁱʲ)
+        new{dim,typeof(OM),typeof(normalized_basis),typeof(natural_basis)}(
             OM,
             coords,
-            bnorm,
-            natbasis,
+            normalized_basis,
+            natural_basis,
             aᵢ,
             χᵢ,
             aⁱ,
@@ -131,14 +131,14 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         )
     end
     function CoorSystemSym(
-        OM::AbstractTens{1,dim,Sym},
+        OM::VEC,
         coords::NTuple{dim,Sym},
         tmp_coords::NTuple = (),
         params::NTuple = ();
         rules::Dict = Dict(),
         tmp_var::Dict = Dict(),
         to_coords::Dict = Dict(),
-    ) where {dim}
+    ) where {VEC,dim}
         simp(t) =
             length(rules) > 0 ? simplify(subs(simplify(t), rules...)) : simplify(t)
         chvar(t, d) = length(d) > 0 ? subs(t, d...) : t
@@ -148,31 +148,30 @@ struct CoorSystemSym{dim} <: AbstractCoorSystem{dim,Sym}
         eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dim)
         χᵢ = ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dim)
         eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dim)
-        bnorm = Basis(simplify(hcat(components_canon.(eᵢ)...)))
+        normalized_basis = Basis(simplify(hcat(components_canon.(eᵢ)...)))
         eᵢ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)), normalized_basis, (:cov,)),
             dim,
         )
         aᵢ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), bnorm, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), normalized_basis, (:cov,)),
             dim,
         )
         aⁱ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? 1 / χᵢ[i] : zero(Sym)), bnorm, (:cont,)),
+            i -> Tens(Vec{dim}(j -> j == i ? inv(χᵢ[i]) : zero(Sym)), normalized_basis, (:cont,)),
             dim,
         )
-        Γ = compute_Christoffel(coords, χᵢ, metric(bnorm, :cov), metric(bnorm, :cont))
-        nate = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cov) * χᵢ[j])
-        natE = Tensor{2,dim}((i, j) -> vecbasis(bnorm, i, j, :cont) / χᵢ[j])
-        natg = SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cov) * χᵢ[i] * χᵢ[j])
-        natG =
-            SymmetricTensor{2,dim}((i, j) -> metric(bnorm, i, j, :cont) / (χᵢ[i] * χᵢ[j]))
-        natbasis = Basis(nate, natE, natg, natG)
-        new{dim}(
+        Γ = compute_Christoffel(coords, χᵢ, metric(normalized_basis, :cov), metric(normalized_basis, :cont))
+        nateᵢ = vecbasis(normalized_basis, i, j, :cov) .* Χ'
+        nateⁱ = vecbasis(normalized_basis, i, j, :cov) .* invΧ'
+        natgᵢⱼ = Symmetric(Χ .* metric(normalized_basis, :cov) .* Χ')
+        natgⁱʲ = Symmetric(invΧ .* metric(normalized_basis, :cont) .* invΧ')
+        natural_basis = Basis(nateᵢ, nateⁱ, natgᵢⱼ, natgⁱʲ)
+        new{dim,typeof(OM),typeof(normalized_basis),typeof(natural_basis)}(
             OMc,
             coords,
-            bnorm,
-            natbasis,
+            normalized_basis,
+            natural_basis,
             aᵢ,
             χᵢ,
             aⁱ,
@@ -196,8 +195,8 @@ getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
 
 getOM(CS::CoorSystemSym) = CS.OM
 
-getbasis(CS::CoorSystemSym) = CS.bnorm
-getnatbasis(CS::CoorSystemSym) = CS.natbasis
+get_normalized_basis(CS::CoorSystemSym) = CS.normalized_basis
+get_(CS::CoorSystemSym) = CS.natural_basis
 
 getLame(CS::CoorSystemSym) = CS.χᵢ
 getChristoffel(CS::CoorSystemSym) = CS.Γ
@@ -213,12 +212,12 @@ unitvec(CS::CoorSystemSym, i::Int) = unitvec(CS)[i]
 
 function compute_Christoffel(coords, χ, γ, invγ)
     dim = length(χ)
-    g = [γ[i, j] * χ[i] * χ[j] for i ∈ 1:dim, j ∈ 1:dim]
-    G = [invγ[i, j] / (χ[i] * χ[j]) for i ∈ 1:dim, j ∈ 1:dim]
-    ∂g = [diff(g[i, j], coords[k]) for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
+    gᵢⱼ = [γ[i, j] * χ[i] * χ[j] for i ∈ 1:dim, j ∈ 1:dim]
+    gⁱʲ = [invγ[i, j] / (χ[i] * χ[j]) for i ∈ 1:dim, j ∈ 1:dim]
+    ∂g = [SymPy.diff(gᵢⱼ[i, j], coords[k]) for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
     Γᵢⱼₖ =
         [(∂g[i, k, j] + ∂g[j, k, i] - ∂g[i, j, k]) / 2 for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
-    return ein"ijl,lk->ijk"(Γᵢⱼₖ, G)
+    return ein"ijl,lk->ijk"(Γᵢⱼₖ, gⁱʲ)
 end
 
 
@@ -321,7 +320,7 @@ julia> coords, vectors, ℬ = init_cartesian() ; x, y, z = coords ; 𝐞₁, �
 ``` 
 """
 init_cartesian(coords = symbols("x y z", real = true)) = Tuple(coords),
-ntuple(i -> 𝐞(i, length(coords), eltype(coords)), length(coords)),
+ntuple(i -> 𝐞(Val(i), Val(length(coords)), Val(eltype(coords))), length(coords)),
 CanonicalBasis{length(coords),eltype(coords)}()
 
 init_cartesian(::Val{3}) = init_cartesian(symbols("x y z", real = true))
@@ -374,7 +373,7 @@ julia> coords, vectors, ℬᵖ = init_polar() ; r, θ = coords ; 𝐞ʳ, 𝐞ᶿ
 init_polar(
     coords = (symbols("r", positive = true), symbols("θ", real = true));
     canonical = false,
-) = Tuple(coords), ntuple(i -> 𝐞ᵖ(i, coords[2]; canonical = canonical), 2), Basis(coords[2])
+) = Tuple(coords), ntuple(i -> 𝐞ᵖ(Val(i), coords[2]; canonical = canonical), 2), Basis(coords[2])
 
 """
     CS_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
@@ -427,7 +426,7 @@ init_cylindrical(
     );
     canonical = false,
 ) = Tuple(coords),
-ntuple(i -> 𝐞ᶜ(i, coords[2]; canonical = canonical), 3),
+ntuple(i -> 𝐞ᶜ(Val(i), coords[2]; canonical = canonical), 3),
 CylindricalBasis(coords[2])
 
 """
@@ -497,7 +496,7 @@ init_spherical(
     );
     canonical = false,
 ) = Tuple(coords),
-ntuple(i -> 𝐞ˢ(i, coords[1:2]...; canonical = canonical), 3),
+ntuple(i -> 𝐞ˢ(Val(i), coords[1:2]...; canonical = canonical), 3),
 SphericalBasis(coords[1:2]...)
 
 """
@@ -622,4 +621,4 @@ julia> angles, vectors, ℬʳ = init_rotated() ; θ, ϕ, ψ = angles ; 𝐞ᶿ, 
 ```
 """
 init_rotated(angles = symbols("θ ϕ ψ", real = true); canonical = false) =
-    Tuple(angles), ntuple(i -> 𝐞ˢ(i, angles...; canonical = canonical), 3), Basis(angles...)
+    Tuple(angles), ntuple(i -> 𝐞ˢ(Val(i), angles...; canonical = canonical), 3), Basis(angles...)

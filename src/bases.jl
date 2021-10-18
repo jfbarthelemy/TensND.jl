@@ -1,7 +1,7 @@
 abstract type AbstractBasis{dim,T<:Number} <: AbstractMatrix{T} end
 
 @pure Base.size(::AbstractBasis{dim}) where {dim} = (dim, dim)
-Base.getindex(b::AbstractBasis, i::Integer, j::Integer) = getindex(vecbasis(b, :cov), i, j)
+Base.getindex(ℬ::AbstractBasis, i::Integer, j::Integer) = getindex(vecbasis(ℬ, :cov), i, j)
 @pure Base.eltype(::Type{AbstractBasis{dim,T}}) where {dim,T} = T
 @pure getdim(::AbstractBasis{dim}) where {dim} = dim
 
@@ -23,7 +23,7 @@ The attributes of this object can be obtained by
 - `vecbasis(ℬ, :cov)`: square matrix defining the primal basis `eᵢ=e[:,i]`
 - `vecbasis(ℬ, :cont)`: square matrix defining the dual basis `eⁱ=E[:,i]`
 - `metric(ℬ, :cov)`: square matrix defining the covariant components of the metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-- `metric(ℬ, :cont)`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
+- `metric(ℬ, :cont)`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=gⁱʲ[i,j]`
 
 # Examples
 ```julia
@@ -53,79 +53,79 @@ julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; ℬʳ = Basis(θ, ϕ, �
                         -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
 ```
 """
-struct Basis{dim,T} <: AbstractBasis{dim,T}
-    e::Matrix{T} # Primal basis `eᵢ=e[:,i]`
-    E::Matrix{T} # Dual basis `eⁱ=E[:,i]`
-    g::Symmetric{T,Matrix{T}} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]`
-    G::Symmetric{T,Matrix{T}} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]`
+struct Basis{dim,T} <: AbstractBasis{dim,T} 
+    eᵢ::Matrix{T} # Primal basis `eᵢ=eᵢ[:,i]`
+    eⁱ::Matrix{T} # Dual basis `eⁱ=eⁱ[:,i]`
+    gᵢⱼ::Symmetric{T,Matrix{T}} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=gᵢⱼ[i,j]`
+    gⁱʲ::Symmetric{T,Matrix{T}} # Inverse of the metric tensor `gⁱʲ=eⁱ⋅eʲ=gⁱʲ[i,j]`
     function Basis(
-        e::AbstractMatrix{T},
-        E::AbstractMatrix{T},
-        g::AbstractMatrix{T},
-        G::AbstractMatrix{T},
+        eᵢ::AbstractMatrix{T},
+        eⁱ::AbstractMatrix{T},
+        gᵢⱼ::AbstractMatrix{T},
+        gⁱʲ::AbstractMatrix{T},
     ) where {T}
-        dim = size(e, 1)
-        @assert dim == size(e, 2) "v should be a square matrix"
-        if isidentity(e)
+        dim = size(eᵢ, 1)
+        @assert dim == size(eᵢ, 2) "v should be a square matrix"
+        if isidentity(eᵢ)
             return CanonicalBasis{dim,T}()
-        elseif isidentity(g)
-            return RotatedBasis(e)
-        elseif isdiag(g)
-            χ = sqrt.(diag(g))
-            return OrthogonalBasis(RotatedBasis(e .* inv.(χ)'), χ)
+        elseif isidentity(gᵢⱼ)
+            return RotatedBasis(eᵢ)
+        elseif isdiag(gᵢⱼ)
+            χ = sqrt.(diag(gᵢⱼ))
+            return OrthogonalBasis(RotatedBasis(eᵢ .* inv.(χ)'), χ)
         else
-            e = Matrix(e)
-            g = Symmetric(g)
-            G = Symmetric(G)
-            E = Matrix(E)
-            new{dim,T}(e, E, g, G)
+            eᵢ = Matrix(eᵢ)
+            gᵢⱼ = Symmetric(gᵢⱼ)
+            gⁱʲ = Symmetric(gⁱʲ)
+            eⁱ = Matrix(eⁱ)
+            new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
         end
     end
-    function Basis(e::AbstractMatrix{T}, ::Val{:cov}) where {T}
-        dim = size(e, 1)
-        @assert dim == size(e, 2) "v should be a square matrix"
-        if isidentity(e)
+    function Basis(eᵢ::AbstractMatrix{T}, ::Val{:cov}) where {T}
+        dim = size(eᵢ, 1)
+        @assert dim == size(eᵢ, 2) "v should be a square matrix"
+        if isidentity(eᵢ)
             return CanonicalBasis{dim,T}()
         else
-            e = Matrix(e)
-            g = simplifyif(Symmetric(e'e))
-            if isidentity(g)
-                return RotatedBasis(e)
-            elseif isdiagonal(g)
-                χ = sqrt.(diag(g))
-                return OrthogonalBasis(RotatedBasis(e .* inv.(χ)'), χ)
+            eᵢ = Matrix(eᵢ)
+            gᵢⱼ = simplifyif(Symmetric(eᵢ'eᵢ))
+            if isidentity(gᵢⱼ)
+                return RotatedBasis(eᵢ)
+            elseif isdiagonal(gᵢⱼ)
+                χ = sqrt.(diag(gᵢⱼ))
+                return OrthogonalBasis(RotatedBasis(eᵢ .* inv.(χ)'), χ)
             else
                 if T == Sym
-                    G = simplifyif(Symmetric(inv(Matrix(g))))
+                    gⁱʲ = simplifyif(Symmetric(inv(Matrix(gᵢⱼ))))
                 else
-                    G = simplifyif(inv(g))
+                    gⁱʲ = simplifyif(inv(gᵢⱼ))
                 end
-                E = simplifyif(e * G')
-                new{dim,T}(e, E, g, G)
+                eⁱ = simplifyif(eᵢ * gⁱʲ')
+                new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
             end
         end
     end
-    function Basis(E::AbstractMatrix{T}, ::Val{:cont}) where {T}
-        dim = size(E, 1)
-        @assert dim == size(E, 2) "v should be a square matrix"
-        if isidentity(E)
+    function Basis(eⁱ::AbstractMatrix{T}, ::Val{:cont}) where {T}
+        dim = size(eⁱ, 1)
+        @assert dim == size(eⁱ, 2) "v should be a square matrix"
+        if isidentity(eⁱ)
             return CanonicalBasis{dim,T}()
         else
-            E = Matrix(E)
-            G = simplifyif(Symmetric(E'E))
-            if isidentity(G)
-                return RotatedBasis(E)
-            elseif isdiagonal(G)
-                uχ = inv.(sqrt.(diag(G)))
-                return OrthogonalBasis(RotatedBasis(E .* uχ'), uχ)
+            eⁱ = Matrix(eⁱ)
+            gⁱʲ = simplifyif(Symmetric(eⁱ'eⁱ))
+            if isidentity(gⁱʲ)
+                return RotatedBasis(eⁱ)
+            elseif isdiagonal(gⁱʲ)
+                uχ = inv.(sqrt.(diag(gⁱʲ)))
+                return OrthogonalBasis(RotatedBasis(eⁱ .* uχ'), uχ)
             else
                 if T == Sym
-                    g = simplifyif(Symmetric(inv(Matrix(G))))
+                    gᵢⱼ = simplifyif(Symmetric(inv(Matrix(gⁱʲ))))
                 else
-                    g = simplifyif(inv(G))
+                    gᵢⱼ = simplifyif(inv(gⁱʲ))
                 end
-                e = simplifyif(E * g')
-                new{dim,T}(e, E, g, G)
+                eᵢ = simplifyif(eⁱ * gᵢⱼ')
+                new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
             end
         end
     end
@@ -146,7 +146,7 @@ The attributes of this object can be obtained by
 - `vecbasis(ℬ, :cov)`: square matrix defining the primal basis `eᵢ=e[:,i]=δᵢⱼ`
 - `vecbasis(ℬ, :cont)`: square matrix defining the dual basis `eⁱ=E[:,i]=δᵢⱼ`
 - `metric(ℬ, :cov)`: square matrix defining the covariant components of the metric tensor `gᵢⱼ=eᵢ⋅eⱼ=g[i,j]=δᵢⱼ`
-- `metric(ℬ, :cont)`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=G[i,j]=δᵢⱼ`
+- `metric(ℬ, :cont)`: square matrix defining the contravariant components of the metric tensor `gⁱʲ=eⁱ⋅eʲ=gⁱʲ[i,j]=δᵢⱼ`
 
 # Examples
 ```julia
@@ -205,16 +205,16 @@ julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; ℬʳ = RotatedBasis(θ
 ```
 """
 struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
-    e::Matrix{T} # Primal basis `eᵢ=e[:,i]`
-    E::Matrix{T} # Dual basis `eⁱ=E[:,i]`
+    eᵢ::Matrix{T} # Primal basis `eᵢ=e[:,i]`
+    eⁱ::Matrix{T} # Dual basis `eⁱ=E[:,i]`
     angles::NamedTuple
     function RotatedBasis(R::AbstractMatrix{T}) where {T<:Number}
         dim = size(R, 1)
         if isidentity(R)
             return CanonicalBasis{dim,T}()
         else
-            e = E = Matrix(R)
-            return new{dim,T}(e, E, angles(R))
+            eᵢ = eⁱ = Matrix(R)
+            return new{dim,T}(eᵢ, eⁱ, angles(R))
         end
     end
     function RotatedBasis(θ::T1, ϕ::T2, ψ::T3 = 0) where {T1<:Number,T2<:Number,T3<:Number}
@@ -224,30 +224,30 @@ struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
         if isidentity(R)
             return CanonicalBasis{dim,T}()
         else
-            e = E = Matrix(R)
-            return new{dim,T}(e, E, angles(R))
+            eᵢ = eⁱ = Matrix(R)
+            return new{dim,T}(eᵢ, eⁱ, angles(R))
         end
     end
     function RotatedBasis(θ::T) where {T<:Number}
         dim = 2
         cθ = cos(θ)
         sθ = sin(θ)
-        e = E = [cθ -sθ; sθ cθ]
-        if isidentity(e)
+        eᵢ = eⁱ = [cθ -sθ; sθ cθ]
+        if isidentity(eᵢ)
             return CanonicalBasis{dim,T}()
         else
-            return new{dim,T}(e, E, angles(e))
+            return new{dim,T}(eᵢ, eⁱ, angles(eᵢ))
         end
     end
     function RotatedBasis(θ::Sym)
         dim = 2
         cθ = cos(θ)
         sθ = sin(θ)
-        e = E = [cθ -sθ; sθ cθ]
-        if isidentity(e)
+        eᵢ = eⁱ = [cθ -sθ; sθ cθ]
+        if isidentity(eᵢ)
             return CanonicalBasis{dim,Sym}()
         else
-            return new{dim,Sym}(e, E, (θ = θ,))
+            return new{dim,Sym}(eᵢ, eⁱ, (θ = θ,))
         end
     end
 end
@@ -257,24 +257,24 @@ const OrthonormalBasis{dim,T} = Union{CanonicalBasis{dim,T}, RotatedBasis{dim,T}
 struct OrthogonalBasis{dim,T} <: AbstractBasis{dim,T}
     parent::OrthonormalBasis{dim,T}
     λ::Vector{T}
-    e::Matrix{T}
-    E::Matrix{T}
-    g::Diagonal{T,Vector{T}}
-    G::Diagonal{T,Vector{T}}
+    eᵢ::Matrix{T}
+    eⁱ::Matrix{T}
+    gᵢⱼ::Diagonal{T,Vector{T}}
+    gⁱʲ::Diagonal{T,Vector{T}}
     function OrthogonalBasis(parent::OrthonormalBasis{dim,T}, λ::Vector) where {dim,T}
         λ = T.(λ)
         if λ == one.(λ)
             return parent
         else
-            e = [λ[j] * parent[i,j] for i ∈ 1:dim, j ∈ 1:dim]
-            E = [parent[i,j] / λ[j] for i ∈ 1:dim, j ∈ 1:dim]
-            return new{dim,T}(parent, λ, e, E, Diagonal(λ.^2), Diagonal(inv.(λ).^2))
+            eᵢ = [λ[j] * parent[i,j] for i ∈ 1:dim, j ∈ 1:dim]
+            eⁱ = [parent[i,j] / λ[j] for i ∈ 1:dim, j ∈ 1:dim]
+            return new{dim,T}(parent, λ, eᵢ, eⁱ, Diagonal(λ.^2), Diagonal(inv.(λ).^2))
         end
     end
 end
 
-relevant_OrthonormalBasis(b::OrthogonalBasis) = b.parent
-relevant_OrthonormalBasis(b::OrthonormalBasis) = b
+relevant_OrthonormalBasis(ℬ::OrthogonalBasis) = ℬ.parent
+relevant_OrthonormalBasis(ℬ::OrthonormalBasis) = ℬ
 relevant_OrthonormalBasis(::Basis{dim,T}) where {dim,T} = CanonicalBasis{dim,T}()
 
 
@@ -327,14 +327,15 @@ invvar(var) = invvar(Val(var))
 
 Returns the primal (if `var = :cov`) or dual (if `var = :cont`) basis
 """
-vecbasis(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.e
-vecbasis(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.E
+vecbasis(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.eᵢ
+vecbasis(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.eⁱ 
 vecbasis(::CanonicalBasis{dim,T}, ::Val{:cov}) where {dim,T} = Id2{dim,T}()
 vecbasis(::CanonicalBasis{dim,T}, ::Val{:cont}) where {dim,T} = Id2{dim,T}()
 
 vecbasis(ℬ::AbstractBasis, var) = vecbasis(ℬ, Val(var))
 vecbasis(ℬ::AbstractBasis) = vecbasis(ℬ, :cov)
 vecbasis(ℬ::AbstractBasis, i::Integer, j::Integer, var = :cov) = vecbasis(ℬ, Val(var))[i, j]
+vecbasis(ℬ::AbstractBasis, j::Integer, var = :cov) = vecbasis(ℬ, Val(var))[:, j]
 
 
 """
@@ -342,8 +343,8 @@ vecbasis(ℬ::AbstractBasis, i::Integer, j::Integer, var = :cov) = vecbasis(ℬ,
 
 Returns the covariant (if `var = :cov`) or contravariant (if `var = :cont`) metric matrix
 """
-metric(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.g
-metric(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.G
+metric(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.gᵢⱼ
+metric(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.gⁱʲ
 metric(::OrthonormalBasis{dim,T}, ::Val{:cov}) where {dim,T} = Id2{dim,T}()
 metric(::OrthonormalBasis{dim,T}, ::Val{:cont}) where {dim,T} = Id2{dim,T}()
 

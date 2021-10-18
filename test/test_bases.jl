@@ -8,7 +8,7 @@
             @test vecbasis(bv) == T[1 0 0; 0 1 0; 0 1 1]
             @test vecbasis(bv, :cont) == T[1 0 0; 0 1 -1; 0 0 1]
             @test metric(bv) == T[1 0 0; 0 2 1; 0 1 1]
-            @test metric(bv, :cont) == bv.G == T[1 0 0; 0 1 -1; 0 -1 2]
+            @test metric(bv, :cont) == bv.gⁱʲ == T[1 0 0; 0 1 -1; 0 -1 2]
             @test vecbasis(bv, :cont)' * vecbasis(bv, :cov) == I
             @test metric(bv, :cont)' * metric(bv, :cov) == I
             @test !isorthogonal(bv)

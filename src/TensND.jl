@@ -25,11 +25,10 @@ export proj_tens
 
 export LeviCivita, 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ, rot2, rot3, rot6
 
-# natvec, unitvec, getcoords, getOM
-
-# export ∂, CoorSystemSym, GRAD, SYMGRAD, DIV, LAPLACE, HESS
-# export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
-# export CS_cartesian, CS_polar, CS_cylindrical, CS_spherical, CS_spheroidal
+export ∂, CoorSystemSym, GRAD, SYMGRAD, DIV, LAPLACE, HESS
+export natvec, unitvec, getcoords, getOM
+export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
+export CS_cartesian, CS_polar, CS_cylindrical, CS_spherical, CS_spheroidal
 
 
 include("array_utils.jl")
@@ -37,7 +36,7 @@ include("bases.jl")
 include("tens.jl")
 include("tens_isotropic.jl")
 include("special_tens.jl")
-# include("coorsystems.jl")
+include("coorsystems.jl")
 
 
 # function __init__()
