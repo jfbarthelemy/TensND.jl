@@ -602,7 +602,7 @@ end
 
 
 for OP in (:(==), :(!=))
-    @eval function Base.$OP(
+    @eval @inline function Base.$OP(
         t1::AbstractTens{order,dim},
         t2::AbstractTens{order,dim},
     ) where {order,dim}
@@ -612,21 +612,21 @@ for OP in (:(==), :(!=))
 end
 
 for OP in (:+, :-)
-    @eval function Base.$OP(
+    @eval @inline function Base.$OP(
         t1::AbstractTens{order,dim},
         t2::AbstractTens{order,dim},
     ) where {order,dim}
         nt1, nt2 = same_basis_same_var(t1, t2)
         return Tens($OP(getarray(nt1), getarray(nt2)), getbasis(nt1), getvar(nt1))
     end
-    @eval function Base.$OP(
+    @eval @inline function Base.$OP(
         t1::AllTensOrthogonal{order,dim,T},
         t2::UniformScaling{T},
     ) where {order,dim,T<:SymPy.SymbolicObject}
         nt1 = TensOrthonormal(t1)
         return Tens($OP(getarray(nt1), t2), getbasis(nt1), getvar(nt1))
     end
-    @eval function Base.$OP(
+    @eval @inline function Base.$OP(
         t1::UniformScaling{T},
         t2::AllTensOrthogonal{order,dim,T},
     ) where {order,dim,T<:SymPy.SymbolicObject}
@@ -635,13 +635,13 @@ for OP in (:+, :-)
     end
 end
 
-Base.:*(α::Number, t::AbstractTens) = Tens(α * getarray(t), getbasis(t), getvar(t))
-Base.:*(t::AbstractTens, α::Number) = Tens(α * getarray(t), getbasis(t), getvar(t))
-Base.:/(t::AbstractTens, α::Number) = Tens(getarray(t) / α, getbasis(t), getvar(t))
+@inline Base.:*(α::Number, t::AbstractTens) = Tens(α * getarray(t), getbasis(t), getvar(t))
+@inline Base.:*(t::AbstractTens, α::Number) = Tens(α * getarray(t), getbasis(t), getvar(t))
+@inline Base.:/(t::AbstractTens, α::Number) = Tens(getarray(t) / α, getbasis(t), getvar(t))
 
-Base.inv(t::AbstractTens{2}) =
+@inline Base.inv(t::AbstractTens{2}) =
     Tens(inv(getarray(t)), getbasis(t), (invvar(getvar(t, 2)), invvar(getvar(t, 1))))
-Base.inv(t::AbstractTens{4}) = Tens(
+@inline Base.inv(t::AbstractTens{4}) = Tens(
     inv(getarray(t)),
     getbasis(t),
     (

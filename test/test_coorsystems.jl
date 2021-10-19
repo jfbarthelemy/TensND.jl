@@ -16,27 +16,27 @@
 
     @testsection "Coordinate systems" begin
         # Cartesian
-        Cartesian = CS_cartesian() ; 𝐗 = getcoords(Cartesian) ; 𝐄 = unitvec(Cartesian) ; ℬ = getbasis(Cartesian)
-        𝛔 = Tensnd(SymmetricTensor{2,3}((i, j) -> SymFunction("σ$i$j", real = true)(𝐗...)))
+        Cartesian = CS_cartesian() ; 𝐗 = getcoords(Cartesian) ; 𝐄 = unitvec(Cartesian) ; ℬ = get_normalized_basis(Cartesian)
+        𝛔 = Tens(SymmetricTensor{2,3}((i, j) -> SymFunction("σ$i$j", real = true)(𝐗...)))
         @test DIV(𝛔, Cartesian) ==
               sum([sum([∂(𝛔[i, j], 𝐗[j]) for j ∈ 1:3]) * 𝐄[i] for i ∈ 1:3])
 
         # Polar
-        Polar = CS_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ; ℬᵖ = getbasis(Polar)
+        Polar = CS_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ; ℬᵖ = get_normalized_basis(Polar)
         f = SymFunction("f", real = true)(r, θ)
         @test simplify(LAPLACE(f, Polar)) ==
               simplify(∂(r * ∂(f, r), r) / r + ∂(f, θ, θ) / r^2)
 
         # Cylindrical
-        Cylindrical = CS_cylindrical() ; rθz = getcoords(Cylindrical) ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical) ; ℬᶜ = getbasis(Cylindrical)
+        Cylindrical = CS_cylindrical() ; rθz = getcoords(Cylindrical) ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical) ; ℬᶜ = get_normalized_basis(Cylindrical)
         r, θ, z = rθz
-        𝐯 = Tensnd(Vec{3}(i -> SymFunction("v$(rθz[i])", real = true)(rθz...)), ℬᶜ)
-        vʳ, vᶿ, vᶻ = getdata(𝐯)
+        𝐯 = Tens(Vec{3}(i -> SymFunction("v$(rθz[i])", real = true)(rθz...)), ℬᶜ)
+        vʳ, vᶿ, vᶻ = getarray(𝐯)
         @test simplify(DIV(𝐯, Cylindrical)) ==
-              ∂(vʳ, r) + vʳ / r + ∂(vᶿ, θ) / r + ∂(vᶻ, z)
+              simplify(∂(vʳ, r) + vʳ / r + ∂(vᶿ, θ) / r + ∂(vᶻ, z))
 
         # Spherical
-        Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
+        Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = get_normalized_basis(Spherical)
         for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ")
             @eval $(Symbol(σⁱʲ)) = SymFunction($σⁱʲ, real = true)($r)
         end
@@ -45,16 +45,17 @@
         @test simplify(div𝛔 ⋅ 𝐞ʳ) == simplify(∂(σʳʳ, r) + (2σʳʳ - σᶿᶿ - σᵠᵠ) / r)
 
         # Concentric sphere - hydrostatic part
-        Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
-        𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic(basis = ℬˢ)
+        Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = get_normalized_basis(Spherical)
+        𝕀, 𝕁, 𝕂 = ISO(Val(3),Val(Sym))
+        𝟏 = tensId2(Val(3),Val(Sym))
         k, μ = symbols("k μ", positive = true)
         λ = k - 2μ/3
         ℂ = 3k * 𝕁 + 2μ * 𝕂
         u = SymFunction("u", real = true)(r)
         𝐮 = u * 𝐞ʳ
         𝛆 = simplify(SYMGRAD(𝐮, Spherical))
-        # 𝛔 = simplify(ℂ ⊡ 𝛆)
-        𝛔 = simplify(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
+        𝛔 = simplify(ℂ ⊡ 𝛆)
+        # 𝛔 = simplify(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
         @test dsolve(factor(simplify(DIV(𝛔, Spherical) ⋅ 𝐞ʳ)), u) ==
               Eq(u, symbols("C1") / r^2 + symbols("C2") * r)
 

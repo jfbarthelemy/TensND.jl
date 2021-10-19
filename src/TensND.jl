@@ -26,7 +26,7 @@ export proj_tens
 export LeviCivita, 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ, rot2, rot3, rot6
 
 export ∂, CoorSystemSym, GRAD, SYMGRAD, DIV, LAPLACE, HESS
-export natvec, unitvec, getcoords, getOM
+export get_normalized_basis, get_natural_basis, natvec, unitvec, getcoords, getOM
 export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
 export CS_cartesian, CS_polar, CS_cylindrical, CS_spherical, CS_spheroidal
 

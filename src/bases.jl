@@ -53,7 +53,7 @@ julia> θ, ϕ, ψ = symbols("θ, ϕ, ψ", real = true) ; ℬʳ = Basis(θ, ϕ, �
                         -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
 ```
 """
-struct Basis{dim,T} <: AbstractBasis{dim,T} 
+struct Basis{dim,T} <: AbstractBasis{dim,T}
     eᵢ::Matrix{T} # Primal basis `eᵢ=eᵢ[:,i]`
     eⁱ::Matrix{T} # Dual basis `eⁱ=eⁱ[:,i]`
     gᵢⱼ::Symmetric{T,Matrix{T}} # Metric tensor `gᵢⱼ=eᵢ⋅eⱼ=gᵢⱼ[i,j]`
@@ -72,13 +72,30 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return RotatedBasis(eᵢ)
         elseif isdiag(gᵢⱼ)
             χ = sqrt.(diag(gᵢⱼ))
-            return OrthogonalBasis(RotatedBasis(eᵢ .* inv.(χ)'), χ)
+            return OrthogonalBasis(RotatedBasis(eᵢ .* transpose(inv.(χ))), χ)
         else
             eᵢ = Matrix(eᵢ)
             gᵢⱼ = Symmetric(gᵢⱼ)
             gⁱʲ = Symmetric(gⁱʲ)
             eⁱ = Matrix(eⁱ)
             new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
+        end
+    end
+    function Basis(ℬ::AbstractBasis{dim,T}, χᵢ::V) where {dim,T,V}
+        Χ = collect(χᵢ)
+        invΧ = inv.(Χ)
+        if Χ == one.(Χ)
+            return ℬ
+        else
+            if ℬ isa OrthonormalBasis
+                return OrthogonalBasis(ℬ, Χ)
+            else
+                eᵢ = vecbasis(ℬ, :cov) .* transpose(Χ)
+                eⁱ = vecbasis(ℬ, :cont) .* transpose(invΧ)
+                gᵢⱼ = Symmetric(Χ .* metric(ℬ, :cov) .* transpose(Χ))
+                gⁱʲ = Symmetric(invΧ .* metric(ℬ, :cont) .* transpose(invΧ))
+                new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
+            end
         end
     end
     function Basis(eᵢ::AbstractMatrix{T}, ::Val{:cov}) where {T}
@@ -88,19 +105,19 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             eᵢ = Matrix(eᵢ)
-            gᵢⱼ = simplifyif(Symmetric(eᵢ'eᵢ))
+            gᵢⱼ = simplifyif(Symmetric(transpose(eᵢ) * eᵢ))
             if isidentity(gᵢⱼ)
                 return RotatedBasis(eᵢ)
             elseif isdiagonal(gᵢⱼ)
                 χ = sqrt.(diag(gᵢⱼ))
-                return OrthogonalBasis(RotatedBasis(eᵢ .* inv.(χ)'), χ)
+                return OrthogonalBasis(RotatedBasis(eᵢ .* transpose(inv.(χ))), χ)
             else
                 if T == Sym
                     gⁱʲ = simplifyif(Symmetric(inv(Matrix(gᵢⱼ))))
                 else
                     gⁱʲ = simplifyif(inv(gᵢⱼ))
                 end
-                eⁱ = simplifyif(eᵢ * gⁱʲ')
+                eⁱ = simplifyif(eᵢ * transpose(gⁱʲ))
                 new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
             end
         end
@@ -112,19 +129,19 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             eⁱ = Matrix(eⁱ)
-            gⁱʲ = simplifyif(Symmetric(eⁱ'eⁱ))
+            gⁱʲ = simplifyif(Symmetric(transpose(eⁱ) * eⁱ))
             if isidentity(gⁱʲ)
                 return RotatedBasis(eⁱ)
             elseif isdiagonal(gⁱʲ)
                 uχ = inv.(sqrt.(diag(gⁱʲ)))
-                return OrthogonalBasis(RotatedBasis(eⁱ .* uχ'), uχ)
+                return OrthogonalBasis(RotatedBasis(eⁱ .* transpose(uχ)), uχ)
             else
                 if T == Sym
                     gᵢⱼ = simplifyif(Symmetric(inv(Matrix(gⁱʲ))))
                 else
                     gᵢⱼ = simplifyif(inv(gⁱʲ))
                 end
-                eᵢ = simplifyif(eⁱ * gᵢⱼ')
+                eᵢ = simplifyif(eⁱ * transpose(gᵢⱼ))
                 new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
             end
         end
@@ -252,7 +269,7 @@ struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
     end
 end
 
-const OrthonormalBasis{dim,T} = Union{CanonicalBasis{dim,T}, RotatedBasis{dim,T}}
+const OrthonormalBasis{dim,T} = Union{CanonicalBasis{dim,T},RotatedBasis{dim,T}}
 
 struct OrthogonalBasis{dim,T} <: AbstractBasis{dim,T}
     parent::OrthonormalBasis{dim,T}
@@ -266,9 +283,9 @@ struct OrthogonalBasis{dim,T} <: AbstractBasis{dim,T}
         if λ == one.(λ)
             return parent
         else
-            eᵢ = [λ[j] * parent[i,j] for i ∈ 1:dim, j ∈ 1:dim]
-            eⁱ = [parent[i,j] / λ[j] for i ∈ 1:dim, j ∈ 1:dim]
-            return new{dim,T}(parent, λ, eᵢ, eⁱ, Diagonal(λ.^2), Diagonal(inv.(λ).^2))
+            eᵢ = [λ[j] * parent[i, j] for i ∈ 1:dim, j ∈ 1:dim]
+            eⁱ = [parent[i, j] / λ[j] for i ∈ 1:dim, j ∈ 1:dim]
+            return new{dim,T}(parent, λ, eᵢ, eⁱ, Diagonal(λ .^ 2), Diagonal(inv.(λ) .^ 2))
         end
     end
 end
@@ -282,7 +299,7 @@ relevant_OrthonormalBasis(::Basis{dim,T}) where {dim,T} = CanonicalBasis{dim,T}(
 
 @inline SphericalBasis(θ, ϕ) = RotatedBasis(θ, ϕ, 0)
 
-const AllOrthogonalBasis{dim,T} = Union{OrthonormalBasis{dim,T}, OrthogonalBasis{dim,T}}
+const AllOrthogonalBasis{dim,T} = Union{OrthonormalBasis{dim,T},OrthogonalBasis{dim,T}}
 
 angles(M::AbstractMatrix{T}, ::Val{2}) where {T} =
     (θ = atan(M[2, 1] - M[1, 2], M[1, 1] + M[2, 2]),)
@@ -328,7 +345,7 @@ invvar(var) = invvar(Val(var))
 Returns the primal (if `var = :cov`) or dual (if `var = :cont`) basis
 """
 vecbasis(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.eᵢ
-vecbasis(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.eⁱ 
+vecbasis(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.eⁱ
 vecbasis(::CanonicalBasis{dim,T}, ::Val{:cov}) where {dim,T} = Id2{dim,T}()
 vecbasis(::CanonicalBasis{dim,T}, ::Val{:cont}) where {dim,T} = Id2{dim,T}()
 

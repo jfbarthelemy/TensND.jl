@@ -179,6 +179,20 @@ for OP in (:+, :-, :*)
         A1::UniformScaling,
         A2::TensISO{order,dim},
     ) where {order,dim,T,N} = TensISO{dim}($OP.(ntuple(_ -> A1.λ, N), getdata(A2)))
+    @eval @inline function Base.$OP(
+        A1::TensISO{order,dim,T,N},
+        A2::AbstractTens{order,dim},
+    ) where {order,dim,T,N}
+        m1 = components(A1, getbasis(A2), getvar(A2))
+        return Tens($OP(m1, getarray(A2)), getbasis(A2), getvar(A2))
+    end
+    @eval @inline function Base.$OP(
+        A1::AbstractTens{order,dim},
+        A2::TensISO{order,dim,T,N},
+    ) where {order,dim,T,N}
+        m2 = components(A2, getbasis(A1), getvar(A1))
+        return Tens($OP(getarray(A1), m2), getbasis(A1), getvar(A1))
+    end
 end
 for OP in (:(==), :(<=), :(>=), :(<), :(>))
     @eval @inline Base.$OP(
@@ -328,15 +342,11 @@ function qcontract(A::TensISO{4,dim,T}, B::AllTensOrthogonal{order,dim}) where {
     newm =
         getdata(A)[2] *
         (contract(contract(m, 1, 3), 1, 2) + contract(contract(m, 1, 4), 1, 2)) / 2 +
-        (getdata(A)[1] - getdata(A)[2]) * contract(contract(m, 1, 2), 1, 2) /
-        dim
+        (getdata(A)[1] - getdata(A)[2]) * contract(contract(m, 1, 2), 1, 2) / dim
     return Tens(newm, getbasis(nB))
 end
 
-function qcontract(
-    A::AllTensOrthogonal{order,dim},
-    B::TensISO{4,dim,T},
-) where {order,dim,T}
+function qcontract(A::AllTensOrthogonal{order,dim}, B::TensISO{4,dim,T}) where {order,dim,T}
     nA = TensOrthonormal(A)
     m = getarray(nA)
     newm =
@@ -352,8 +362,8 @@ end
 isotropify(A::AllTensOrthogonal{2,dim}) where {dim} = TensISO{dim}(tr(A) / dim)
 
 function isotropify(A::AllTensOrthogonal{4,dim,T}) where {dim,T}
-    α = tensJ4(Val(dim),Val(T)) ⊙ A
-    β = (tensK4(Val(dim),Val(T)) ⊙ A) / 5
+    α = tensJ4(Val(dim), Val(T)) ⊙ A
+    β = (tensK4(Val(dim), Val(T)) ⊙ A) / 5
     return TensISO{dim}(α, β)
 end
 
