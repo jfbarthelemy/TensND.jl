@@ -205,7 +205,6 @@ CanonicalBasis{2, Float64}
 struct CanonicalBasis{dim,T} <: AbstractBasis{dim,T} end
 CanonicalBasis() = CanonicalBasis{3,Sym}()
 
-
 """
     RotatedBasis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
     RotatedBasis(θ::T<:Number)
