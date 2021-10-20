@@ -65,6 +65,7 @@ The package relies on the definition of
 ## Examples
 
 ### Differential operators in polar coordinates
+
 ```julia
 julia> using TensND, SymPy
 
@@ -93,3 +94,23 @@ TensND.TensRotated{2, 2, Sym, Tensors.Tensor{2, 2, Sym, 4}}
  sin(θ)   cos(θ)
 → var: (:cont, :cont)
 ```
+
+## Citing TensND.jl
+
+```
+@misc{TensND.jl,
+	author  = {Jean-François Barthélémy},
+	title   = {TensND.jl},
+	url     = {https://github.com/jfbarthelemy/TensND.jl},
+	version = {v0.1.0},
+	year    = {2021},
+	month   = {8}
+}
+```
+
+## Related packages
+
+- [SymPy.jl](https://github.com/JuliaPy/SymPy.jl)
+- [Tensors.jl](https://github.com/Ferrite-FEM/Tensors.jl)
+- [OMEinsum.jl](https://github.com/under-Peter/OMEinsum.jl)
+- [Rotations.jl](https://github.com/JuliaGeometry/Rotations.jl)
