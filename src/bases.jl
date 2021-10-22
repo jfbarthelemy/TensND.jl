@@ -146,7 +146,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             end
         end
     end
-    Basis(v::AbstractMatrix{T}, var) where {T} = Basis(v, Val(var))
+    Basis(v::AbstractMatrix{T}, var::Symbol) where {T} = Basis(v, Val(var))
     Basis(v::AbstractMatrix{T}) where {T} = Basis(v, :cov)
     Basis(θ::T1, ϕ::T2, ψ::T3 = 0) where {T1,T2,T3} = RotatedBasis(θ, ϕ, ψ)
     Basis(θ::T) where {T} = RotatedBasis(θ)

@@ -349,7 +349,7 @@ CanonicalBasis{length(coords),eltype(coords)}()
 
 init_cartesian(::Val{3}) = init_cartesian(symbols("x y z", real = true))
 init_cartesian(::Val{2}) = init_cartesian(symbols("x y", real = true))
-init_cartesian(dim::Int) = init_cartesian(Val(dim))
+init_cartesian(dim::Integer) = init_cartesian(Val(dim))
 
 """
     CS_cartesian(coords = symbols("x y z", real = true))
