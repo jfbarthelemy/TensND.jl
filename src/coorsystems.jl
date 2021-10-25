@@ -352,13 +352,13 @@ init_cartesian(::Val{2}) = init_cartesian(symbols("x y", real = true))
 init_cartesian(dim::Integer) = init_cartesian(Val(dim))
 
 """
-    CS_cartesian(coords = symbols("x y z", real = true))
+    coorsys_cartesian(coords = symbols("x y z", real = true))
 
 Returns the cartesian coordinate system
 
 # Examples
 ```julia
-julia> Cartesian = CS_cartesian() ; 𝐗 = getcoords(Cartesian) ; 𝐄 = unitvec(Cartesian) ; ℬ = getbasis(Cartesian)
+julia> Cartesian = coorsys_cartesian() ; 𝐗 = getcoords(Cartesian) ; 𝐄 = unitvec(Cartesian) ; ℬ = getbasis(Cartesian)
 
 julia> 𝛔 = Tens(SymmetricTensor{2,3}((i, j) -> SymFunction("σ\$i\$j", real = true)(𝐗...))) ;
 
@@ -375,7 +375,7 @@ Tens.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 # var: (:cont,)
 ``` 
 """
-function CS_cartesian(coords = symbols("x y z", real = true))
+function coorsys_cartesian(coords = symbols("x y z", real = true))
     dim = length(coords)
     𝐗, 𝐄, ℬ = init_cartesian(coords)
     OM = sum([𝐗[i] * 𝐄[i] for i = 1:dim])
@@ -402,13 +402,13 @@ ntuple(i -> 𝐞ᵖ(Val(i), coords[2]; canonical = canonical), 2),
 Basis(coords[2])
 
 """
-    CS_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
+    coorsys_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
 
 Returns the polar coordinate system
 
 # Examples
 ```julia
-julia> Polar = CS_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ; ℬᵖ = getbasis(Polar)
+julia> Polar = coorsys_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ; ℬᵖ = getbasis(Polar)
 
 julia> f = SymFunction("f", real = true)(r, θ) ;
 
@@ -425,7 +425,7 @@ julia> LAPLACE(f, Polar)
 ∂r
 ``` 
 """
-function CS_polar(
+function coorsys_polar(
     coords = (symbols("r", positive = true), symbols("θ", real = true));
     canonical = false,
 )
@@ -456,13 +456,13 @@ ntuple(i -> 𝐞ᶜ(Val(i), coords[2]; canonical = canonical), 3),
 CylindricalBasis(coords[2])
 
 """
-    CS_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
+    coorsys_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
 
 Returns the cylindrical coordinate system
 
 # Examples
 ```julia
-julia> Cylindrical = CS_cylindrical() ; rθz = getcoords(Cylindrical) ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical) ; ℬᶜ = getbasis(Cylindrical)
+julia> Cylindrical = coorsys_cylindrical() ; rθz = getcoords(Cylindrical) ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical) ; ℬᶜ = getbasis(Cylindrical)
 
 julia> 𝐯 = Tens(Vec{3}(i -> SymFunction("v\$(rθz[i])", real = true)(rθz...)), ℬᶜ) ;
 
@@ -474,7 +474,7 @@ julia> DIV(𝐯, Cylindrical)
 ∂r                ∂z                              r
 ``` 
 """
-function CS_cylindrical(
+function coorsys_cylindrical(
     coords = (
         symbols("r", positive = true),
         symbols("θ", real = true),
@@ -486,7 +486,7 @@ function CS_cylindrical(
     OM = r * 𝐞ʳ + z * 𝐞ᶻ
     return CoorSystemSym(OM, coords, ℬᶜ, (one(Sym), r, one(Sym)))
 end
-# function CS_cylindrical(
+# function Cylindrical(
 #     coords = (
 #         symbols("r", positive = true),
 #         symbols("θ", real = true),
@@ -526,13 +526,13 @@ ntuple(i -> 𝐞ˢ(Val(i), coords[1:2]...; canonical = canonical), 3),
 SphericalBasis(coords[1:2]...)
 
 """
-    CS_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
+    coorsys_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
 
 Returns the spherical coordinate system
 
 # Examples
 ```julia
-julia> Spherical = CS_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
+julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; ℬˢ = getbasis(Spherical)
 
 julia> for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ") @eval \$(Symbol(σⁱʲ)) = SymFunction(\$σⁱʲ, real = true)(\$r) end ;
 
@@ -556,7 +556,7 @@ d            σʳʳ(r) - σᵠᵠ(r)   σʳʳ(r) - σᶿᶿ(r)
 dr                  r                 r
 ``` 
 """
-function CS_spherical(
+function coorsys_spherical(
     coords = (
         symbols("θ", real = true),
         symbols("ϕ", real = true),
@@ -572,14 +572,14 @@ end
 
 
 """
-    CS_spheroidal(coords = (symbols("ϕ", real = true),symbols("p", real = true),symbols("q", positive = true),),
+    coorsys_spheroidal(coords = (symbols("ϕ", real = true),symbols("p", real = true),symbols("q", positive = true),),
                             c = symbols("c", positive = true),tmp_coords = (symbols("p̄ q̄", positive = true)...,),)
 
 Returns the spheroidal coordinate system
 
 # Examples
 ```julia
-julia> Spheroidal = CS_spheroidal() ; OM = getOM(Spheroidal)
+julia> Spheroidal = coorsys_spheroidal() ; OM = getOM(Spheroidal)
 Tens.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 # data: 3-element Vec{3, Sym}:
  c⋅p̄⋅q̄⋅cos(ϕ)
@@ -595,7 +595,7 @@ julia> LAPLACE(OM[1]^2, Spheroidal)
 2
 ``` 
 """
-function CS_spheroidal(
+function coorsys_spheroidal(
     coords = (
         symbols("ϕ", real = true),
         symbols("p", real = true),
@@ -650,3 +650,9 @@ julia> angles, vectors, ℬʳ = init_rotated() ; θ, ϕ, ψ = angles ; 𝐞ᶿ, 
 init_rotated(angles = symbols("θ ϕ ψ", real = true); canonical = false) = Tuple(angles),
 ntuple(i -> 𝐞ˢ(Val(i), angles...; canonical = canonical), 3),
 Basis(angles...)
+
+export ∂, CoorSystemSym, getChristoffel
+export GRAD, SYMGRAD, DIV, LAPLACE, HESS
+export get_normalized_basis, get_natural_basis, natvec, unitvec, getcoords, getOM
+export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
+export coorsys_cartesian, coorsys_polar, coorsys_cylindrical, coorsys_spherical, coorsys_spheroidal

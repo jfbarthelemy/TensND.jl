@@ -134,11 +134,6 @@ julia> 𝕀, 𝕁, 𝕂 = ISO() ;
 ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} =
     tensId4(Val(dim), Val(T)), tensJ4(Val(dim), Val(T)), tensK4(Val(dim), Val(T))
 
-const t𝟏 = tensId2
-const t𝕀 = tensId4
-const t𝕁 = tensJ4
-const t𝕂 = tensK4
-
 getdata(t::TensISO) = t.data
 getarray(t::TensISO) = Array(t)
 getbasis(::TensISO{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
@@ -383,3 +378,6 @@ end
 
 isISO(A::TensISO) = true
 isISO(A::AbstractArray) = isotropify(A) == A
+
+export TensISO, tensId2, tensId4, tensJ4, tensK4, ISO, isotropify, isISO
+

@@ -147,12 +147,10 @@ Tensors.otimes(t::AbstractArray, α::Number) = α * t
 sotimes(α::Number, t::AbstractArray) = α * t
 sotimes(t::AbstractArray, α::Number) = α * t
 
-
-
 const ⊙ = qcontract
 const ⊠ = otimesu
 const ⊠ˢ = otimesul
 const ⊗ˢ = sotimes
-
 const sboxtimes = otimesul
 
+export isidentity, contract, qcontract, otimesu, otimesul, sboxtimes, sotimes, ⊙, ⊠, ⊠ˢ, ⊗ˢ

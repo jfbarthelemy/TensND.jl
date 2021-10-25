@@ -1,12 +1,12 @@
 using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 sympy.init_printing(use_unicode=true)
 
-Spherical = CS_spherical()
+Spherical = coorsys_spherical()
 θ, ϕ, r = getcoords(Spherical)
 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical)
 ℬˢ = get_normalized_basis(Spherical)
 𝐱 = getOM(Spherical)
-𝐞₁, 𝐞₂, 𝐞₃ = unitvec(CS_cartesian())
+𝐞₁, 𝐞₂, 𝐞₃ = unitvec(coorsys_cartesian())
 # 𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic(basis = ℬˢ)
 𝕀, 𝕁, 𝕂 = ISO(Val(3),Val(Sym))
 𝟏 = tensId2(Val(3),Val(Sym))

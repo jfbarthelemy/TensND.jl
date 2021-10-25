@@ -287,4 +287,4 @@ function rot6(θ, ϕ = 0, ψ = 0)
     return sboxtimes(R, R)
 end
 
-
+export LeviCivita, 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ, rot2, rot3, rot6

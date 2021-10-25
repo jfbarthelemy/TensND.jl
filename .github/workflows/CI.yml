@@ -63,7 +63,7 @@ jobs:
             end
             DocMeta.setdocmeta!(TensND, :DocTestSetup, docmeta; recursive=true)
             doctest(TensND)'
-      - run: julia --project=docs docs/make.jl
+      - run: julia --project=docs --color=yes -e 'using Pkg; Pkg.instantiate(); include("docs/make.jl")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}

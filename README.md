@@ -396,7 +396,7 @@ TensND.TensRotated{1, 3, Sym, Vec{3, Sym}}
 ### Coordinate systems and differential operators
 
 ```julia
-julia> Polar = CS_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ;
+julia> Polar = coorsys_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar) ;
 
 julia> LAPLACE(SymFunction("f", real = true)(r, θ), Polar)
                                2
@@ -423,7 +423,7 @@ TensND.TensRotated{2, 2, Sym, Tensors.Tensor{2, 2, Sym, 4}}
 ```
 
 ```julia
-julia> Spherical = CS_spherical() ;
+julia> Spherical = coorsys_spherical() ;
 
 julia> θ, ϕ, r = getcoords(Spherical) ;
 

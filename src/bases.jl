@@ -421,3 +421,7 @@ for OP in (:show, :print, :display)
         end
     end
 end
+
+export Basis, CanonicalBasis, RotatedBasis, CylindricalBasis, SphericalBasis, OrthogonalBasis, AllOrthogonalBasis
+export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal
+

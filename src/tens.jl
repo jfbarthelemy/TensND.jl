@@ -5,7 +5,6 @@ abstract type AbstractTens{order,dim,T<:Number} <: AbstractArray{T,order} end
 @pure Base.eltype(::Type{AbstractTens{order,dim,T}}) where {order,dim,T} = T
 
 
-
 """
     Tens{order,dim,T,A<:AbstractArray}
 
@@ -81,7 +80,6 @@ for order ∈ (2, 4)
         return TensOrthonormal(A, basis)
     end
 end
-
 
 
 struct TensRotated{order,dim,T,A<:AbstractArray} <: AbstractTens{order,dim,T}
@@ -1202,6 +1200,10 @@ Tensors.minortranspose(
     t::TensOrthonormal{order,dim,T,<:FourthOrderTensor},
 ) where {order,dim,T} = Tens(minortranspose(getarray(t)), getbasis(t))
 
-# const ⊗̅ = otimesu
-# const ⊗̲ = otimesl
-# const ⊗̲̅ = otimesul
+export AbstractTens, Tens
+export proj_tens
+export getorder, arraytype, getdata, getarray, getbasis, getvar
+export components, components_canon, change_tens, change_tens_canon
+export trigsimp, expand_trig
+export KM, invKM
+export getbasis, getvar
