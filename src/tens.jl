@@ -70,14 +70,14 @@ for order ∈ (2, 4)
         ε = 1.e-6,
     ) where {dim,T}
         basis = relevant_OrthonormalBasis(getbasis(t))
-        A = components(t, basis)
+        newt = change_tens(t, basis)
         for sym ∈ proj
-            (pA, d, drel) = proj_array(Val(sym), A)
+            (projt, d, drel) = proj_tens(Val(sym), newt)
             if d == zero(T) || drel < ε
-                return pA
+                return projt
             end
         end
-        return TensOrthonormal(A, basis)
+        return newt
     end
 end
 
@@ -978,7 +978,7 @@ function Tensors.dotdot(
 end
 
 """
-    dcontract(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
+    qcontract(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
 Defines a quadruple contracted product between two tensors
 

@@ -328,8 +328,11 @@ Tensors.dotdot(v1::AbstractTens{1}, S::TensISO{4,dim}, v2::AbstractTens{1}) wher
 Tensors.dotdot(a1::AbstractTens{2}, S::TensISO{4,dim}, a2::AbstractTens{2}) where {dim} =
     (getdata(S)[1] - getdata(S)[2]) * tr(a1) * tr(a2) / dim + getdata(S)[2] * a1 ⊡ a2
 
-qcontract(A::TensISO{4,dim}, B::TensISO{4,dim}) where {dim} =
+qcontract(A::TensISO{4,3}, B::TensISO{4,3}) =
     getdata(A)[1] * getdata(B)[1] + 5 * getdata(A)[2] * getdata(B)[2]
+
+qcontract(A::TensISO{4,2}, B::TensISO{4,2}) =
+    getdata(A)[1] * getdata(B)[1] + 2 * getdata(A)[2] * getdata(B)[2]
 
 function qcontract(A::TensISO{4,dim,T}, B::AllTensOrthogonal{order,dim}) where {order,dim,T}
     nB = TensOrthonormal(B)
@@ -354,9 +357,10 @@ function qcontract(A::AllTensOrthogonal{order,dim}, B::TensISO{4,dim,T}) where {
     return Tens(newm, getbasis(nA))
 end
 
-isotropify(A::AllTensOrthogonal{2,dim}) where {dim} = TensISO{dim}(tr(A) / dim)
+isotropify(A::AbstractArray{T,2}) where {T} = TensISO{size(A)[1]}(tr(A) / dim)
 
-function isotropify(A::AllTensOrthogonal{4,dim,T}) where {dim,T}
+function isotropify(A::AbstractArray{T,4}) where {T}
+    dim = size(A)[1]
     α = tensJ4(Val(dim), Val(T)) ⊙ A
     β = (tensK4(Val(dim), Val(T)) ⊙ A) / 5
     return TensISO{dim}(α, β)
@@ -364,7 +368,7 @@ end
 
 TensISO(A::AbstractArray) = isotropify(Tens(A))
 
-function proj_array(::Val{:ISO}, A::AbstractArray)
+function proj_tens(::Val{:ISO}, A::AbstractArray)
     norm = x -> simplify(√(sum(x .^ 2)))
     nA = norm(A)
     if nA == zero(eltype(A))
