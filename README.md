@@ -57,7 +57,7 @@ The package relies on the definition of
 
 - **coordinate systems**
 
-  - a coordinate system contains all information required to perform differential operations on tensor fields: position vector `OM` expressed in the canonical basis, coordinate names `xⁱ`, natural basis `aᵢ=∂ᵢOM`, normalized basis `eᵢ=aᵢ/||aᵢ||`, Christoffel coefficients `Γᵢⱼᵏ=∂ᵢaⱼ⋅aᵏ` where `aⁱ` form the dual basis associated to the natural one
+  - a coordinate system contains all information required to perform differential operations on tensor fields: position vector `OM` expressed in the canonical basis, coordinate names `xⁱ`, natural basis `aᵢ=∂ᵢOM`, normalized basis `eᵢ=aᵢ/||aᵢ||`, Christoffel coefficients `Γᵢⱼᵏ=∂ᵢaⱼ⋅aᵏ` where `(aⁱ)(1≤i≤dim)` form the dual basis associated to the natural one
   - predefined coordinate systems are available: cartesian, polar, cylindrical, spherical and spheroidal but the user can define new systems
 
   **_NOTE:_**
@@ -80,7 +80,7 @@ An arbitrary basis contains four matrices
 - one defining the metric tensor `gᵢⱼ=𝐞ᵢ⋅𝐞ⱼ`,
 - one defining the inverse of the  metric tensor `gⁱʲ=𝐞ⁱ⋅𝐞ʲ`.
 
-and is defined by one the following constructors
+and is built by one the following constructors
 
 - `Basis(eᵢ::AbstractMatrix{T},eⁱ::AbstractMatrix{T},gᵢⱼ::AbstractMatrix{T},gⁱʲ::AbstractMatrix{T}) where {T}`
 - `Basis(ℬ::AbstractBasis{dim,T}, χᵢ::V) where {dim,T,V}` where `χᵢ` is a list of scaling factors applied on the vectors of the basis `ℬ`
@@ -89,7 +89,7 @@ and is defined by one the following constructors
 - `Basis(θ::T) where {T}`
 - `Basis{dim,T}() where {dim,T}`
 
-Depending on the property of the basis (canonical, orthonormal, orthogonal...), different types of basis can be created.
+Depending on the property of the basis (canonical, orthonormal, orthogonal...), the most relevant type (`CanonicalBasis`, `RotatedBasis`, `OrthogonalBasis` or `Basis`) is implicitly created by calling `Basis`.
 
 ```julia
 julia> ℬ = Basis(Sym[1 0 0; 0 1 0; 0 1 1])
@@ -131,7 +131,7 @@ RotatedBasis{3, Sym}
  ⋅  ⋅  1
 ```
 
-Predefined symbolic coordinates and basis vectors can be obtained from
+Predefined symbolic or numerical coordinates and basis vectors can be obtained from
 
 - `init_cartesian(dim::Integer)`
 - `init_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)`
@@ -139,7 +139,7 @@ Predefined symbolic coordinates and basis vectors can be obtained from
 - `init_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)`
 - `init_rotated(coords = symbols("θ ϕ ψ", real = true); canonical = false)`
 
-The option `canonical` specifies whether the vector are expressed in the canconical basis or directly in the rotated basis.
+The option `canonical` specifies whether the vector is expressed as a tensor with components in the canonical basis or directly in the rotated basis. The second option (ie `canonical = false` by default) is often preferable for further calculations in the rotated basis.
 
 ```julia
 julia> (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ = init_cartesian() ;
@@ -185,12 +185,12 @@ julia> (θ, ϕ, ψ), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬʳ = init_rotated() ;
 ```
 
 **_NOTE:_**
-it is worth noting the unusual order of coordinates and vectors of the spherical basis which have been chosen here so that `θ=ϕ=0` correspond to the cartesian basis in the correct order.
+it is worth noting the unusual order of coordinates and vectors of the spherical basis which have been chosen here so that `θ = ϕ = 0` corresponds to the cartesian basis in the correct order.
 
 A tensor, parametrized by an order and a dimension, is in general defined by
 
-- an array or a set of condensed parameters (e.g. isotropic tensors)
-- a basis
+- an array or a set of condensed parameters (e.g. isotropic tensors),
+- a basis,
 - a set of variances (covariant `:cov` or contravariant `:cont`) useful if the basis is not orthonormal.
 
 In practice, the type of basis conditions the type of tensor (`TensCanonical`, `TensRotated`, `TensOrthogonal`, `Tens` or even `TensISO` in case of isotropic tensor).

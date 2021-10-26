@@ -63,7 +63,7 @@ end
 
 
 for order ∈ (2, 4)
-    @eval function proj_tens(
+    @eval function best_sym_tens(
         t::AbstractTens{$order,dim,T},
         args...;
         proj = (:ISO,),
@@ -74,10 +74,10 @@ for order ∈ (2, 4)
         for sym ∈ proj
             (projt, d, drel) = proj_tens(Val(sym), newt)
             if d == zero(T) || drel < ε
-                return projt
+                return projt, d, drel, sym
             end
         end
-        return newt
+        return newt, zero(T), zero(T), :ANISO
     end
 end
 
@@ -1201,7 +1201,7 @@ Tensors.minortranspose(
 ) where {order,dim,T} = Tens(minortranspose(getarray(t)), getbasis(t))
 
 export AbstractTens, Tens
-export proj_tens
+export proj_tens, best_sym_tens
 export getorder, arraytype, getdata, getarray, getbasis, getvar
 export components, components_canon, change_tens, change_tens_canon
 export trigsimp, expand_trig
