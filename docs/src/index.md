@@ -28,10 +28,10 @@ julia> import Pkg; Pkg.add("https://github.com/jfbarthelemy/TensND.jl.git")
 
 ```@contents
 Pages = [
-    "man\\getting_started.md",
-    "man\\bases.md",
-    "man\\tensors.md",
-    "man\\coorsystems.md",
+    "man/getting_started.md",
+    "man/bases.md",
+    "man/tensors.md",
+    "man/coorsystems.md",
 ]
 Depth = 1
 ```
@@ -40,7 +40,7 @@ Depth = 1
 
 ```@contents
 Pages = [
-    "tuto\\nlayersphere.md",
+    "tuto/nlayersphere.md",
 ]
 Depth = 1
 ```
