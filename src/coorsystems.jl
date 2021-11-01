@@ -237,8 +237,8 @@ Tens.TensRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 
 function ∂(
     t::AbstractTens{order,dim,Sym},
-    CS::CoorSystemSym{dim},
     i::Integer,
+    CS::CoorSystemSym{dim},
 ) where {order,dim}
     t = only_coords(CS, t)
     ℬ = get_natural_basis(CS)
@@ -255,39 +255,34 @@ function ∂(
     return change_tens(Tens(data, ℬ, var), get_normalized_basis(CS), var)
 end
 
-∂(t::Sym, CS::CoorSystemSym{dim}, i::Integer) where {dim} = SymPy.diff(only_coords(CS, t), getcoords(CS, i))
+∂(t::Sym, i::Integer, CS::CoorSystemSym{dim}) where {dim} =
+    SymPy.diff(only_coords(CS, t), getcoords(CS, i))
+
+function ∂(
+    t::AbstractTens{order,dim,Sym},
+    x::Sym,
+    CS::CoorSystemSym{dim},
+) where {order,dim}
+    ind = findfirst(i -> i == x, getcoords(CS))
+    return ind === nothing ? zero(t) : ∂(t, ind, CS)
+end
+
+function ∂(
+    t::Sym,
+    x::Sym,
+    CS::CoorSystemSym{dim},
+) where {order,dim}
+    ind = findfirst(i -> i == x, getcoords(CS))
+    return ind === nothing ? zero(t) : ∂(t, ind, CS)
+end
 
 """
     GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
 
 Calculates the gradient of `T` with respect to the coordinate system `CS`
 """
-GRAD(
-    T::Union{Sym,AbstractTens{order,dim,Sym}},
-    CS::CoorSystemSym{dim},
-) where {order,dim} = 
-    sum([∂(T, CS, i) ⊗ natvec(CS, i, :cont) for i = 1:dim])
-
-# function GRAD(T::AbstractTens{order,dim,Sym}, CS::CoorSystemSym{dim}) where {order,dim}
-#     T = only_coords(CS, T)
-#     ℬ = get_natural_basis(CS)
-#     var = ntuple(_ -> :cont, order)
-#     varfin = ntuple(i -> i <= order ? :cont : :cov, order + 1)
-#     t = Array(components(T, ℬ, var))
-#     Γ = getChristoffel(CS)
-#     data = zeros(Sym, ntuple(_ -> dim, order + 1)...)
-#     for i ∈ 1:dim
-#         data[ntuple(_ -> (:), order)..., i] = diff.(t, getcoords(CS, i))
-#         for o ∈ 1:order
-#             ec1 = ntuple(j -> j == o ? order + 1 : j, order)
-#             ec2 = (order + 1, o)
-#             ec3 = ntuple(j -> j, order)
-#             data[ntuple(_ -> (:), order)..., i] +=
-#                 einsum(EinCode((ec1, ec2), ec3), (t, view(Γ, i, :, :)))
-#         end
-#     end
-#     return change_tens(Tens(data, ℬ, varfin), get_normalized_basis(CS), varfin)
-# end
+GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order,dim} =
+    sum([∂(T, i, CS) ⊗ natvec(CS, i, :cont) for i = 1:dim])
 
 
 """
@@ -298,8 +293,7 @@ Calculates the symmetrized gradient of `T` with respect to the coordinate system
 SYMGRAD(
     T::Union{Sym,AbstractTens{order,dim,Sym}},
     CS::CoorSystemSym{dim},
-) where {order,dim} =
-    sum([∂(T, CS, i) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
+) where {order,dim} = sum([∂(T, i, CS) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
 
 
 """
@@ -308,7 +302,7 @@ SYMGRAD(
 Calculates the divergence  of `T` with respect to the coordinate system `CS`
 """
 DIV(T::AbstractTens{order,dim,Sym}, CS::CoorSystemSym{dim}) where {order,dim} =
-    sum([∂(T, CS, i) ⋅ natvec(CS, i, :cont) for i = 1:dim])
+    sum([∂(T, i, CS) ⋅ natvec(CS, i, :cont) for i = 1:dim])
 
 
 
@@ -635,6 +629,18 @@ function coorsys_spheroidal(
     )
 end
 
+macro set_coorsys(CS)
+    m = @__MODULE__
+    return quote
+            $m.∂(t, i::Integer) = $m.∂(t, $(esc(CS)), i)
+            $m.∂(t, x::Sym) = $m.∂(t, $(esc(CS)), x)
+            $m.GRAD(t::Union{Sym,AbstractTens}) = $m.GRAD(t, $(esc(CS)))
+            $m.SYMGRAD(t::Union{Sym,AbstractTens}) = $m.SYMGRAD(t, $(esc(CS)))
+            $m.DIV(t::AbstractTens) = $m.DIV(t, $(esc(CS)))
+            $m.LAPLACE(t::Union{Sym,AbstractTens}) = $m.LAPLACE(t, $(esc(CS)))
+            $m.HESS(t::Union{Sym,AbstractTens}) = $m.HESS(t, $(esc(CS)))
+        end
+end
 
 """
     init_rotated(coords = symbols("θ ϕ ψ", real = true); canonical = false)
@@ -655,4 +661,6 @@ export ∂, CoorSystemSym, getChristoffel
 export GRAD, SYMGRAD, DIV, LAPLACE, HESS
 export get_normalized_basis, get_natural_basis, natvec, unitvec, getcoords, getOM
 export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
-export coorsys_cartesian, coorsys_polar, coorsys_cylindrical, coorsys_spherical, coorsys_spheroidal
+export coorsys_cartesian,
+    coorsys_polar, coorsys_cylindrical, coorsys_spherical, coorsys_spheroidal
+export @set_coorsys
