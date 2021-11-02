@@ -24,7 +24,9 @@ This Julia package provides tools to perform tensor calculations of any order an
 
 The following example is provided to illustrate the purpose of the library
 ```julia
-julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; vec = ("𝐞ᶿ", "𝐞ᵠ", "𝐞ʳ") ;
+julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ;
+
+julia> 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; vec = ("𝐞ᶿ", "𝐞ᵠ", "𝐞ʳ") ;
 
 julia> @set_coorsys Spherical
 
