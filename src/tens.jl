@@ -204,6 +204,40 @@ for OP in (:show, :print, :display)
     end
 end
 
+function printvec(t::AbstractTens{order,dim,T}, vec) where {order,dim,T}
+    ind = CartesianIndices(t)
+    firstprint = true
+    s = ""
+    for i ∈ ind
+        x = t[i]
+        if x ≠ zero(T)
+            if !firstprint
+                s *= " + "
+            end
+            if x ≠ one(T)
+                s *= "(" * string(x) * ")"
+            end
+            j = Tuple(i)
+            s *= vec[j[1]]
+            for k ∈ j[2:end]
+                s *= "⊗"
+                s *= vec[k]
+            end
+            firstprint = false
+        end
+    end
+    print(s)
+end
+
+function printvec(t::AbstractTens{0,dim,T}, 𝐞) where {dim,T}
+    print(t)
+end
+
+function printvec(t, 𝐞)
+    print(t)
+end
+
+
 
 ########################
 # Component extraction #
@@ -1210,6 +1244,7 @@ Tensors.minortranspose(
 export AbstractTens, Tens
 export proj_tens, best_sym_tens
 export getorder, arraytype, getdata, getarray, getbasis, getvar
+export printvec
 export components, components_canon, change_tens, change_tens_canon
 export trigsimp, expand_trig
 export KM, invKM
