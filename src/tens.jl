@@ -226,15 +226,15 @@ function printvec(t::AbstractTens{order,dim,T}, vec) where {order,dim,T}
             firstprint = false
         end
     end
-    print(s)
+    println(s)
 end
 
 function printvec(t::AbstractTens{0,dim,T}, 𝐞) where {dim,T}
-    print(t)
+    println(t)
 end
 
 function printvec(t, 𝐞)
-    print(t)
+    println(t)
 end
 
 

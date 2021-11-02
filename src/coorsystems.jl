@@ -538,31 +538,15 @@ Sets a coordinate system in order to avoid precising it in differential operator
 
 # Examples
 ```julia
-julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ;
+julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; vec = ("𝐞ᶿ", "𝐞ᵠ", "𝐞ʳ") ;
 
 julia> @set_coorsys Spherical
 
-julia> GRAD(𝐞ʳ)
-TensND.TensRotated{2, 3, Sym, Tensor{2, 3, Sym, 9}}
-→ data: 3×3 Tensor{2, 3, Sym, 9}:
- 1/r    0  0
-   0  1/r  0
-   0    0  0
-→ basis: 3×3 Matrix{Sym}:
- cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
- sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
-       -sin(θ)        0         cos(θ)
+julia> printvec(GRAD(𝐞ʳ),vec)
+(1/r)𝐞ᶿ⊗𝐞ᶿ + (1/r)𝐞ᵠ⊗𝐞ᵠ
 
-julia> DIV(𝐞ʳ ⊗ 𝐞ʳ)
-TensND.TensRotated{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
-   0
-   0
- 2/r
-→ basis: 3×3 Matrix{Sym}:
- cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
- sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
-       -sin(θ)        0         cos(θ)
+julia> printvec(DIV(𝐞ʳ ⊗ 𝐞ʳ),vec)
+(2/r)𝐞ʳ
 
 julia> LAPLACE(1/r)
 0

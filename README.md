@@ -22,6 +22,36 @@
 
 This Julia package provides tools to perform tensor calculations of any order and any dimension in arbitrary coordinate systems (cartesian, polar, cylindrical, spherical, spheroidal or any user defined coordinate systems...). In particular differential operators are available: gradient, symmetrized gradient, divergence, Laplace, Hessian. The implementation of this library is much inspired by the Maple library [Tens3d](http://jean.garrigues.perso.centrale-marseille.fr/tens3d.html) developped by Jean Guarrigues.
 
+The following example is provided to illustrate the purpose of the library
+```julia
+julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ; vec = ("𝐞ᶿ", "𝐞ᵠ", "𝐞ʳ") ;
+
+julia> @set_coorsys Spherical
+
+julia> printvec(GRAD(𝐞ʳ),vec)
+(1/r)𝐞ᶿ⊗𝐞ᶿ + (1/r)𝐞ᵠ⊗𝐞ᵠ
+
+julia> printvec(DIV(𝐞ʳ ⊗ 𝐞ʳ),vec)
+(2/r)𝐞ʳ
+
+julia> LAPLACE(1/r)
+0
+
+julia> f = SymFunction("f", real = true)
+f
+
+julia> printvec(DIV(f(r) * 𝐞ʳ ⊗ 𝐞ʳ),vec)
+(Derivative(f(r), r) + 2*f(r)/r)𝐞ʳ
+
+julia> LAPLACE(f(r))
+              d       
+  2         2⋅──(f(r))
+ d            dr
+───(f(r)) + ──────────
+  2             r
+dr
+```
+
 ## Installation
 
 The package can be installed with the Julia package manager. From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
