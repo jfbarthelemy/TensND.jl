@@ -30,7 +30,7 @@ function Tensors.otimes(
     return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
 end
 
-function contract(t::AbstractArray{T,order}, i::Int, j::Int) where {T,order}
+function contract(t::AbstractArray{T,order}, i::Integer, j::Integer) where {T,order}
     m = min(i, j)
     M = max(i, j)
     ec1 = ntuple(k -> k == j ? i : k, order)
@@ -38,7 +38,7 @@ function contract(t::AbstractArray{T,order}, i::Int, j::Int) where {T,order}
     return einsum(EinCode((ec1,), ec2), (AbstractArray{T}(t),))
 end
 
-contract(t::AbstractArray{T,2}, ::Int, ::Int) where {T} = tr(t)
+contract(t::AbstractArray{T,2}, ::Integer, ::Integer) where {T} = tr(t)
 
 function Tensors.dcontract(
     t1::AbstractArray{T1,order1},

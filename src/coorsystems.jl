@@ -175,7 +175,7 @@ with_tmp_var(CS::CoorSystemSym, t) = length(CS.tmp_var) > 0 ? subs(t, CS.tmp_var
 only_coords(CS::CoorSystemSym, t) = length(CS.to_coords) > 0 ? subs(t, CS.to_coords...) : t
 
 getcoords(CS::CoorSystemSym) = CS.coords
-getcoords(CS::CoorSystemSym, i::Int) = getcoords(CS)[i]
+getcoords(CS::CoorSystemSym, i::Integer) = getcoords(CS)[i]
 
 getOM(CS::CoorSystemSym) = CS.OM
 
@@ -188,10 +188,10 @@ getChristoffel(CS::CoorSystemSym) = CS.Γ
 natvec(CS::CoorSystemSym, ::Val{:cov}) = CS.aᵢ
 natvec(CS::CoorSystemSym, ::Val{:cont}) = CS.aⁱ
 natvec(CS::CoorSystemSym, var = :cov) = natvec(CS, Val(var))
-natvec(CS::CoorSystemSym, i::Int, var = :cov) = natvec(CS, var)[i]
+natvec(CS::CoorSystemSym, i::Integer, var = :cov) = natvec(CS, var)[i]
 
 unitvec(CS::CoorSystemSym) = CS.eᵢ
-unitvec(CS::CoorSystemSym, i::Int) = unitvec(CS)[i]
+unitvec(CS::CoorSystemSym, i::Integer) = unitvec(CS)[i]
 
 
 function compute_Christoffel(coords, χ, γ, invγ)
@@ -324,27 +324,6 @@ Calculates the Hessian of `T` with respect to the coordinate system `CS`
 HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order,dim} =
     GRAD(GRAD(T, CS), CS)
 
-
-
-
-"""
-    init_cartesian(coords = symbols("x y z", real = true))
-
-Returns the coordinates, unit vectors and basis of the cartesian basis
-
-# Examples
-```julia
-julia> coords, vectors, ℬ = init_cartesian() ; x, y, z = coords ; 𝐞₁, 𝐞₂, 𝐞₃ = vectors ;
-``` 
-"""
-init_cartesian(coords = symbols("x y z", real = true)) = Tuple(coords),
-ntuple(i -> 𝐞(Val(i), Val(length(coords)), Val(eltype(coords))), length(coords)),
-CanonicalBasis{length(coords),eltype(coords)}()
-
-init_cartesian(::Val{3}) = init_cartesian(symbols("x y z", real = true))
-init_cartesian(::Val{2}) = init_cartesian(symbols("x y", real = true))
-init_cartesian(dim::Integer) = init_cartesian(Val(dim))
-
 """
     coorsys_cartesian(coords = symbols("x y z", real = true))
 
@@ -376,24 +355,6 @@ function coorsys_cartesian(coords = symbols("x y z", real = true))
     χᵢ = ntuple(_ -> one(Sym), dim)
     return CoorSystemSym(OM, coords, ℬ, χᵢ)
 end
-
-
-"""
-    init_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
-
-Returns the coordinates, base vectors and basis of the polar basis
-
-# Examples
-```julia
-julia> coords, vectors, ℬᵖ = init_polar() ; r, θ = coords ; 𝐞ʳ, 𝐞ᶿ = vectors ;
-``` 
-"""
-init_polar(
-    coords = (symbols("r", positive = true), symbols("θ", real = true));
-    canonical = false,
-) = Tuple(coords),
-ntuple(i -> 𝐞ᵖ(Val(i), coords[2]; canonical = canonical), 2),
-Basis(coords[2])
 
 """
     coorsys_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
@@ -429,27 +390,6 @@ function coorsys_polar(
 end
 
 """
-    init_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
-
-Returns the coordinates, base vectors and basis of the cylindrical basis
-
-# Examples
-```julia
-julia> coords, vectors, ℬᶜ = init_cylindrical() ; r, θ, z = coords ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = vectors ;
-``` 
-"""
-init_cylindrical(
-    coords = (
-        symbols("r", positive = true),
-        symbols("θ", real = true),
-        symbols("z", real = true),
-    );
-    canonical = false,
-) = Tuple(coords),
-ntuple(i -> 𝐞ᶜ(Val(i), coords[2]; canonical = canonical), 3),
-CylindricalBasis(coords[2])
-
-"""
     coorsys_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
 
 Returns the cylindrical coordinate system
@@ -480,44 +420,6 @@ function coorsys_cylindrical(
     OM = r * 𝐞ʳ + z * 𝐞ᶻ
     return CoorSystemSym(OM, coords, ℬᶜ, (one(Sym), r, one(Sym)))
 end
-# function Cylindrical(
-#     coords = (
-#         symbols("r", positive = true),
-#         symbols("θ", real = true),
-#         symbols("z", real = true),
-#     );
-#     canonical = false,
-# )
-#     (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical(coords, canonical = canonical)
-#     OM = r * 𝐞ʳ + z * 𝐞ᶻ
-#     CS = CoorSystemSym(OM, coords)
-#     return CS, (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ
-# end
-
-
-"""
-    init_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
-
-Returns the coordinates, base vectors and basis of the spherical basis.
-Take care that the order of the 3 vectors is `𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ` so that
-the basis coincides with the canonical one when the angles are null and in consistency
-the coordinates are ordered as `θ, ϕ, r`.
-
-# Examples
-```julia
-julia> coords, vectors, ℬˢ = init_spherical() ; θ, ϕ, r = coords ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ  = vectors ;
-``` 
-"""
-init_spherical(
-    coords = (
-        symbols("θ", real = true),
-        symbols("ϕ", real = true),
-        symbols("r", positive = true),
-    );
-    canonical = false,
-) = Tuple(coords),
-ntuple(i -> 𝐞ˢ(Val(i), coords[1:2]...; canonical = canonical), 3),
-SphericalBasis(coords[1:2]...)
 
 """
     coorsys_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
@@ -563,7 +465,6 @@ function coorsys_spherical(
     rules = Dict(abs(sin(θ)) => sin(θ))
     return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(Sym)); rules = rules)
 end
-
 
 """
     coorsys_spheroidal(coords = (symbols("ϕ", real = true),symbols("p", real = true),symbols("q", positive = true),),
@@ -629,11 +530,51 @@ function coorsys_spheroidal(
     )
 end
 
+"""
+    @set_coorsys CS
+    @set_coorsys(CS)
+
+Sets a coordinate system in order to avoid precising it in differential operators
+
+# Examples
+```julia
+julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ;
+
+julia> @set_coorsys Spherical
+
+julia> GRAD(𝐞ʳ)
+TensND.TensRotated{2, 3, Sym, Tensor{2, 3, Sym, 9}}
+→ data: 3×3 Tensor{2, 3, Sym, 9}:
+ 1/r    0  0
+   0  1/r  0
+   0    0  0
+→ basis: 3×3 Matrix{Sym}:
+ cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
+ sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
+       -sin(θ)        0         cos(θ)
+
+julia> DIV(𝐞ʳ ⊗ 𝐞ʳ)
+TensND.TensRotated{1, 3, Sym, Vec{3, Sym}}
+→ data: 3-element Vec{3, Sym}:
+   0
+   0
+ 2/r
+→ basis: 3×3 Matrix{Sym}:
+ cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
+ sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
+       -sin(θ)        0         cos(θ)
+
+julia> LAPLACE(1/r)
+0
+``` 
+"""
 macro set_coorsys(CS)
     m = @__MODULE__
     return quote
-            $m.∂(t, i::Integer) = $m.∂(t, $(esc(CS)), i)
-            $m.∂(t, x::Sym) = $m.∂(t, $(esc(CS)), x)
+            $m.∂(t::AbstractTens{order,dim,Sym}, i::Integer) where {order,dim} = $m.∂(t, i, $(esc(CS)))
+            $m.∂(t::AbstractTens{order,dim,Sym}, x::Sym) where {order,dim}  = $m.∂(t, x, $(esc(CS)))
+            $m.∂(t::Sym, i::Integer) = $m.∂(t, i, $(esc(CS)))
+            $m.∂(t::Sym, x::Sym) = $m.∂(t, x, $(esc(CS)))
             $m.GRAD(t::Union{Sym,AbstractTens}) = $m.GRAD(t, $(esc(CS)))
             $m.SYMGRAD(t::Union{Sym,AbstractTens}) = $m.SYMGRAD(t, $(esc(CS)))
             $m.DIV(t::AbstractTens) = $m.DIV(t, $(esc(CS)))
@@ -642,25 +583,8 @@ macro set_coorsys(CS)
         end
 end
 
-"""
-    init_rotated(coords = symbols("θ ϕ ψ", real = true); canonical = false)
-
-Returns the angles, base vectors and basis of the rotated basis.
-Note that here the coordinates are angles and do not represent a valid parametrization of `ℝ³`
-
-# Examples
-```julia
-julia> angles, vectors, ℬʳ = init_rotated() ; θ, ϕ, ψ = angles ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = vectors ;
-```
-"""
-init_rotated(angles = symbols("θ ϕ ψ", real = true); canonical = false) = Tuple(angles),
-ntuple(i -> 𝐞ˢ(Val(i), angles...; canonical = canonical), 3),
-Basis(angles...)
-
 export ∂, CoorSystemSym, getChristoffel
 export GRAD, SYMGRAD, DIV, LAPLACE, HESS
 export get_normalized_basis, get_natural_basis, natvec, unitvec, getcoords, getOM
-export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
-export coorsys_cartesian,
-    coorsys_polar, coorsys_cylindrical, coorsys_spherical, coorsys_spheroidal
+export coorsys_cartesian, coorsys_polar, coorsys_cylindrical, coorsys_spherical, coorsys_spheroidal
 export @set_coorsys

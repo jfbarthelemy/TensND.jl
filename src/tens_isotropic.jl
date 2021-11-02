@@ -34,7 +34,6 @@ end
 
 """
     tensId2(::Val{dim}, ::Val{T}) where {dim,T<:Number}
-    t𝟏(::Val{dim}, ::Val{T}) where {dim,T<:Number}
 
 Identity tensor of second order `𝟏ᵢⱼ = δᵢⱼ = 1 if i=j otherwise 0`
 
@@ -60,7 +59,6 @@ tensId2(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} = TensIS
 
 """
     tensId4(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
-    t𝕀(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
 
 Symmetric identity tensor of fourth order  `𝕀 = 𝟏 ⊠ˢ 𝟏` i.e. `(𝕀)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2`
 
@@ -80,7 +78,6 @@ tensId4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} = TensIS
 
 """
     tensJ4(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
-    t𝕁(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
 
 Spherical projector of fourth order  `𝕁 = (𝟏 ⊗ 𝟏) / dim` i.e. `(𝕁)ᵢⱼₖₗ = δᵢⱼδₖₗ/dim`
 
@@ -101,7 +98,6 @@ tensJ4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} =
 
 """
     tensK4(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
-    t𝕂(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
 
 Deviatoric projector of fourth order  `𝕂 = 𝕀 - 𝕁` i.e. `(𝕂)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2 - δᵢⱼδₖₗ/dim`
 
@@ -134,11 +130,16 @@ julia> 𝕀, 𝕁, 𝕂 = ISO() ;
 ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} =
     tensId4(Val(dim), Val(T)), tensJ4(Val(dim), Val(T)), tensK4(Val(dim), Val(T))
 
+for FUNC in (:tensId2, :tensId4, :tensJ4, :tensK4, :ISO)
+    @eval $FUNC(args...) = $FUNC(Val.(args)...)
+end
+
+
 getdata(t::TensISO) = t.data
 getarray(t::TensISO) = Array(t)
 getbasis(::TensISO{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
 getvar(::TensISO{order}) where {order} = ntuple(_ -> :cont, Val(order))
-getvar(::TensISO, i::Int) = :cont
+getvar(::TensISO, i::Integer) = :cont
 components(t::TensISO{order,dim,T}) where {order,dim,T} = getarray(t)
 components(
     t::TensISO{order,dim,T},
@@ -189,7 +190,7 @@ for OP in (:+, :-, :*)
         return Tens($OP(getarray(A1), m2), getbasis(A1), getvar(A1))
     end
 end
-for OP in (:(==), :(<=), :(>=), :(<), :(>))
+for OP ∈ (:(==), :(<=), :(>=), :(<), :(>))
     @eval @inline Base.$OP(
         A1::TensISO{order,dim},
         A2::TensISO{order,dim},
@@ -199,6 +200,16 @@ end
     TensISO{dim}(one(T) ./ getdata(A))
 @inline Base.one(A::TensISO{order,dim,T}) where {order,dim,T} =
     TensISO{dim}(one.(getdata(A)))
+@inline Base.zero(A::TensISO{order,dim,T}) where {order,dim,T} =
+    TensISO{dim}(zero.(getdata(A)))
+
+for FUNC ∈ (:one, :zero)
+    @eval begin
+        @inline Base.$FUNC(A::AbstractTens{4,dim,T}) where {dim,T} =
+            TensISO{dim}($FUNC(T), $FUNC(T))
+        @inline Base.$FUNC(A::AbstractTens{2,dim,T}) where {dim,T} = TensISO{dim}($FUNC(T))
+    end
+end
 
 @inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{-1}) = inv(A)
 @inline Base.literal_pow(::typeof(^), A::TensISO, ::Val{0}) = one(A)
@@ -212,8 +223,15 @@ end
 @inline Base.transpose(A::TensISO) = A
 @inline Base.adjoint(A::TensISO) = A
 
-function Base.display(A::TensISO{4,dim,T}) where {dim,T}
-    print("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
+for OP in (:show, :print, :display)
+    @eval begin
+        function Base.$OP(A::TensISO{4})
+            print("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
+        end
+        function Base.$OP(A::TensISO{2})
+            print("(", getdata(A)[1], ") 𝟏")
+        end
+    end
 end
 
 for OP in (:(simplify), :(factor), :(subs), :(diff))
@@ -357,12 +375,12 @@ function qcontract(A::AllTensOrthogonal{order,dim}, B::TensISO{4,dim,T}) where {
     return Tens(newm, getbasis(nA))
 end
 
-isotropify(A::AbstractArray{T,2}) where {T} = TensISO{size(A)[1]}(tr(A) / dim)
+isotropify(A::AbstractArray{T,2}) where {T} = TensISO{size(A)[1]}(tr(A) / size(A)[1])
 
 function isotropify(A::AbstractArray{T,4}) where {T}
     dim = size(A)[1]
-    α = tensJ4(Val(dim), Val(T)) ⊙ A
-    β = (tensK4(Val(dim), Val(T)) ⊙ A) / 5
+    α = tensJ4(dim, T) ⊙ A
+    β = (tensK4(dim, T) ⊙ A) / 5
     return TensISO{dim}(α, β)
 end
 
@@ -384,4 +402,3 @@ isISO(A::TensISO) = true
 isISO(A::AbstractArray) = isotropify(A) == A
 
 export TensISO, tensId2, tensId4, tensJ4, tensK4, ISO, isotropify, isISO
-

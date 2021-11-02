@@ -26,7 +26,7 @@ julia> ε = LeviCivita(Sym)
 LeviCivita(T::Type{<:Number} = Sym) = [T(T((i - j) * (j - k) * (k - i)) / T(2)) for i = 1:3, j = 1:3, k = 1:3]
 
 """
-    𝐞(i::Int, dim::Int = 3, T::Type{<:Number} = Sym)
+    𝐞(i::Integer, dim::Int = 3, T::Type{<:Number} = Sym)
 
 Vector of the canonical basis
 
@@ -49,7 +49,26 @@ Tens{1, 3, Sym, Sym, Vec{3, Sym}, CanonicalBasis{3, Sym}}
     Tens(Vec{dim}(j -> j == i ? one(T) : zero(T)))
 
 """
-    𝐞ᵖ(i::Int, θ::T = zero(Sym); canonical = false)
+    init_cartesian(coords = symbols("x y z", real = true))
+
+Returns the coordinates, unit vectors and basis of the cartesian basis
+
+# Examples
+```julia
+julia> coords, vectors, ℬ = init_cartesian() ; x, y, z = coords ; 𝐞₁, 𝐞₂, 𝐞₃ = vectors ;
+``` 
+"""
+init_cartesian(coords = symbols("x y z", real = true)) = Tuple(coords),
+ntuple(i -> 𝐞(Val(i), Val(length(coords)), Val(eltype(coords))), length(coords)),
+CanonicalBasis{length(coords),eltype(coords)}()
+
+init_cartesian(::Val{3}) = init_cartesian(symbols("x y z", real = true))
+init_cartesian(::Val{2}) = init_cartesian(symbols("x y", real = true))
+init_cartesian(dim::Integer) = init_cartesian(Val(dim))
+
+
+"""
+    𝐞ᵖ(i::Integer, θ::T = zero(Sym); canonical = false)
 
 Vector of the polar basis
 
@@ -76,7 +95,25 @@ Tens{1, 2, Sym, Sym, Vec{2, Sym}, RotatedBasis{2, Sym}}
     Tens(Vec{2}([zero(T), one(T)]), Basis(θ))
 
 """
-    𝐞ᶜ(i::Int, θ::T = zero(Sym); canonical = false)
+    init_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
+
+Returns the coordinates, base vectors and basis of the polar basis
+
+# Examples
+```julia
+julia> coords, vectors, ℬᵖ = init_polar() ; r, θ = coords ; 𝐞ʳ, 𝐞ᶿ = vectors ;
+``` 
+"""
+init_polar(
+    coords = (symbols("r", positive = true), symbols("θ", real = true));
+    canonical = false,
+) = Tuple(coords),
+ntuple(i -> 𝐞ᵖ(Val(i), coords[2]; canonical = canonical), 2),
+Basis(coords[2])
+
+
+"""
+    𝐞ᶜ(i::Integer, θ::T = zero(Sym); canonical = false)
 
 Vector of the cylindrical basis
 
@@ -108,7 +145,28 @@ Tens{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
     Tens(Vec{3}([zero(T), zero(T), one(T)]), CylindricalBasis(θ))
 
 """
-    𝐞ˢ(i::Int, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym); canonical = false)
+    init_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
+
+Returns the coordinates, base vectors and basis of the cylindrical basis
+
+# Examples
+```julia
+julia> coords, vectors, ℬᶜ = init_cylindrical() ; r, θ, z = coords ; 𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = vectors ;
+``` 
+"""
+init_cylindrical(
+    coords = (
+        symbols("r", positive = true),
+        symbols("θ", real = true),
+        symbols("z", real = true),
+    );
+    canonical = false,
+) = Tuple(coords),
+ntuple(i -> 𝐞ᶜ(Val(i), coords[2]; canonical = canonical), 3),
+CylindricalBasis(coords[2])
+
+"""
+    𝐞ˢ(i::Integer, θ::T = zero(Sym), ϕ::T = zero(Sym), ψ::T = zero(Sym); canonical = false)
 
 Vector of the basis rotated with the 3 Euler angles `θ, ϕ, ψ` (spherical if `ψ=0`)
 
@@ -183,11 +241,48 @@ function 𝐞ˢ(
     end
 end
 
-
 for eb in (:𝐞, :𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
-    @eval $eb(i::Int, args...; kwargs...) = $eb(Val(i), args...; kwargs...)
+    @eval $eb(i::Integer, args...; kwargs...) = $eb(Val(i), args...; kwargs...)
 end
 
+"""
+    init_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
+
+Returns the coordinates, base vectors and basis of the spherical basis.
+Take care that the order of the 3 vectors is `𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ` so that
+the basis coincides with the canonical one when the angles are null and in consistency
+the coordinates are ordered as `θ, ϕ, r`.
+
+# Examples
+```julia
+julia> coords, vectors, ℬˢ = init_spherical() ; θ, ϕ, r = coords ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ  = vectors ;
+``` 
+"""
+init_spherical(
+    coords = (
+        symbols("θ", real = true),
+        symbols("ϕ", real = true),
+        symbols("r", positive = true),
+    );
+    canonical = false,
+) = Tuple(coords),
+ntuple(i -> 𝐞ˢ(Val(i), coords[1:2]...; canonical = canonical), 3),
+SphericalBasis(coords[1:2]...)
+
+"""
+    init_rotated(coords = symbols("θ ϕ ψ", real = true); canonical = false)
+
+Returns the angles, base vectors and basis of the rotated basis.
+Note that here the coordinates are angles and do not represent a valid parametrization of `ℝ³`
+
+# Examples
+```julia
+julia> angles, vectors, ℬʳ = init_rotated() ; θ, ϕ, ψ = angles ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = vectors ;
+```
+"""
+init_rotated(angles = symbols("θ ϕ ψ", real = true); canonical = false) = Tuple(angles),
+ntuple(i -> 𝐞ˢ(Val(i), angles...; canonical = canonical), 3),
+Basis(angles...)
 
 """
     rot3(θ, ϕ = 0, ψ = 0)
@@ -287,4 +382,7 @@ function rot6(θ, ϕ = 0, ψ = 0)
     return sboxtimes(R, R)
 end
 
-export LeviCivita, 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ, rot2, rot3, rot6
+export LeviCivita
+export 𝐞, 𝐞ᵖ, 𝐞ᶜ, 𝐞ˢ
+export init_cartesian, init_polar, init_cylindrical, init_spherical, init_rotated
+export rot2, rot3, rot6

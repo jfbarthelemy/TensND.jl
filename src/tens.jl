@@ -61,6 +61,7 @@ struct Tens{order,dim,T,A<:AbstractArray} <: AbstractTens{order,dim,T}
     Tens(data::T, args...) where {T} = data
 end
 
+proj_tens(sym::Symbol, A::AbstractArray) = proj_tens(Val(sym), A)
 
 for order ∈ (2, 4)
     @eval function best_sym_tens(
@@ -72,7 +73,7 @@ for order ∈ (2, 4)
         basis = relevant_OrthonormalBasis(getbasis(t))
         newt = change_tens(t, basis)
         for sym ∈ proj
-            (projt, d, drel) = proj_tens(Val(sym), newt)
+            (projt, d, drel) = proj_tens(sym, newt)
             if d == zero(T) || drel < ε
                 return projt, d, drel, sym
             end
@@ -80,7 +81,6 @@ for order ∈ (2, 4)
         return newt, zero(T), zero(T), :ANISO
     end
 end
-
 
 struct TensRotated{order,dim,T,A<:AbstractArray} <: AbstractTens{order,dim,T}
     data::A
@@ -144,9 +144,11 @@ function TensOrthonormal(t::TensOrthogonal{order,dim,T}) where {order,dim,T}
     return Tens(m, onℬ)
 end
 
-Base.size(t::TensArray) = size(getarray(t))
-Base.getindex(t::TensArray, ind...) = getindex(getarray(t), ind...)
+@inline Base.size(t::TensArray) = size(getarray(t))
+@inline Base.getindex(t::TensArray, ind...) = getindex(getarray(t), ind...)
 @pure datatype(::TensArray{order,dim,T,A}) where {order,dim,T,A} = A
+
+@inline Base.zero(t::AbstractTens) = Tens(zero.(getarray(t)), getbasis(t), getvar(t))
 
 # This function aims at storing the table of components in the `Tensor` type whenever possible
 tensor_or_array(tab::AbstractArray{T,1}) where {T} = Vec{size(tab, 1)}(tab)
@@ -167,14 +169,13 @@ tensor_or_array(tab::AbstractArray) = tab
 # Utility/Accessor Functions #
 ##############################
 
-
 getarray(t::TensArray) = t.data
 getbasis(t::TensBasis) = t.basis
 getbasis(::TensCanonical{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
 getvar(::TensOrthonormal{order}) where {order} = ntuple(_ -> :cont, Val(order))
-getvar(::TensOrthonormal, i::Int) = :cont
+getvar(::TensOrthonormal, i::Integer) = :cont
 getvar(t::TensVar) = t.var
-getvar(t::TensVar, i::Int) = t.var[i]
+getvar(t::TensVar, i::Integer) = t.var[i]
 
 
 #####################
@@ -186,16 +187,22 @@ for OP in (:show, :print, :display)
 
         function Base.$OP(t::AbstractTens)
             $OP(typeof(t))
-            print("→ data: ")
+            print("→ array: ")
             $OP(getarray(t))
             print("→ basis: ")
             $OP(vecbasis(getbasis(t)))
             print("→ var: ")
             $OP(getvar(t))
         end
+        function Base.$OP(t::TensOrthonormal)
+            $OP(typeof(t))
+            print("→ array: ")
+            $OP(getarray(t))
+            print("→ basis: ")
+            $OP(vecbasis(getbasis(t)))
+        end
     end
 end
-
 
 
 ########################
@@ -834,11 +841,11 @@ LinearAlgebra.norm(u::AbstractTens{1,dim}) where {dim} = √(dot(u, u))
 LinearAlgebra.norm(t::AbstractTens{2,dim}) where {dim} = √(dot(t, t))
 
 """
-    contract(t::AbstractTens{order,dim}, i::Int, j::Int)
+    contract(t::AbstractTens{order,dim}, i::Integer, j::Integer)
 
 Calculates the tensor obtained after contraction with respect to the indices `i` and `j`
 """
-function contract(t::AbstractTens{order,dim}, i::Int, j::Int) where {order,dim}
+function contract(t::AbstractTens{order,dim}, i::Integer, j::Integer) where {order,dim}
     var = ntuple(k -> k == j ? invvar(getvar(t, i)) : getvar(t, k), order)
     nt = change_tens(t, getbasis(t), var)
     data = contract(getarray(nt), i, j)
@@ -848,16 +855,16 @@ function contract(t::AbstractTens{order,dim}, i::Int, j::Int) where {order,dim}
     return Tens(data, getbasis(nt), var)
 end
 
-function contract(t::AbstractTens{2,dim}, i::Int, j::Int) where {dim}
+function contract(t::AbstractTens{2,dim}, i::Integer, j::Integer) where {dim}
     var = ntuple(k -> k == j ? invvar(getvar(t, i)) : getvar(t, k), 2)
     nt = change_tens(t, getbasis(t), var)
     return contract(getarray(nt), i, j)
 end
 
-contract(t::TensOrthonormal{order,dim}, i::Int, j::Int) where {order,dim} =
+contract(t::TensOrthonormal{order,dim}, i::Integer, j::Integer) where {order,dim} =
     Tens(contract(getarray(t), i, j), getbasis(t))
 
-contract(t::TensOrthonormal{2,dim}, i::Int, j::Int) where {dim} =
+contract(t::TensOrthonormal{2,dim}, i::Integer, j::Integer) where {dim} =
     contract(getarray(t), i, j)
 
 LinearAlgebra.tr(t::AbstractTens{2}) = contract(t, 1, 2)
