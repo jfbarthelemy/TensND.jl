@@ -19,16 +19,7 @@ Basis{3, Sym}
  -1/4  -1/4   3/4
 
 julia&gt; V = Tens(Tensor{1,3}(i -&gt; symbols(&quot;v$i&quot;, real = true)))
-TensND.TensCanonical{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
- v₁
- v₂
- v₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont,)
+(v1)𝐞¹ + (v2)𝐞² + (v3)𝐞³
 
 julia&gt; components(V, ℬ, (:cont,))
 3-element Vector{Sym}:
@@ -68,16 +59,7 @@ julia&gt; components(V, ℬ̄, (:cov,))
  sqrt(2)*v1/2 + sqrt(2)*v2/2
 
 julia&gt; T = Tens(Tensor{2,3}((i, j) -&gt; symbols(&quot;t$i$j&quot;, real = true)))
-TensND.TensCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
-→ data: 3×3 Tensor{2, 3, Sym, 9}:
- t₁₁  t₁₂  t₁₃
- t₂₁  t₂₂  t₂₃
- t₃₁  t₃₂  t₃₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+(t11)𝐞¹⊗𝐞¹ + (t21)𝐞²⊗𝐞¹ + (t31)𝐞³⊗𝐞¹ + (t12)𝐞¹⊗𝐞² + (t22)𝐞²⊗𝐞² + (t32)𝐞³⊗𝐞² + (t13)𝐞¹⊗𝐞³ + (t23)𝐞²⊗𝐞³ + (t33)𝐞³⊗𝐞³
 
 julia&gt; components(T, ℬ, (:cov, :cov))
 3×3 Matrix{Sym}:
@@ -89,19 +71,10 @@ julia&gt; factor(simplify(components(T, ℬ, (:cont, :cov))))
 3×3 Matrix{Sym}:
  -(t12 + t13 - t22 - t23 - t32 - t33)/2  -(t11 + t13 - t21 - t23 - t31 - t33)/2  -(t11 + t12 - t21 - t22 - t31 - t32)/2
   (t12 + t13 - t22 - t23 + t32 + t33)/2   (t11 + t13 - t21 - t23 + t31 + t33)/2   (t11 + t12 - t21 - t22 + t31 + t32)/2
-  (t12 + t13 + t22 + t23 - t32 - t33)/2   (t11 + t13 + t21 + t23 - t31 - t33)/2   (t11 + t12 + t21 + t22 - t31 - t32)/2</code></pre><p>Special tensors are available</p><ul><li><code>tensId2(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: second-order identity (<code>𝟏ᵢⱼ = δᵢⱼ = 1 if i=j otherwise 0</code>)</li><li><code>tensId4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order identity with minor symmetries (<code>𝕀 = 𝟏 ⊠ˢ 𝟏</code> i.e. <code>(𝕀)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2</code>)</li><li><code>tensJ4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order spherical projector (<code>𝕁 = (𝟏 ⊗ 𝟏) / dim</code> i.e. <code>(𝕁)ᵢⱼₖₗ = δᵢⱼδₖₗ/dim</code>)</li><li><code>tensK4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order deviatoric projector (<code>𝕂 = 𝕀 - 𝕁</code> i.e. <code>(𝕂)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2 - δᵢⱼδₖₗ/dim</code>)</li><li><code>ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: returns <code>𝕀, 𝕁, 𝕂</code></li></ul><p>The useful tensor products are the following:</p><ul><li><code>⊗</code> tensor product</li><li><code>⊗ˢ</code> symmetrized tensor product</li><li><code>⊠</code> modified tensor product</li><li><code>⊠ˢ</code> symmetrized modified tensor product</li><li><code>⋅</code> contracted product</li><li><code>⊡</code> double contracted product</li><li><code>⊙</code> quadruple contracted product</li></ul><p><strong><em>NOTE:</em></strong> more information about modified tensor products can be found in <a href="https://sbrisard.github.io/posts/20140226-decomposition_of_transverse_isotropic_fourth-rank_tensors.html">Sébastien Brisard&#39;s blog</a>.</p><pre><code class="language-julia hljs">julia&gt; 𝟏 = tensId2(Val(3), Val(Sym))
-TensISO{2, 3, Sym, 1}
-→ data: 3×3 Matrix{Sym}:
- 1  0  0
- 0  1  0
- 0  0  1
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+  (t12 + t13 + t22 + t23 - t32 - t33)/2   (t11 + t13 + t21 + t23 - t31 - t33)/2   (t11 + t12 + t21 + t22 - t31 - t32)/2</code></pre><p>Special tensors are available</p><ul><li><code>tensId2(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: second-order identity (<code>𝟏ᵢⱼ = δᵢⱼ = 1 if i=j otherwise 0</code>)</li><li><code>tensId4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order identity with minor symmetries (<code>𝕀 = 𝟏 ⊠ˢ 𝟏</code> i.e. <code>(𝕀)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2</code>)</li><li><code>tensJ4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order spherical projector (<code>𝕁 = (𝟏 ⊗ 𝟏) / dim</code> i.e. <code>(𝕁)ᵢⱼₖₗ = δᵢⱼδₖₗ/dim</code>)</li><li><code>tensK4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order deviatoric projector (<code>𝕂 = 𝕀 - 𝕁</code> i.e. <code>(𝕂)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2 - δᵢⱼδₖₗ/dim</code>)</li><li><code>ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: returns <code>𝕀, 𝕁, 𝕂</code></li></ul><p>The useful tensor products are the following:</p><ul><li><code>⊗</code> tensor product</li><li><code>⊗ˢ</code> symmetrized tensor product</li><li><code>⊠</code> modified tensor product</li><li><code>⊠ˢ</code> symmetrized modified tensor product</li><li><code>⋅</code> contracted product</li><li><code>⊡</code> double contracted product</li><li><code>⊙</code> quadruple contracted product</li></ul><p><strong><em>NOTE:</em></strong> more information about modified tensor products can be found in <a href="https://sbrisard.github.io/posts/20140226-decomposition_of_transverse_isotropic_fourth-rank_tensors.html">Sébastien Brisard&#39;s blog</a>.</p><pre><code class="language-julia hljs">julia&gt; 𝟏 = tensId2(3, Sym)
+(1) 𝟏
 
-julia&gt; 𝕀, 𝕁, 𝕂 = ISO(Val(3),Val(Sym)) ;
+julia&gt; 𝕀, 𝕁, 𝕂 = ISO(3, Sym) ;
 
 julia&gt; 𝕀 == 𝟏 ⊠ˢ 𝟏
 true
@@ -114,28 +87,11 @@ julia&gt; a = Tens(Vec{3}((i,) -&gt; symbols(&quot;a$i&quot;, real = true))) ;
 julia&gt; b = Tens(Vec{3}((i,) -&gt; symbols(&quot;b$i&quot;, real = true))) ;
 
 julia&gt; a ⊗ b
-TensND.TensCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
-→ data: 3×3 Tensor{2, 3, Sym, 9}:
- a₁⋅b₁  a₁⋅b₂  a₁⋅b₃
- a₂⋅b₁  a₂⋅b₂  a₂⋅b₃
- a₃⋅b₁  a₃⋅b₂  a₃⋅b₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+(a1*b1)𝐞¹⊗𝐞¹ + (a2*b1)𝐞²⊗𝐞¹ + (a3*b1)𝐞³⊗𝐞¹ + (a1*b2)𝐞¹⊗𝐞² + (a2*b2)𝐞²⊗𝐞² + (a3*b2)𝐞³⊗𝐞² + (a1*b3)𝐞¹⊗𝐞³ + (a2*b3)𝐞²⊗𝐞³ + (a3*b3)𝐞³⊗𝐞³
 
 julia&gt; a ⊗ˢ b
-TensND.TensCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
-→ data: 3×3 Tensor{2, 3, Sym, 9}:
-             a₁⋅b₁  a1*b2/2 + a2*b1/2  a1*b3/2 + a3*b1/2
- a1*b2/2 + a2*b1/2              a₂⋅b₂  a2*b3/2 + a3*b2/2
- a1*b3/2 + a3*b1/2  a2*b3/2 + a3*b2/2              a₃⋅b₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+(a1*b1)𝐞¹⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞²⊗𝐞¹ + (a1*b3/2 + a3*b1/2)𝐞³⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞¹⊗𝐞² + (a2*b2)𝐞²⊗𝐞² + (a2*b3/2 + a3*b2/2)𝐞³⊗𝐞² + (a1*b3/2 + a3*b1/2)𝐞¹⊗𝐞³
+ + (a2*b3/2 + a3*b2/2)𝐞²⊗𝐞³ + (a3*b3)𝐞³⊗𝐞³
 
 julia&gt; (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical()
 ((θ, ϕ, r), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Sym[cos(θ)*cos(ϕ) -sin(ϕ) sin(θ)*cos(ϕ); sin(ϕ)*cos(θ) cos(ϕ) sin(θ)*sin(ϕ); -sin(θ) 0 cos(θ)])
@@ -147,25 +103,7 @@ julia&gt; R = rot3(θ, ϕ)
        -sin(θ)        0         cos(θ)
 
 julia&gt; A = Tens(R * a)
-TensND.TensCanonical{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
- a₁⋅cos(θ)⋅cos(ϕ) - a₂⋅sin(ϕ) + a₃⋅sin(θ)⋅cos(ϕ)
- a₁⋅sin(ϕ)⋅cos(θ) + a₂⋅cos(ϕ) + a₃⋅sin(θ)⋅sin(ϕ)
-                          -a₁⋅sin(θ) + a₃⋅cos(θ)
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont,)
+(a1*cos(θ)*cos(ϕ) - a2*sin(ϕ) + a3*sin(θ)*cos(ϕ))𝐞¹ + (a1*sin(ϕ)*cos(θ) + a2*cos(ϕ) + a3*sin(θ)*sin(ϕ))𝐞² + (-a1*sin(θ) + a3*cos(θ))𝐞³
 
 julia&gt; simplify(change_tens(A, ℬˢ))
-TensND.TensRotated{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
- a₁
- a₂
- a₃
-→ basis: 3×3 Matrix{Sym}:
- cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
- sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
-       -sin(θ)        0         cos(θ)
-→ var: (:cont,)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bases/">« Bases</a><a class="docs-footer-nextpage" href="../coorsystems/">Coordinate systems and differential operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.5 on <span class="colophon-date" title="Tuesday 2 November 2021 23:05">Tuesday 2 November 2021</span>. Using Julia version 1.6.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+(a1)𝐞¹ + (a2)𝐞² + (a3)𝐞³</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bases/">« Bases</a><a class="docs-footer-nextpage" href="../coorsystems/">Coordinate systems and differential operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.5 on <span class="colophon-date" title="Wednesday 3 November 2021 22:26">Wednesday 3 November 2021</span>. Using Julia version 1.6.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
