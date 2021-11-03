@@ -56,7 +56,7 @@ struct Tens{order,dim,T,A<:AbstractArray} <: AbstractTens{order,dim,T}
         basis::OrthonormalBasis = CanonicalBasis{size(data)[1],T}(),
         args...,
     ) where {T} = TensOrthonormal(data, basis)
-    Tens(data::AbstractArray, var::NTuple, basis::AbstractBasis) = Tens(data, basis, var)
+    Tens(data::AbstractArray, var::NTuple, basis::AbstractBasis = CanonicalBasis{size(data,1),eltype(data)}()) = Tens(data, basis, var)
     Tens(data::AbstractArray{T,0}, args...) where {T} = T(data[1])
     Tens(data::T, args...) where {T} = data
 end
@@ -172,8 +172,8 @@ tensor_or_array(tab::AbstractArray) = tab
 getarray(t::TensArray) = t.data
 getbasis(t::TensBasis) = t.basis
 getbasis(::TensCanonical{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
-getvar(::TensOrthonormal{order}) where {order} = ntuple(_ -> :cont, Val(order))
-getvar(::TensOrthonormal, i::Integer) = :cont
+getvar(::TensOrthonormal{order}) where {order} = ntuple(_ -> :cov, Val(order))
+getvar(::TensOrthonormal, i::Integer) = :cov
 getvar(t::TensVar) = t.var
 getvar(t::TensVar, i::Integer) = t.var[i]
 
@@ -185,27 +185,31 @@ for OP in (:show, :print, :display)
     @eval begin
         Base.$OP(U::FourthOrderTensor) = $OP(tomandel(U))
 
-        function Base.$OP(t::AbstractTens)
-            $OP(typeof(t))
-            print("→ array: ")
-            $OP(getarray(t))
-            print("→ basis: ")
-            $OP(vecbasis(getbasis(t)))
-            print("→ var: ")
-            $OP(getvar(t))
-        end
-        function Base.$OP(t::TensOrthonormal)
-            $OP(typeof(t))
-            print("→ array: ")
-            $OP(getarray(t))
-            print("→ basis: ")
-            $OP(vecbasis(getbasis(t)))
-        end
+        # function Base.$OP(t::AbstractTens)
+        #     $OP(typeof(t))
+        #     print("→ array: ")
+        #     $OP(getarray(t))
+        #     print("→ basis: ")
+        #     $OP(vecbasis(getbasis(t)))
+        #     print("→ var: ")
+        #     $OP(getvar(t))
+        # end
+        # function Base.$OP(t::TensOrthonormal)
+        #     $OP(typeof(t))
+        #     print("→ array: ")
+        #     $OP(getarray(t))
+        #     print("→ basis: ")
+        #     $OP(vecbasis(getbasis(t)))
+        # end
+
+        Base.$OP(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T} = printvec(t; vec= vec, coords = coords)        
     end
 end
 
-function printvec(t::AbstractTens{order,dim,T}, vec) where {order,dim,T}
+
+function printvec(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T}
     ind = CartesianIndices(t)
+    ℬ = getbasis(t)
     firstprint = true
     s = ""
     for i ∈ ind
@@ -218,23 +222,20 @@ function printvec(t::AbstractTens{order,dim,T}, vec) where {order,dim,T}
                 s *= "(" * string(x) * ")"
             end
             j = Tuple(i)
-            s *= vec[j[1]]
-            for k ∈ j[2:end]
-                s *= "⊗"
-                s *= vec[k]
+            for k ∈ 1:order
+                s *= strvecbasis(ℬ, coords[j[k]], invvar(getvar(t,k)); vec = vec)
+                if k < order
+                    s *= "⊗"
+                end
             end
             firstprint = false
         end
     end
-    println(s)
-end
-
-function printvec(t::AbstractTens{0,dim,T}, 𝐞) where {dim,T}
-    println(t)
-end
-
-function printvec(t, 𝐞)
-    println(t)
+    if length(s)>0
+        println(s)
+    else
+        println(0)
+    end
 end
 
 

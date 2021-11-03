@@ -29,16 +29,7 @@ Basis{3, Sym}
  -1/4  -1/4   3/4
 
 julia> V = Tens(Tensor{1,3}(i -> symbols("v$i", real = true)))
-TensND.TensCanonical{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
- v₁
- v₂
- v₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont,)
+(v1)𝐞¹ + (v2)𝐞² + (v3)𝐞³
 
 julia> components(V, ℬ, (:cont,))
 3-element Vector{Sym}:
@@ -78,16 +69,7 @@ julia> components(V, ℬ̄, (:cov,))
  sqrt(2)*v1/2 + sqrt(2)*v2/2
 
 julia> T = Tens(Tensor{2,3}((i, j) -> symbols("t$i$j", real = true)))
-TensND.TensCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
-→ data: 3×3 Tensor{2, 3, Sym, 9}:
- t₁₁  t₁₂  t₁₃
- t₂₁  t₂₂  t₂₃
- t₃₁  t₃₂  t₃₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+(t11)𝐞¹⊗𝐞¹ + (t21)𝐞²⊗𝐞¹ + (t31)𝐞³⊗𝐞¹ + (t12)𝐞¹⊗𝐞² + (t22)𝐞²⊗𝐞² + (t32)𝐞³⊗𝐞² + (t13)𝐞¹⊗𝐞³ + (t23)𝐞²⊗𝐞³ + (t33)𝐞³⊗𝐞³
 
 julia> components(T, ℬ, (:cov, :cov))
 3×3 Matrix{Sym}:
@@ -124,19 +106,10 @@ The useful tensor products are the following:
 more information about modified tensor products can be found in [Sébastien Brisard's blog](https://sbrisard.github.io/posts/20140226-decomposition_of_transverse_isotropic_fourth-rank_tensors.html).
 
 ```julia
-julia> 𝟏 = tensId2(Val(3), Val(Sym))
-TensISO{2, 3, Sym, 1}
-→ data: 3×3 Matrix{Sym}:
- 1  0  0
- 0  1  0
- 0  0  1
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+julia> 𝟏 = tensId2(3, Sym)
+(1) 𝟏
 
-julia> 𝕀, 𝕁, 𝕂 = ISO(Val(3),Val(Sym)) ;
+julia> 𝕀, 𝕁, 𝕂 = ISO(3, Sym) ;
 
 julia> 𝕀 == 𝟏 ⊠ˢ 𝟏
 true
@@ -149,28 +122,11 @@ julia> a = Tens(Vec{3}((i,) -> symbols("a$i", real = true))) ;
 julia> b = Tens(Vec{3}((i,) -> symbols("b$i", real = true))) ;
 
 julia> a ⊗ b
-TensND.TensCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
-→ data: 3×3 Tensor{2, 3, Sym, 9}:
- a₁⋅b₁  a₁⋅b₂  a₁⋅b₃
- a₂⋅b₁  a₂⋅b₂  a₂⋅b₃
- a₃⋅b₁  a₃⋅b₂  a₃⋅b₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+(a1*b1)𝐞¹⊗𝐞¹ + (a2*b1)𝐞²⊗𝐞¹ + (a3*b1)𝐞³⊗𝐞¹ + (a1*b2)𝐞¹⊗𝐞² + (a2*b2)𝐞²⊗𝐞² + (a3*b2)𝐞³⊗𝐞² + (a1*b3)𝐞¹⊗𝐞³ + (a2*b3)𝐞²⊗𝐞³ + (a3*b3)𝐞³⊗𝐞³
 
 julia> a ⊗ˢ b
-TensND.TensCanonical{2, 3, Sym, Tensor{2, 3, Sym, 9}}
-→ data: 3×3 Tensor{2, 3, Sym, 9}:
-             a₁⋅b₁  a1*b2/2 + a2*b1/2  a1*b3/2 + a3*b1/2
- a1*b2/2 + a2*b1/2              a₂⋅b₂  a2*b3/2 + a3*b2/2
- a1*b3/2 + a3*b1/2  a2*b3/2 + a3*b2/2              a₃⋅b₃
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont, :cont)
+(a1*b1)𝐞¹⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞²⊗𝐞¹ + (a1*b3/2 + a3*b1/2)𝐞³⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞¹⊗𝐞² + (a2*b2)𝐞²⊗𝐞² + (a2*b3/2 + a3*b2/2)𝐞³⊗𝐞² + (a1*b3/2 + a3*b1/2)𝐞¹⊗𝐞³
+ + (a2*b3/2 + a3*b2/2)𝐞²⊗𝐞³ + (a3*b3)𝐞³⊗𝐞³
 
 julia> (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical()
 ((θ, ϕ, r), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Sym[cos(θ)*cos(ϕ) -sin(ϕ) sin(θ)*cos(ϕ); sin(ϕ)*cos(θ) cos(ϕ) sin(θ)*sin(ϕ); -sin(θ) 0 cos(θ)])
@@ -182,26 +138,8 @@ julia> R = rot3(θ, ϕ)
        -sin(θ)        0         cos(θ)
 
 julia> A = Tens(R * a)
-TensND.TensCanonical{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
- a₁⋅cos(θ)⋅cos(ϕ) - a₂⋅sin(ϕ) + a₃⋅sin(θ)⋅cos(ϕ)
- a₁⋅sin(ϕ)⋅cos(θ) + a₂⋅cos(ϕ) + a₃⋅sin(θ)⋅sin(ϕ)
-                          -a₁⋅sin(θ) + a₃⋅cos(θ)
-→ basis: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ var: (:cont,)
+(a1*cos(θ)*cos(ϕ) - a2*sin(ϕ) + a3*sin(θ)*cos(ϕ))𝐞¹ + (a1*sin(ϕ)*cos(θ) + a2*cos(ϕ) + a3*sin(θ)*sin(ϕ))𝐞² + (-a1*sin(θ) + a3*cos(θ))𝐞³
 
 julia> simplify(change_tens(A, ℬˢ))
-TensND.TensRotated{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
- a₁
- a₂
- a₃
-→ basis: 3×3 Matrix{Sym}:
- cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
- sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
-       -sin(θ)        0         cos(θ)
-→ var: (:cont,)
+(a1)𝐞¹ + (a2)𝐞² + (a3)𝐞³
 ```

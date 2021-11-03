@@ -154,3 +154,4 @@ const ⊗ˢ = sotimes
 const sboxtimes = otimesul
 
 export isidentity, contract, qcontract, otimesu, otimesul, sboxtimes, sotimes, ⊙, ⊠, ⊠ˢ, ⊗ˢ
+export ⋅, ⊡, ⊗

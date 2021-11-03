@@ -96,17 +96,11 @@ RotatedBasis{3, Sym}
 
 julia> (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical() ;
 
-julia> display(𝐞ʳ)
-TensND.TensRotated{1, 3, Sym, Vec{3, Sym}}
-→ data: 3-element Vec{3, Sym}:
- 0
- 0
- 1
-→ basis: 3×3 Matrix{Sym}:
- cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
- sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
-       -sin(θ)        0         cos(θ)
-→ var: (:cont,)
+julia> components_canon(𝐞ʳ)
+3-element Vector{Sym}:
+ sin(θ)⋅cos(ϕ)
+ sin(θ)⋅sin(ϕ)
+        cos(θ)
 
 julia> (θ, ϕ, ψ), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬʳ = init_rotated() ;
 ```

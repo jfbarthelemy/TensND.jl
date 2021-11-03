@@ -226,10 +226,10 @@ end
 for OP in (:show, :print, :display)
     @eval begin
         function Base.$OP(A::TensISO{4})
-            print("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
+            println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
         end
         function Base.$OP(A::TensISO{2})
-            print("(", getdata(A)[1], ") 𝟏")
+            println("(", getdata(A)[1], ") 𝟏")
         end
     end
 end

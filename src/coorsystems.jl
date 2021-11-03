@@ -177,6 +177,8 @@ only_coords(CS::CoorSystemSym, t) = length(CS.to_coords) > 0 ? subs(t, CS.to_coo
 getcoords(CS::CoorSystemSym) = CS.coords
 getcoords(CS::CoorSystemSym, i::Integer) = getcoords(CS)[i]
 
+@pure getdim(::CoorSystemSym{dim}) where {dim} = dim
+
 getOM(CS::CoorSystemSym) = CS.OM
 
 get_normalized_basis(CS::CoorSystemSym) = CS.normalized_basis
@@ -530,6 +532,7 @@ function coorsys_spheroidal(
     )
 end
 
+
 """
     @set_coorsys CS
     @set_coorsys(CS)
@@ -552,7 +555,7 @@ julia> LAPLACE(1/r)
 0
 ``` 
 """
-macro set_coorsys(CS)
+macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
     m = @__MODULE__
     return quote
             $m.∂(t::AbstractTens{order,dim,Sym}, i::Integer) where {order,dim} = $m.∂(t, i, $(esc(CS)))
@@ -564,8 +567,17 @@ macro set_coorsys(CS)
             $m.DIV(t::AbstractTens) = $m.DIV(t, $(esc(CS)))
             $m.LAPLACE(t::Union{Sym,AbstractTens}) = $m.LAPLACE(t, $(esc(CS)))
             $m.HESS(t::Union{Sym,AbstractTens}) = $m.HESS(t, $(esc(CS)))
+
+            coords = $(esc(coords)) === nothing ? string.(getcoords($(esc(CS)))) : ntuple(i -> i, getdim($(esc(CS))))
+
+            Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(t; vec = $(esc(vec)), coords = coords)
+            Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(t; vec = $(esc(vec)), coords = coords)
+            Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(t; vec = $(esc(vec)), coords = coords)
+
         end
 end
+
+
 
 export ∂, CoorSystemSym, getChristoffel
 export GRAD, SYMGRAD, DIV, LAPLACE, HESS

@@ -5,6 +5,34 @@ Base.getindex(ℬ::AbstractBasis, i::Integer, j::Integer) = getindex(vecbasis(�
 @pure Base.eltype(::Type{AbstractBasis{dim,T}}) where {dim,T} = T
 @pure getdim(::AbstractBasis{dim}) where {dim} = dim
 
+function subscriptnumber(i::Integer)
+    if i < 0
+        c = [Char(0x208B)]
+    else
+        c = []
+    end
+    for d in reverse(digits(abs(i)))
+        push!(c, Char(0x2080+d))
+    end
+    return join(c)
+end
+
+function superscriptnumber(i::Integer)
+    if i < 0
+        c = [Char(0x207B)]
+    else
+        c = []
+    end
+    for d in reverse(digits(abs(i)))
+        if d == 0 push!(c, Char(0x2070)) end
+        if d == 1 push!(c, Char(0x00B9)) end
+        if d == 2 push!(c, Char(0x00B2)) end
+        if d == 3 push!(c, Char(0x00B3)) end
+        if d > 3 push!(c, Char(0x2070+d)) end
+    end
+    return join(c)
+end
+
 
 """
     Basis(v::AbstractMatrix{T}, ::Val{:cov})
@@ -351,7 +379,79 @@ vecbasis(::CanonicalBasis{dim,T}, ::Val{:cont}) where {dim,T} = Id2{dim,T}()
 vecbasis(ℬ::AbstractBasis, var) = vecbasis(ℬ, Val(var))
 vecbasis(ℬ::AbstractBasis) = vecbasis(ℬ, :cov)
 vecbasis(ℬ::AbstractBasis, i::Integer, j::Integer, var = :cov) = vecbasis(ℬ, Val(var))[i, j]
-vecbasis(ℬ::AbstractBasis, j::Integer, var = :cov) = vecbasis(ℬ, Val(var))[:, j]
+vecbasis(ℬ::AbstractBasis, i::Integer, var = :cov) = vecbasis(ℬ, Val(var))[:, i]
+
+strvecbasis(::AbstractBasis, i::Integer, ::Val{:cov} ; vec = "𝐞") = vec * subscriptnumber(i)
+strvecbasis(::AbstractBasis, i::Integer, ::Val{:cont} ; vec = "𝐞") = vec * superscriptnumber(i)
+strvecbasis(ℬ::AbstractBasis, i::Integer, var = :cov ; vec = "𝐞") = strvecbasis(ℬ, i, Val(var) ; vec = vec)
+
+const dsubscriptchar = Dict(
+    "a" => "ₐ",
+    "e" => "ₑ",
+    "h" => "ₕ",
+    "i" => "ᵢ",
+    "j" => "ⱼ",
+    "k" => "ₖ",
+    "l" => "ₗ",
+    "m" => "ₘ",
+    "n" => "ₙ",
+    "o" => "ₒ",
+    "p" => "ₚ",
+    "r" => "ᵣ",
+    "s" => "ₛ",
+    "t" => "ₜ",
+    "u" => "ᵤ",
+    "v" => "ᵥ",
+    "x" => "ₓ",
+    "β" => "ᵦ",
+    "γ" => "ᵧ",
+    "ρ" => "ᵨ",
+    "ϕ" => "ᵩ",
+    "χ" => "ᵪ",
+)
+
+const dsuperscriptchar = Dict(
+    "a" => "ᵃ",
+    "b" => "ᵇ",
+    "c" => "ᶜ",
+    "d" => "ᵈ",
+    "e" => "ᵉ",
+    "f" => "ᶠ",
+    "g" => "ᵍ",
+    "h" => "ʰ",
+    "i" => "ⁱ",
+    "j" => "ʲ",
+    "k" => "ᵏ",
+    "l" => "ˡ",
+    "m" => "ᵐ",
+    "n" => "ⁿ",
+    "o" => "ᴼ",
+    "p" => "ᵖ",
+    "r" => "ʳ",
+    "s" => "ˢ",
+    "t" => "ᵗ",
+    "u" => "ᶸ",
+    "v" => "ᵛ",
+    "w" => "ʷ",
+    "x" => "ˣ",
+    "y" => "ʸ",
+    "z" => "ᶻ",
+    "β" => "ᵝ",
+    "γ" => "ᵞ",
+    "ε" => "ᵋ",
+    "θ" => "ᶿ",
+    "ι" => "ᶥ ",
+    "ϕ" => "ᵠ",
+    "χ" => "ᵡ",
+)
+
+subscriptchar(s::String) = s ∈ keys(dsubscriptchar) ? dsubscriptchar[s] : s ∈ keys(dsuperscriptchar) ? dsuperscriptchar[s] : s
+superscriptchar(s::String) = s ∈ keys(dsuperscriptchar) ? dsuperscriptchar[s] : s ∈ keys(dsubscriptchar) ? dsubscriptchar[s] : s
+
+
+strvecbasis(::AbstractBasis, i::AbstractString, ::Val{:cov} ; vec = "𝐞") = vec * subscriptchar(i)
+strvecbasis(::AbstractBasis, i::AbstractString, ::Val{:cont} ; vec = "𝐞") = vec * superscriptchar(i)
+strvecbasis(ℬ::AbstractBasis, i::AbstractString, var = :cov ; vec = "𝐞") = strvecbasis(ℬ, i, Val(var) ; vec = vec)
 
 
 """
