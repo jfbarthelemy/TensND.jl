@@ -111,7 +111,6 @@ init_polar(
 ntuple(i -> 𝐞ᵖ(Val(i), coords[2]; canonical = canonical), 2),
 Basis(coords[2])
 
-
 """
     𝐞ᶜ(i::Integer, θ::T = zero(Sym); canonical = false)
 

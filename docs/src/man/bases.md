@@ -2,8 +2,8 @@
 
 An arbitrary basis contains four matrices
 
-- one in which columns correspond to the covariant vectors of new basis with respect to the canonical one `𝐞ᵢ`,
-- one defining the contravariant (or dual) basis `𝐞ⁱ`,
+- one in which columns correspond to the covariant vectors of new basis `(𝐞ᵢ)` with respect to the canonical one,
+- one defining the contravariant (or dual) basis `(𝐞ⁱ)`,
 - one defining the metric tensor `gᵢⱼ=𝐞ᵢ⋅𝐞ⱼ`,
 - one defining the inverse of the  metric tensor `gⁱʲ=𝐞ⁱ⋅𝐞ʲ`.
 
