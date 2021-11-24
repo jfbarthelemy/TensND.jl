@@ -569,10 +569,11 @@ macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
             $m.HESS(t::Union{Sym,AbstractTens}) = $m.HESS(t, $(esc(CS)))
 
             coords = $(esc(coords)) === nothing ? string.(getcoords($(esc(CS)))) : ntuple(i -> i, getdim($(esc(CS))))
+            ℬ = get_normalized_basis($(esc(CS)))
 
-            Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(t; vec = $(esc(vec)), coords = coords)
-            Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(t; vec = $(esc(vec)), coords = coords)
-            Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(t; vec = $(esc(vec)), coords = coords)
+            Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
 
         end
 end
