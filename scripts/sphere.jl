@@ -6,6 +6,7 @@ Spherical = coorsys_spherical()
 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical)
 ℬˢ = get_normalized_basis(Spherical)
 𝐱 = getOM(Spherical)
+@set_coorsys Spherical
 𝐞₁, 𝐞₂, 𝐞₃ = unitvec(coorsys_cartesian())
 # 𝟏, 𝟙, 𝕀, 𝕁, 𝕂 = init_isotropic(basis = ℬˢ)
 𝕀, 𝕁, 𝕂 = ISO(Val(3),Val(Sym))

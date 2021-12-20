@@ -149,13 +149,15 @@ components(
 components(t::TensISO{order,dim,T}, ::NTuple{order,Symbol}) where {order,dim,T} =
     getarray(t)
 
-change_tens(t::TensISO{order,dim,T}, ::OrthonormalBasis{dim,T}) where {order,dim,T} = t
+change_tens(t::TensISO{order,dim,T}, ℬ::OrthonormalBasis{dim,T}) where {order,dim,T} =
+    Tens(getarray(t), ℬ)
 change_tens(
     t::TensISO{order,dim,T},
-    ::OrthonormalBasis{dim,T},
+    ℬ::OrthonormalBasis{dim,T},
     ::NTuple{order,Symbol},
-) where {order,dim,T} = t
+) where {order,dim,T} = Tens(getarray(t), ℬ)
 
+@inline Base.:-(A::TensISO{order,dim}) where {order,dim} = TensISO{dim}(.-(getdata(A)))
 @inline Base.:*(α::Number, A::TensISO{order,dim}) where {order,dim} =
     TensISO{dim}(α .* getdata(A))
 @inline Base.:*(A::TensISO{order,dim}, α::Number) where {order,dim} =
@@ -311,7 +313,7 @@ function Tensors.dcontract(
     m2 = einsum(EinCode((ec1,), ec2), (m,))
     newm =
         (m + m2) * getdata(B)[2] / 2 +
-        Id2{dim,T}() ⊗ contract(m, order - 1, order) * (getdata(B)[1] - getdata(B)[2]) / dim
+        contract(m, order - 1, order) ⊗ Id2{dim,T}() * (getdata(B)[1] - getdata(B)[2]) / dim
     return Tens(newm, getbasis(nA))
 end
 

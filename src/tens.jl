@@ -675,6 +675,7 @@ for OP in (:+, :-)
     end
 end
 
+@inline Base.:-(t::AbstractTens) = Tens(.-(getarray(t)), getbasis(t), getvar(t))
 @inline Base.:*(α::Number, t::AbstractTens) = Tens(α * getarray(t), getbasis(t), getvar(t))
 @inline Base.:*(t::AbstractTens, α::Number) = Tens(α * getarray(t), getbasis(t), getvar(t))
 @inline Base.:/(t::AbstractTens, α::Number) = Tens(getarray(t) / α, getbasis(t), getvar(t))
