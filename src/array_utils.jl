@@ -125,7 +125,7 @@ function sotimes(
 end
 
 @inline function sotimes(S1::Vec{dim}, S2::Vec{dim}) where {dim}
-    return Tensor{2,dim}(@inline function (i, j)
+    return SymmetricTensor{2,dim}(@inline function (i, j)
         @inbounds (S1[i] * S2[j] + S1[j] * S2[i]) / 2
     end)
 end
