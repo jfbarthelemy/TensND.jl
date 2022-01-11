@@ -774,7 +774,7 @@ function Tensors.otimes(
     t1::AbstractTens{order1,dim},
     t2::AbstractTens{order2,dim},
 ) where {order1,order2,dim}
-    if t1 === t2
+    if t1 == t2
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -788,7 +788,7 @@ function Tensors.otimes(
     t1::TensOrthonormal{order1,dim},
     t2::TensOrthonormal{order2,dim},
 ) where {order1,order2,dim}
-    if t1 === t2
+    if t1 == t2
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -1206,12 +1206,41 @@ function sotimes(
 end
 
 function sotimes(
+    t1::AbstractTens{1,dim},
+    t2::AbstractTens{1,dim},
+) where {dim}
+    if t1 == t2
+        return otimes(t1)
+    else
+        nt1, nt2 = same_basis(t1, t2)
+        var = (getvar(nt1)[end], getvar(nt2)[begin+1:end]...)
+        nt2 = change_tens(nt2, getbasis(nt2), var)
+        data = sotimes(getarray(nt1), getarray(nt2))
+        var = (getvar(nt1)..., getvar(nt2)...)
+        return Tens(data, getbasis(nt1), var)
+    end
+end
+
+function sotimes(
     t1::TensOrthonormal{order1,dim},
     t2::TensOrthonormal{order2,dim},
 ) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
     data = sotimes(getarray(nt1), getarray(nt2))
     return Tens(data, getbasis(nt1))
+end
+
+function sotimes(
+    t1::TensOrthonormal{1,dim},
+    t2::TensOrthonormal{1,dim},
+) where {dim}
+    if t1 == t2
+        return otimes(t1)
+    else
+        nt1, nt2 = same_basis(t1, t2)
+        data = sotimes(getarray(nt1), getarray(nt2))
+        return Tens(data, getbasis(nt1))
+    end
 end
 
 Base.transpose(t::TensArray{order,dim,T,<:SecondOrderTensor}) where {order,dim,T} =
