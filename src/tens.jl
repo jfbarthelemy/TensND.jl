@@ -774,19 +774,27 @@ function Tensors.otimes(
     t1::AbstractTens{order1,dim},
     t2::AbstractTens{order2,dim},
 ) where {order1,order2,dim}
-    nt1, nt2 = same_basis(t1, t2)
-    data = otimes(getarray(nt1), getarray(nt2))
-    var = (getvar(nt1)..., getvar(nt2)...)
-    return Tens(data, getbasis(nt1), var)
+    if t1 === t2
+        return otimes(t1)
+    else
+        nt1, nt2 = same_basis(t1, t2)
+        data = otimes(getarray(nt1), getarray(nt2))
+        var = (getvar(nt1)..., getvar(nt2)...)
+        return Tens(data, getbasis(nt1), var)
+    end
 end
 
 function Tensors.otimes(
     t1::TensOrthonormal{order1,dim},
     t2::TensOrthonormal{order2,dim},
 ) where {order1,order2,dim}
-    nt1, nt2 = same_basis(t1, t2)
-    data = otimes(getarray(nt1), getarray(nt2))
-    return Tens(data, getbasis(nt1))
+    if t1 === t2
+        return otimes(t1)
+    else
+        nt1, nt2 = same_basis(t1, t2)
+        data = otimes(getarray(nt1), getarray(nt2))
+        return Tens(data, getbasis(nt1))
+    end
 end
 
 Tensors.otimes(v::AbstractTens{1,dim}) where {dim} =
