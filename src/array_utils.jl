@@ -20,6 +20,30 @@ simplifyif(x::Sym) = simplify(x)
 simplifyif(m::Matrix{Sym}) = simplify.(m)
 simplifyif(m::Symmetric{Sym}) = Symmetric(simplify.(m))
 
+@inline LinearAlgebra.issymmetric(t::Tensor{2, 2, T}) where {T <: Real} = @inbounds t[1,2] ≈ t[2,1]
+
+@inline function LinearAlgebra.issymmetric(t::Tensor{2, 3, T}) where {T <: Real}
+    return @inbounds t[1,2] ≈ t[2,1] && t[1,3] ≈ t[3,1] && t[2,3] ≈ t[3,2]
+end
+
+function Tensors.isminorsymmetric(t::Tensor{4, dim, T}) where {dim, T <: Real}
+    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
+        if !(t[i,j,k,l] ≈ t[j,i,k,l]) || !(t[i,j,k,l] ≈ t[i,j,l,k])
+            return false
+        end
+    end
+    return true
+end
+
+function Tensors.ismajorsymmetric(t::FourthOrderTensor{dim, T}) where {dim, T <: Real}
+    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
+        if !(t[i,j,k,l] ≈ t[k,l,i,j])
+            return false
+        end
+    end
+    return true
+end
+
 function Tensors.otimes(
     t1::AbstractArray{T1,order1},
     t2::AbstractArray{T2,order2},
