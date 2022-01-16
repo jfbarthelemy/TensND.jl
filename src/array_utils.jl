@@ -44,6 +44,11 @@ function Tensors.ismajorsymmetric(t::FourthOrderTensor{dim, T}) where {dim, T <:
     return true
 end
 
+@inline function Tensors.majortranspose(S::SymmetricTensor{4, dim}) where {dim}
+    SymmetricTensor{4, dim}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
+end
+
+
 function Tensors.otimes(
     t1::AbstractArray{T1,order1},
     t2::AbstractArray{T2,order2},
