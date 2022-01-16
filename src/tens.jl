@@ -161,6 +161,7 @@ for order ∈ (2, 4)
         end
         return newtab
     end
+    @eval tensor_or_array(tab::Tensor{$order,dim}) where {dim} = Tensors.issymmetric(tab) ? convert(SymmetricTensor{$order,dim}, tab) : tab
 end
 tensor_or_array(tab::Tensors.AllTensors) = tab
 tensor_or_array(tab::AbstractArray) = tab
