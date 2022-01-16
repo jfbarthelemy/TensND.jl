@@ -1280,6 +1280,19 @@ Tensors.minortranspose(
     t::TensOrthonormal{order,dim,T,<:FourthOrderTensor},
 ) where {order,dim,T} = Tens(minortranspose(getarray(t)), getbasis(t))
 
+function tensbasis(ℬ::AbstractBasis, i::Integer, ::Val{:cov})
+    T = eltype(ℬ)
+    t = [T(Int(j == i)) for j ∈ 1:getdim(ℬ)]
+    return Tens(t, ℬ, (:cont,))
+end
+function tensbasis(ℬ::AbstractBasis, i::Integer, ::Val{:cont})
+    T = eltype(ℬ)
+    t = [T(Int(j == i)) for j ∈ 1:getdim(ℬ)]
+    return Tens(t, ℬ, (:cov,))
+end
+tensbasis(ℬ::AbstractBasis, i::Integer, var = :cov) = tensbasis(ℬ, i, Val(var))
+
+
 export AbstractTens, Tens
 export proj_tens, best_sym_tens
 export getorder, arraytype, getdata, getarray, getbasis, getvar
@@ -1288,3 +1301,4 @@ export components, components_canon, change_tens, change_tens_canon
 export trigsimp, expand_trig
 export KM, invKM
 export getbasis, getvar
+export tensbasis
