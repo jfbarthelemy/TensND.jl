@@ -1292,7 +1292,7 @@ function tensbasis(ℬ::AbstractBasis, i::Integer, ::Val{:cont})
     return Tens(t, ℬ, (:cov,))
 end
 tensbasis(ℬ::AbstractBasis, i::Integer, var = :cov) = tensbasis(ℬ, i, Val(var))
-
+tensbasis(ℬ::AbstractBasis, var = :cov) = ntuple(i -> tensbasis(ℬ, i, Val(var)), getdim(ℬ))
 
 export AbstractTens, Tens
 export proj_tens, best_sym_tens
