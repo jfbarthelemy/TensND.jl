@@ -761,7 +761,10 @@ Defines a tensor from a Kelvin-Mandel vector or matrix representation
 """
 invKM(TT::Type{<:Tensors.AllTensors}, v::AbstractVecOrMat; kwargs...) =
     Tens(frommandel(TT, v; kwargs...))
+invKM(TT::Type{<:Tensors.AllTensors}, v::AbstractVecOrMat, b::AbstractBasis; kwargs...) =
+    Tens(frommandel(TT, v; kwargs...), b)
 invKM(v::AbstractVecOrMat; kwargs...) = invKM(select_type_KM[size(v)], v; kwargs...)
+invKM(v::AbstractVecOrMat, b::AbstractBasis; kwargs...) = invKM(select_type_KM[size(v)], v, b; kwargs...)
 
 
 """
