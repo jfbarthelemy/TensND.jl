@@ -262,8 +262,8 @@ scontract(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
 Tensors.otimes(A::TensISO{2,dim}) where {dim} =
     TensISO{dim}(dim * getdata(A)[1]^2, zero(eltype(A)))
 
-scontract(A::TensISO{2,dim}, B::TensISO{2,dim}) where {dim} =
-    TensISO{dim}(getdata(A)[1] * getdata(B)[1])
+scontract(A::TensISO{2,dim}) where {dim} =
+    TensISO{dim}(getdata(A)[1]^2)
 
 scontract(A::TensISO{2,dim}, B::AbstractArray) where {dim} = getdata(A)[1] * B
 scontract(A::AbstractArray, B::TensISO{2,dim}) where {dim} = A * getdata(B)[1]
