@@ -1,6 +1,6 @@
 abstract type AbstractTens{order,dim,T<:Number} <: AbstractArray{T,order} end
 
-@pure getorder(::AbstractTens{getorder,dim,T}) where {getorder,dim,T} = getorder
+@pure getorder(::AbstractTens{order,dim,T}) where {order,dim,T} = order
 @pure getdim(::AbstractTens{order,dim,T}) where {order,dim,T} = dim
 @pure Base.eltype(::Type{AbstractTens{order,dim,T}}) where {order,dim,T} = T
 
@@ -186,29 +186,30 @@ for OP in (:show, :print, :display)
     @eval begin
         Base.$OP(U::FourthOrderTensor) = $OP(tomandel(U))
 
-        # function Base.$OP(t::AbstractTens)
-        #     $OP(typeof(t))
-        #     print("→ array: ")
-        #     $OP(getarray(t))
-        #     print("→ basis: ")
-        #     $OP(vecbasis(getbasis(t)))
-        #     print("→ var: ")
-        #     $OP(getvar(t))
-        # end
-        # function Base.$OP(t::TensOrthonormal)
-        #     $OP(typeof(t))
-        #     print("→ array: ")
-        #     $OP(getarray(t))
-        #     print("→ basis: ")
-        #     $OP(vecbasis(getbasis(t)))
-        # end
+        function Base.$OP(t::AbstractTens)
+            $OP(typeof(t))
+            print("→ array: ")
+            $OP(getarray(t))
+            print("→ basis: ")
+            $OP(vecbasis(getbasis(t)))
+            print("→ var: ")
+            $OP(getvar(t))
+        end
+        function Base.$OP(t::TensOrthonormal)
+            $OP(typeof(t))
+            print("→ array: ")
+            $OP(getarray(t))
+            print("→ basis: ")
+            $OP(vecbasis(getbasis(t)))
+        end
 
-        Base.$OP(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T} = printvec(t; vec= vec, coords = coords)        
+        # Base.$OP(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T} = intrinsic(t; vec= vec, coords = coords)        
     end
 end
 
+intrinsic(t::T) where {T} = println(t)
 
-function printvec(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T}
+function intrinsic(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T}
     ind = CartesianIndices(t)
     ℬ = getbasis(t)
     firstprint = true
@@ -1300,7 +1301,7 @@ tensbasis(ℬ::AbstractBasis, var = :cov) = ntuple(i -> tensbasis(ℬ, i, Val(va
 export AbstractTens, Tens
 export proj_tens, best_sym_tens
 export getorder, arraytype, getdata, getarray, getbasis, getvar
-export printvec
+export intrinsic
 export components, components_canon, change_tens, change_tens_canon
 export trigsimp, expand_trig
 export KM, invKM

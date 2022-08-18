@@ -545,10 +545,10 @@ julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞
 
 julia> @set_coorsys Spherical
 
-julia> printvec(GRAD(𝐞ʳ),vec)
+julia> intrinsic(GRAD(𝐞ʳ),vec)
 (1/r)𝐞ᶿ⊗𝐞ᶿ + (1/r)𝐞ᵠ⊗𝐞ᵠ
 
-julia> printvec(DIV(𝐞ʳ ⊗ 𝐞ʳ),vec)
+julia> intrinsic(DIV(𝐞ʳ ⊗ 𝐞ʳ),vec)
 (2/r)𝐞ʳ
 
 julia> LAPLACE(1/r)
@@ -568,17 +568,24 @@ macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
             $m.LAPLACE(t::Union{Sym,AbstractTens}) = $m.LAPLACE(t, $(esc(CS)))
             $m.HESS(t::Union{Sym,AbstractTens}) = $m.HESS(t, $(esc(CS)))
 
-            coords = $(esc(coords)) === nothing ? string.(getcoords($(esc(CS)))) : ntuple(i -> i, getdim($(esc(CS))))
+            if $(esc(coords)) === nothing
+                coords = string.(getcoords($(esc(CS))))
+            end
             ℬ = get_normalized_basis($(esc(CS)))
+            $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
 
-            Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-            Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-            Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T} = printvec(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            # Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            # Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            # Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
 
         end
 end
 
-
+function intrinsic(t::AbstractTens{order,dim,T}, CS::AbstractCoorSystem; vec = '𝐞') where {order,dim,T}
+    coords = string.(getcoords(CS))
+    ℬ = get_normalized_basis(CS)
+    return intrinsic(change_tens(t, ℬ); vec = vec, coords = coords)
+end
 
 export ∂, CoorSystemSym, getChristoffel
 export GRAD, SYMGRAD, DIV, LAPLACE, HESS

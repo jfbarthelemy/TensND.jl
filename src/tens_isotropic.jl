@@ -235,6 +235,8 @@ for OP in (:show, :print, :display)
         end
     end
 end
+intrinsic(A::TensISO{4}) = println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
+intrinsic(A::TensISO{2}) = println("(", getdata(A)[1], ") 𝟏")
 
 for OP in (:(simplify), :(factor), :(subs), :(diff))
     @eval SymPy.$OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =

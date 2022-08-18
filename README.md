@@ -31,22 +31,22 @@ julia> Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞
 
 julia> @set_coorsys Spherical
 
-julia> GRAD(𝐞ʳ)
+julia> GRAD(𝐞ʳ) |> intrinsic
 (1/r)𝐞ᶿ⊗𝐞ᶿ + (1/r)𝐞ᵠ⊗𝐞ᵠ
 
-julia> DIV(𝐞ʳ ⊗ 𝐞ʳ)
+julia> DIV(𝐞ʳ ⊗ 𝐞ʳ) |> intrinsic
 (2/r)𝐞ʳ
 
-julia> LAPLACE(1/r)
+julia> LAPLACE(1/r) |> intrinsic
 0
 
 julia> f = SymFunction("f", real = true)
 f
 
-julia> DIV(f(r) * 𝐞ʳ ⊗ 𝐞ʳ)
+julia> DIV(f(r) * 𝐞ʳ ⊗ 𝐞ʳ) |> intrinsic
 (Derivative(f(r), r) + 2*f(r)/r)𝐞ʳ
 
-julia> LAPLACE(f(r))
+julia> LAPLACE(f(r)) |> intrinsic
               d       
   2         2⋅──(f(r))
  d            dr
@@ -56,10 +56,10 @@ dr
 
 julia> for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ") @eval $(Symbol(σⁱʲ)) = SymFunction($σⁱʲ, real = true)($r) end
 
-julia> 𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ
+julia> 𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ ; intrinsic(𝛔)
 (σᶿᶿ(r))𝐞ᶿ⊗𝐞ᶿ + (σᵠᵠ(r))𝐞ᵠ⊗𝐞ᵠ + (σʳʳ(r))𝐞ʳ⊗𝐞ʳ
 
-julia> div𝛔 = simplify(DIV(𝛔))
+julia> div𝛔 = simplify(DIV(𝛔)) ; intrinsic(div𝛔)
 ((-σᵠᵠ(r) + σᶿᶿ(r))/(r*tan(θ)))𝐞ᶿ + ((r*Derivative(σʳʳ(r), r) + 2*σʳʳ(r) - σᵠᵠ(r) - σᶿᶿ(r))/r)𝐞ʳ
 ```
 
