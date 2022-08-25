@@ -97,7 +97,7 @@ struct SubManifoldSym{dim,VEC,BNORM,BNAT,TENSA,TENSB} <: AbstractCoorSystem{dim,
         a₀ = metric(natural_basis, :cov)
         a = Tens(SymmetricTensor{2,dim,Sym}( (i,j) -> i<dim && j<dim ? a₀[i,j] : zero(Sym)), natural_basis, (:cov,:cov))
         b = Tens(SymmetricTensor{2,dim,Sym}( (i,j) -> i<dim && j<dim ? aᵢ[dim]⋅simp(chvar(∂(chvar(aᵢ[j], to_coords), coords[i]), tmp_var)) : zero(Sym)), natural_basis, (:cov,:cov))
-        Γ₀ = compute_Riemann(
+        Γ₀ = compute_Christoffel(
             coords,
             χᵢ,
             metric(normalized_basis, :cov),
@@ -127,24 +127,13 @@ struct SubManifoldSym{dim,VEC,BNORM,BNAT,TENSA,TENSB} <: AbstractCoorSystem{dim,
     end
 end
 
-const getRiemann = getChristoffel
-
 normal(SM::SubManifoldSym{dim}) where {dim} = natvec(SM, :cov)[dim]
 
-getsubmetric(SM::SubManifoldSym) = SM.a
+submetric(SM::SubManifoldSym) = SM.a
 
-getcurvature(SM::SubManifoldSym) = SM.b
+curvature(SM::SubManifoldSym) = SM.b
 
-function compute_Riemann(coords, χ, γ, invγ)
-    dimm1 = length(χ)-1
-    gᵢⱼ = [γ[i, j] * χ[i] * χ[j] for i ∈ 1:dimm1, j ∈ 1:dimm1]
-    gⁱʲ = [invγ[i, j] / (χ[i] * χ[j]) for i ∈ 1:dimm1, j ∈ 1:dimm1]
-    ∂g = [SymPy.diff(gᵢⱼ[i, j], coords[k]) for i ∈ 1:dimm1, j ∈ 1:dimm1, k ∈ 1:dimm1]
-    Γᵢⱼₖ =
-        [(∂g[i, k, j] + ∂g[j, k, i] - ∂g[i, j, k]) / 2 for i ∈ 1:dimm1, j ∈ 1:dimm1, k ∈ 1:dimm1]
-    return ein"ijl,lk->ijk"(Γᵢⱼₖ, gⁱʲ)
-end
-
+Riemann(SM::SubManifoldSym{dim}) where {dim} = SM.Γ[1:dim-1,1:dim-1,1:dim-1]
 
 function ∂(
     t::AbstractTens{order,dim,Sym},
@@ -152,10 +141,10 @@ function ∂(
     SM::SubManifoldSym{dim},
 ) where {order,dim}
     t = only_coords(SM, t)
-    ℬ = get_natural_basis(SM)
+    ℬ = natural_basis(SM)
     var = ntuple(_ -> :cont, order)
     t = Array(components(t, ℬ, var))
-    Γ = getChristoffel(SM)
+    Γ = Christoffel(SM)
     data = diff.(t, getcoords(SM, i))
     for o ∈ 1:order
         ec1 = ntuple(j -> j == o ? order + 1 : j, order)
@@ -163,7 +152,7 @@ function ∂(
         ec3 = ntuple(j -> j, order)
         data += einsum(EinCode((ec1, ec2), ec3), (t, view(Γ, i, :, :)))
     end
-    return change_tens(Tens(data, ℬ, var), get_normalized_basis(SM), var)
+    return change_tens(Tens(data, ℬ, var), normalized_basis(SM), var)
 end
 
 ∂(t::Sym, i::Integer, SM::SubManifoldSym{dim}) where {dim} =
@@ -206,7 +195,6 @@ SYMGRAD(
     SM::SubManifoldSym{dim},
 ) where {order,dim} = sum([∂(T, i, SM) ⊗ˢ natvec(SM, i, :cont) for i = 1:dim-1])
 
-
 """
     DIV(T::AbstractTens{order,dim,Sym},SM::SubManifoldSym{dim}) where {order,dim}
 
@@ -214,8 +202,6 @@ Calculates the divergence  of `T` with respect to the coordinate system `SM`
 """
 DIV(T::AbstractTens{order,dim,Sym}, SM::SubManifoldSym{dim}) where {order,dim} =
     sum([∂(T, i, SM) ⋅ natvec(SM, i, :cont) for i = 1:dim-1])
-
-
 
 """
     LAPLACE(T::Union{Sym,AbstractTens{order,dim,Sym}},SM::SubManifoldSym{dim}) where {order,dim}
@@ -480,7 +466,7 @@ HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 #             if $(esc(coords)) === nothing
 #                 coords = string.(getcoords($(esc(SM))))
 #             end
-#             ℬ = get_normalized_basis($(esc(SM)))
+#             ℬ = normalized_basis($(esc(SM)))
 #             $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
 
 #             # Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
@@ -492,9 +478,9 @@ HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 
 # function intrinsic(t::AbstractTens{order,dim,T}, SM::AbstractCoorSystem; vec = '𝐞') where {order,dim,T}
 #     coords = string.(getcoords(SM))
-#     ℬ = get_normalized_basis(SM)
+#     ℬ = normalized_basis(SM)
 #     return intrinsic(change_tens(t, ℬ); vec = vec, coords = coords)
 # end
 
-export SubManifoldSym, getRiemann
-export normal, getsubmetric, getcurvature
+export SubManifoldSym
+export normal, submetric, curvature, Riemann

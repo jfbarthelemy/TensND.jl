@@ -46,7 +46,7 @@ julia> getChristoffel(Spherical)
   0  -r*sin(θ)^2  0
   0            0  0
 
-julia> ℬˢ = get_normalized_basis(Spherical)
+julia> ℬˢ = normalized_basis(Spherical)
 RotatedBasis{3, Sym}
 → basis: 3×3 Matrix{Sym}:
  cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)

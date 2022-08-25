@@ -4,7 +4,7 @@ sympy.init_printing(use_unicode=true)
 Spherical = coorsys_spherical()
 θ, ϕ, r = getcoords(Spherical)
 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical)
-ℬˢ = get_normalized_basis(Spherical)
+ℬˢ = normalized_basis(Spherical)
 𝐱 = getOM(Spherical)
 @set_coorsys Spherical
 𝐞₁, 𝐞₂, 𝐞₃ = unitvec(coorsys_cartesian())

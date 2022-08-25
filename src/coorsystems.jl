@@ -181,11 +181,11 @@ getcoords(CS::AbstractCoorSystem, i::Integer) = getcoords(CS)[i]
 
 getOM(CS::AbstractCoorSystem) = CS.OM
 
-get_normalized_basis(CS::AbstractCoorSystem) = CS.normalized_basis
-get_natural_basis(CS::AbstractCoorSystem) = CS.natural_basis
+normalized_basis(CS::AbstractCoorSystem) = CS.normalized_basis
+natural_basis(CS::AbstractCoorSystem) = CS.natural_basis
 
-getLame(CS::AbstractCoorSystem) = CS.χᵢ
-getChristoffel(CS::AbstractCoorSystem) = CS.Γ
+Lame(CS::AbstractCoorSystem) = CS.χᵢ
+Christoffel(CS::AbstractCoorSystem) = CS.Γ
 
 natvec(CS::AbstractCoorSystem, ::Val{:cov}) = CS.aᵢ
 natvec(CS::AbstractCoorSystem, ::Val{:cont}) = CS.aⁱ
@@ -197,7 +197,7 @@ unitvec(CS::AbstractCoorSystem, i::Integer) = unitvec(CS)[i]
 
 
 function compute_Christoffel(coords, χ, γ, invγ)
-    dim = length(χ)
+    dim = length(coords)
     gᵢⱼ = [γ[i, j] * χ[i] * χ[j] for i ∈ 1:dim, j ∈ 1:dim]
     gⁱʲ = [invγ[i, j] / (χ[i] * χ[j]) for i ∈ 1:dim, j ∈ 1:dim]
     ∂g = [SymPy.diff(gᵢⱼ[i, j], coords[k]) for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
@@ -243,10 +243,10 @@ function ∂(
     CS::CoorSystemSym{dim},
 ) where {order,dim}
     t = only_coords(CS, t)
-    ℬ = get_natural_basis(CS)
+    ℬ = natural_basis(CS)
     var = ntuple(_ -> :cont, order)
     t = Array(components(t, ℬ, var))
-    Γ = getChristoffel(CS)
+    Γ = Christoffel(CS)
     data = diff.(t, getcoords(CS, i))
     for o ∈ 1:order
         ec1 = ntuple(j -> j == o ? order + 1 : j, order)
@@ -254,7 +254,7 @@ function ∂(
         ec3 = ntuple(j -> j, order)
         data += einsum(EinCode((ec1, ec2), ec3), (t, view(Γ, i, :, :)))
     end
-    return change_tens(Tens(data, ℬ, var), get_normalized_basis(CS), var)
+    return change_tens(Tens(data, ℬ, var), normalized_basis(CS), var)
 end
 
 ∂(t::Sym, i::Integer, CS::CoorSystemSym{dim}) where {dim} =
@@ -575,7 +575,7 @@ macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
             if length(coords) == dim-1
                 coords = (coords..., dim)
             end
-            ℬ = get_normalized_basis($(esc(CS)))
+            ℬ = normalized_basis($(esc(CS)))
             $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
 
             # Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
@@ -587,12 +587,12 @@ end
 
 function intrinsic(t::AbstractTens{order,dim,T}, CS::AbstractCoorSystem; vec = '𝐞') where {order,dim,T}
     coords = string.(getcoords(CS))
-    ℬ = get_normalized_basis(CS)
+    ℬ = normalized_basis(CS)
     return intrinsic(change_tens(t, ℬ); vec = vec, coords = coords)
 end
 
-export ∂, CoorSystemSym, getChristoffel
+export ∂, CoorSystemSym, Lame, Christoffel
 export GRAD, SYMGRAD, DIV, LAPLACE, HESS
-export get_normalized_basis, get_natural_basis, natvec, unitvec, getcoords, getOM
+export normalized_basis, natural_basis, natvec, unitvec, getcoords, getOM
 export coorsys_cartesian, coorsys_polar, coorsys_cylindrical, coorsys_spherical, coorsys_spheroidal
 export @set_coorsys

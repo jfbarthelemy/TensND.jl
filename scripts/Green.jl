@@ -3,7 +3,7 @@ sympy.init_printing(use_unicode=true)
 
 Polar = coorsys_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar)
 @set_coorsys Polar
-ℬˢ = get_normalized_basis(Polar)
+ℬˢ = normalized_basis(Polar)
 𝐱 = getOM(Polar)
 Cartesian = coorsys_cartesian(symbols("x y", real = true))
 𝐞₁, 𝐞₂ = unitvec(Cartesian)
@@ -31,7 +31,7 @@ d = Dict(r => sqrt(x₁^2+x₂^2), sin(θ) => x₂/sqrt(x₁^2+x₂^2), cos(θ) 
 
 
 Spherical = coorsys_spherical() ; θ, ϕ, r = getcoords(Spherical) ; 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical) ;
-ℬˢ = get_normalized_basis(Spherical)
+ℬˢ = normalized_basis(Spherical)
 @set_coorsys Spherical
 𝕀, 𝕁, 𝕂 = ISO(Val(3),Val(Sym))
 𝟏 = tensId2(Val(3),Val(Sym))

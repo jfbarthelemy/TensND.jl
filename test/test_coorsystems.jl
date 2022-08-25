@@ -19,7 +19,7 @@
         Cartesian = coorsys_cartesian()
         𝐗 = getcoords(Cartesian)
         𝐄 = unitvec(Cartesian)
-        ℬ = get_normalized_basis(Cartesian)
+        ℬ = normalized_basis(Cartesian)
         𝛔 = Tens(SymmetricTensor{2,3}((i, j) -> SymFunction("σ$i$j", real = true)(𝐗...)))
         @test DIV(𝛔, Cartesian) ==
               sum([sum([∂(𝛔[i, j], 𝐗[j]) for j ∈ 1:3]) * 𝐄[i] for i ∈ 1:3])
@@ -28,7 +28,7 @@
         Polar = coorsys_polar()
         r, θ = getcoords(Polar)
         𝐞ʳ, 𝐞ᶿ = unitvec(Polar)
-        ℬᵖ = get_normalized_basis(Polar)
+        ℬᵖ = normalized_basis(Polar)
         f = SymFunction("f", real = true)(r, θ)
         @test simplify(LAPLACE(f, Polar)) ==
               simplify(∂(r * ∂(f, r), r) / r + ∂(f, θ, θ) / r^2)
@@ -37,7 +37,7 @@
         Cylindrical = coorsys_cylindrical()
         rθz = getcoords(Cylindrical)
         𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ = unitvec(Cylindrical)
-        ℬᶜ = get_normalized_basis(Cylindrical)
+        ℬᶜ = normalized_basis(Cylindrical)
         r, θ, z = rθz
         𝐯 = Tens(Vec{3}(i -> SymFunction("v$(rθz[i])", real = true)(rθz...)), ℬᶜ)
         vʳ, vᶿ, vᶻ = getarray(𝐯)
@@ -48,7 +48,7 @@
         Spherical = coorsys_spherical()
         θ, ϕ, r = getcoords(Spherical)
         𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical)
-        ℬˢ = get_normalized_basis(Spherical)
+        ℬˢ = normalized_basis(Spherical)
         for σⁱʲ ∈ ("σʳʳ", "σᶿᶿ", "σᵠᵠ")
             @eval $(Symbol(σⁱʲ)) = SymFunction($σⁱʲ, real = true)($r)
         end
@@ -59,7 +59,7 @@
         # Concentric sphere - hydrostatic part
         θ, ϕ, r = getcoords(Spherical)
         𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical)
-        ℬˢ = get_normalized_basis(Spherical)
+        ℬˢ = normalized_basis(Spherical)
         𝕀, 𝕁, 𝕂 = ISO(Val(3), Val(Sym))
         𝟏 = tensId2(Val(3), Val(Sym))
         k, μ = symbols("k μ", positive = true)
