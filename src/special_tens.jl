@@ -95,7 +95,7 @@ Tens{1, 2, Sym, Sym, Vec{2, Sym}, RotatedBasis{2, Sym}}
     Tens(Vec{2}([zero(T), one(T)]), Basis(θ))
 
 """
-    init_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
+    init_polar(coords = (symbols("r θ", real = true)); canonical = false)
 
 Returns the coordinates, base vectors and basis of the polar basis
 
@@ -105,7 +105,7 @@ julia> coords, vectors, ℬᵖ = init_polar() ; r, θ = coords ; 𝐞ʳ, 𝐞ᶿ
 ``` 
 """
 init_polar(
-    coords = (symbols("r", positive = true), symbols("θ", real = true));
+    coords = (symbols("r θ", real = true));
     canonical = false,
 ) = Tuple(coords),
 ntuple(i -> 𝐞ᵖ(Val(i), coords[2]; canonical = canonical), 2),
@@ -144,7 +144,7 @@ Tens{1, 3, Sym, Sym, Vec{3, Sym}, RotatedBasis{3, Sym}}
     Tens(Vec{3}([zero(T), zero(T), one(T)]), CylindricalBasis(θ))
 
 """
-    init_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
+    init_cylindrical(coords = (symbols("r", positive = true), symbols("θ z", real = true)...); canonical = false)
 
 Returns the coordinates, base vectors and basis of the cylindrical basis
 
@@ -156,8 +156,7 @@ julia> coords, vectors, ℬᶜ = init_cylindrical() ; r, θ, z = coords ; 𝐞ʳ
 init_cylindrical(
     coords = (
         symbols("r", positive = true),
-        symbols("θ", real = true),
-        symbols("z", real = true),
+        symbols("θ z", real = true)...,
     );
     canonical = false,
 ) = Tuple(coords),
@@ -245,7 +244,7 @@ for eb in (:𝐞, :𝐞ᵖ, :𝐞ᶜ, :𝐞ˢ)
 end
 
 """
-    init_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
+    init_spherical(coords = (symbols("θ ϕ", real = true)..., symbols("r", positive = true)); canonical = false)
 
 Returns the coordinates, base vectors and basis of the spherical basis.
 Take care that the order of the 3 vectors is `𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ` so that
@@ -259,8 +258,7 @@ julia> coords, vectors, ℬˢ = init_spherical() ; θ, ϕ, r = coords ; 𝐞ᶿ,
 """
 init_spherical(
     coords = (
-        symbols("θ", real = true),
-        symbols("ϕ", real = true),
+        symbols("θ ϕ", real = true)...,
         symbols("r", positive = true),
     );
     canonical = false,

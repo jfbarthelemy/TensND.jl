@@ -171,29 +171,29 @@ struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
     end
 end
 
-with_tmp_var(CS::CoorSystemSym, t) = length(CS.tmp_var) > 0 ? subs(t, CS.tmp_var...) : t
-only_coords(CS::CoorSystemSym, t) = length(CS.to_coords) > 0 ? subs(t, CS.to_coords...) : t
+with_tmp_var(CS::AbstractCoorSystem, t) = length(CS.tmp_var) > 0 ? subs(t, CS.tmp_var...) : t
+only_coords(CS::AbstractCoorSystem, t) = length(CS.to_coords) > 0 ? subs(t, CS.to_coords...) : t
 
-getcoords(CS::CoorSystemSym) = CS.coords
-getcoords(CS::CoorSystemSym, i::Integer) = getcoords(CS)[i]
+getcoords(CS::AbstractCoorSystem) = CS.coords
+getcoords(CS::AbstractCoorSystem, i::Integer) = getcoords(CS)[i]
 
-@pure getdim(::CoorSystemSym{dim}) where {dim} = dim
+@pure getdim(::AbstractCoorSystem{dim}) where {dim} = dim
 
-getOM(CS::CoorSystemSym) = CS.OM
+getOM(CS::AbstractCoorSystem) = CS.OM
 
-get_normalized_basis(CS::CoorSystemSym) = CS.normalized_basis
-get_natural_basis(CS::CoorSystemSym) = CS.natural_basis
+get_normalized_basis(CS::AbstractCoorSystem) = CS.normalized_basis
+get_natural_basis(CS::AbstractCoorSystem) = CS.natural_basis
 
-getLame(CS::CoorSystemSym) = CS.χᵢ
-getChristoffel(CS::CoorSystemSym) = CS.Γ
+getLame(CS::AbstractCoorSystem) = CS.χᵢ
+getChristoffel(CS::AbstractCoorSystem) = CS.Γ
 
-natvec(CS::CoorSystemSym, ::Val{:cov}) = CS.aᵢ
-natvec(CS::CoorSystemSym, ::Val{:cont}) = CS.aⁱ
-natvec(CS::CoorSystemSym, var = :cov) = natvec(CS, Val(var))
-natvec(CS::CoorSystemSym, i::Integer, var = :cov) = natvec(CS, var)[i]
+natvec(CS::AbstractCoorSystem, ::Val{:cov}) = CS.aᵢ
+natvec(CS::AbstractCoorSystem, ::Val{:cont}) = CS.aⁱ
+natvec(CS::AbstractCoorSystem, var = :cov) = natvec(CS, Val(var))
+natvec(CS::AbstractCoorSystem, i::Integer, var = :cov) = natvec(CS, var)[i]
 
-unitvec(CS::CoorSystemSym) = CS.eᵢ
-unitvec(CS::CoorSystemSym, i::Integer) = unitvec(CS)[i]
+unitvec(CS::AbstractCoorSystem) = CS.eᵢ
+unitvec(CS::AbstractCoorSystem, i::Integer) = unitvec(CS)[i]
 
 
 function compute_Christoffel(coords, χ, γ, invγ)
@@ -570,6 +570,10 @@ macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
 
             if $(esc(coords)) === nothing
                 coords = string.(getcoords($(esc(CS))))
+            end
+            dim = getdim($(esc(CS)))
+            if length(coords) == dim-1
+                coords = (coords..., dim)
             end
             ℬ = get_normalized_basis($(esc(CS)))
             $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)

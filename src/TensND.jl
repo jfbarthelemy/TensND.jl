@@ -11,6 +11,7 @@ include("tens.jl")
 include("tens_isotropic.jl")
 include("special_tens.jl")
 include("coorsystems.jl")
+include("submanifold.jl")
 
 
 # function __init__()
