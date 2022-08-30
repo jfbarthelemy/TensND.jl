@@ -182,6 +182,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
     Basis() = CanonicalBasis()
 end
 
+
 """
     CanonicalBasis{dim, T}
 
@@ -232,6 +233,7 @@ CanonicalBasis{2, Float64}
 """
 struct CanonicalBasis{dim,T} <: AbstractBasis{dim,T} end
 CanonicalBasis() = CanonicalBasis{3,Sym}()
+
 
 """
     RotatedBasis(θ::T<:Number, ϕ::T<:Number, ψ::T<:Number)
@@ -295,6 +297,7 @@ struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
         end
     end
 end
+
 
 const OrthonormalBasis{dim,T} = Union{CanonicalBasis{dim,T},RotatedBasis{dim,T}}
 
@@ -502,6 +505,20 @@ Checks whether the basis `ℬ` is orthonormal
 isorthonormal(ℬ::AbstractBasis) = isidentity(metric(ℬ))
 
 isorthonormal(::OrthonormalBasis) = true
+
+
+for OP in (:(simplify), :(factor), :(subs), :(diff))
+    @eval  SymPy.$OP(b::Basis{dim,Sym}, args...; kwargs...) where {dim} =
+        Basis($OP(b.eᵢ, args...; kwargs...))
+    @eval SymPy.$OP(b::CanonicalBasis{dim,Sym}, args...; kwargs...) where {dim} = b
+end
+
+for OP in (:(trigsimp), :(expand_trig))
+    @eval  $OP(b::Basis{dim,Sym}, args...; kwargs...) where {dim} =
+        Basis($OP(b.eᵢ, args...; kwargs...))
+    @eval $OP(b::CanonicalBasis{dim,Sym}, args...; kwargs...) where {dim} = b
+end
+
 
 #####################
 # Display Functions #
