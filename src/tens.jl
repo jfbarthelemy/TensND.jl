@@ -251,7 +251,7 @@ end
     components(t::AbstractTens{order,dim,T},ℬ::AbstractBasis{dim})
     components(t::AbstractTens{order,dim,T},var::NTuple{order,Symbol})
 
-Extracts the components of a tensor for new variances and/or in a new basis
+Extract the components of a tensor for new variances and/or in a new basis
 
 # Examples
 ```julia
@@ -449,7 +449,7 @@ components(
 """
     components_canon(t::AbstractTens)
 
-Extracts the components of a tensor in the canonical basis
+Extract the components of a tensor in the canonical basis
 """
 components_canon(t::AbstractTens) =
     components(t, CanonicalBasis{getdim(t),eltype(t)}(), getvar(t))
@@ -461,7 +461,7 @@ components_canon(t::TensOrthonormal) = components(t, CanonicalBasis{getdim(t),el
     change_tens(t::AbstractTens{order,dim,T},ℬ::AbstractBasis{dim})
     change_tens(t::AbstractTens{order,dim,T},var::NTuple{order,Symbol})
 
-Rewrites the same tensor with components corresponding to new variances and/or to a new basis
+Rewrite the same tensor with components corresponding to new variances and/or to a new basis
 
 ```julia
 julia> ℬ = Basis(Sym[0 1 1; 1 0 1; 1 1 0]) ;
@@ -526,7 +526,7 @@ end
 """
     change_tens_canon(t::AbstractTens{order,dim,T},var::NTuple{order,Symbol})
 
-Rewrites the same tensor with components corresponding to the canonical basis
+Rewrite the same tensor with components corresponding to the canonical basis
 
 ```julia
 julia> ℬ = Basis(Sym[0 1 1; 1 0 1; 1 1 0]) ;
@@ -559,12 +559,20 @@ TensND.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 change_tens_canon(t::AbstractTens) = change_tens(t, CanonicalBasis{getdim(t),eltype(t)}())
 
 
-for OP in (:(simplify), :(factor), :(subs), :(diff))
+for OP in (:(diff),)
     @eval SymPy.$OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
-        Tens($OP(getarray(t), args...; kwargs...), $OP(getbasis(t), args...; kwargs...), getvar(t))
+        change_tens(Tens($OP(components_canon(t), args...; kwargs...)), getbasis(t), getvar(t))
     @eval SymPy.$OP(t::AbstractArray{Sym}, args...; kwargs...) = $OP.(t, args...; kwargs...)
     @eval SymPy.$OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
         Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
+end
+
+for OP in (:(simplify), :(factor), :(subs))
+    @eval SymPy.$OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+        Tens(SymPy.$OP(getarray(t), args...; kwargs...), SymPy.$OP(getbasis(t), args...; kwargs...), getvar(t))
+    @eval SymPy.$OP(t::AbstractArray{Sym}, args...; kwargs...) = SymPy.$OP.(t, args...; kwargs...)
+    @eval SymPy.$OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
+        Tensors.get_base(typeof(t))(SymPy.$OP.(Tensors.get_data(t), args...; kwargs...))
 end
 
 for OP in (:(trigsimp), :(expand_trig))
@@ -699,7 +707,7 @@ end
     KM(t::AbstractTens{order,dim}; kwargs...)
     KM(t::AbstractTens{order,dim}, var::NTuple{order,Symbol}, b::AbstractBasis{dim}; kwargs...)
 
-Writes the components of a second or fourth order tensor in Kelvin-Mandel notation
+Write the components of a second or fourth order tensor in Kelvin-Mandel notation
 
 # Examples
 ```julia
@@ -758,7 +766,7 @@ const select_type_KM = Dict(
 """
     invKM(v::AbstractVecOrMat; kwargs...)
 
-Defines a tensor from a Kelvin-Mandel vector or matrix representation
+Define a tensor from a Kelvin-Mandel vector or matrix representation
 """
 invKM(TT::Type{<:Tensors.AllTensors}, v::AbstractVecOrMat; kwargs...) =
     Tens(frommandel(TT, v; kwargs...))
@@ -771,7 +779,7 @@ invKM(v::AbstractVecOrMat, b::AbstractBasis; kwargs...) = invKM(select_type_KM[s
 """
     otimes(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
-Defines a tensor product between two tensors
+Define a tensor product between two tensors
 
 `(aⁱeᵢ) ⊗ (bʲeⱼ) = aⁱbʲ eᵢ⊗eⱼ`
 """
@@ -841,7 +849,7 @@ end
 """
     dot(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
-Defines a contracted product between two tensors
+Define a contracted product between two tensors
 
 `a ⋅ b = aⁱbⱼ`
 """
@@ -892,7 +900,7 @@ LinearAlgebra.norm(t::AbstractTens{2,dim}) where {dim} = √(dot(t, t))
 """
     contract(t::AbstractTens{order,dim}, i::Integer, j::Integer)
 
-Calculates the tensor obtained after contraction with respect to the indices `i` and `j`
+Calculate the tensor obtained after contraction with respect to the indices `i` and `j`
 """
 function contract(t::AbstractTens{order,dim}, i::Integer, j::Integer) where {order,dim}
     var = ntuple(k -> k == j ? invvar(getvar(t, i)) : getvar(t, k), order)
@@ -921,7 +929,7 @@ LinearAlgebra.tr(t::AbstractTens{2}) = contract(t, 1, 2)
 """
     dcontract(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
-Defines a double contracted product between two tensors
+Define a double contracted product between two tensors
 
 `𝛔 ⊡ 𝛆 = σⁱʲεᵢⱼ`
 `𝛔 = ℂ ⊡ 𝛆`
@@ -989,7 +997,7 @@ end
 """
     dotdot(v1::AbstractTens{order1,dim}, S::AbstractTens{orderS,dim}, v2::AbstractTens{order2,dim})
 
-Defines a bilinear operator `𝐯₁⋅𝕊⋅𝐯₂`
+Define a bilinear operator `𝐯₁⋅𝕊⋅𝐯₂`
 
 # Examples
 ```julia
@@ -1036,7 +1044,7 @@ end
 """
     qcontract(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
-Defines a quadruple contracted product between two tensors
+Define a quadruple contracted product between two tensors
 
 `𝔸 ⊙ 𝔹 = AᵢⱼₖₗBⁱʲᵏˡ`
 
@@ -1105,7 +1113,7 @@ end
 """
     otimesu(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
-Defines a special tensor product between two tensors of at least second order
+Define a special tensor product between two tensors of at least second order
 
 `(𝐚 ⊠ 𝐛) ⊡ 𝐩 = 𝐚⋅𝐩⋅𝐛 = aⁱᵏbʲˡpₖₗ eᵢ⊗eⱼ`
 """
@@ -1164,7 +1172,7 @@ otimesul(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim} =
 """
     otimesul(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
-Defines a special tensor product between two tensors of at least second order
+Define a special tensor product between two tensors of at least second order
 
 `(𝐚 ⊠ˢ 𝐛) ⊡ 𝐩 = (𝐚 ⊠ 𝐛) ⊡ (𝐩 + ᵗ𝐩)/2  = 1/2(aⁱᵏbʲˡ+aⁱˡbʲᵏ) pₖₗ eᵢ⊗eⱼ`
 """
@@ -1194,7 +1202,7 @@ end
 """
     sotimes(t1::AbstractTens{order1,dim}, t2::AbstractTens{order2,dim})
 
-Defines a symmetric tensor product between two tensors
+Define a symmetric tensor product between two tensors
 
 `(aⁱeᵢ) ⊗ˢ (bʲeⱼ) = 1/2(aⁱbʲ + aʲbⁱ) eᵢ⊗eⱼ`
 """

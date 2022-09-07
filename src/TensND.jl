@@ -3,7 +3,9 @@ module TensND
 import Base: @pure, eltype
 import LinearAlgebra: normalize, dot, tr
 
-using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
+using LinearAlgebra, Tensors, OMEinsum, Rotations
+using SymPy
+using Symbolics
 
 include("array_utils.jl")
 include("bases.jl")

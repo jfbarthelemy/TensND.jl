@@ -120,7 +120,7 @@ tensK4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T<:Number} =
 """
     ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym))
 
-Returns the three fourth-order isotropic tensors `𝕀, 𝕁, 𝕂`
+Return the three fourth-order isotropic tensors `𝕀, 𝕁, 𝕂`
 
 # Examples
 ```julia
@@ -240,7 +240,7 @@ intrinsic(A::TensISO{2}) = println("(", getdata(A)[1], ") 𝟏")
 
 for OP in (:(simplify), :(factor), :(subs), :(diff))
     @eval SymPy.$OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =
-        TensISO{dim}($OP.(getdata(A), args...; kwargs...))
+        TensISO{dim}(SymPy.$OP.(getdata(A), args...; kwargs...))
 end
 
 for OP in (:(trigsimp), :(expand_trig))
@@ -408,7 +408,11 @@ function proj_tens(::Val{:ISO}, A::AbstractArray)
     end
 end
 
-isISO(A::TensISO) = true
+isISO(::TensISO) = true
 isISO(A::AbstractArray) = isotropify(A) == A
+
+LinearAlgebra.issymmetric(::TensISO) = true
+Tensors.isminorsymmetric(::TensISO{4}) = true
+Tensors.ismajorsymmetric(::TensISO{4}) = true
 
 export TensISO, tensId2, tensId4, tensJ4, tensK4, ISO, isotropify, isISO

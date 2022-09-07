@@ -4,7 +4,7 @@
     CoorSystemSym(OM::AbstractTens{1,dim,Sym},coords::NTuple{dim,Sym},
                   tmp_coords::NTuple = (),params::NTuple = ();rules::Dict = Dict(),tmp_var::Dict = Dict(),to_coords::Dict = Dict()) where {dim}
 
-Defines a new coordinate system either from
+Define a new coordinate system either from
 1. the position vector `OM`, the coordinates `coords`, the basis of unit vectors (`𝐞ᵢ`) `bnorm` and the Lamé coefficients `χᵢ`
 
     In this case the natural basis is formed by the vectors `𝐚ᵢ = χᵢ 𝐞ᵢ` directly calculated from the input data.
@@ -60,17 +60,17 @@ struct SubManifoldSym{dim,VEC,BNORM,BNAT,TENSA,TENSB} <: AbstractCoorSystem{dim,
         to_coords::Dict = Dict(),
     ) where {VEC,dimm1}
         dim = dimm1 + 1
-        simp(t) = length(rules) > 0 ? simplify(subs(simplify(t), rules...)) : simplify(t)
+        simp(t) = length(rules) > 0 ? SymPy.simplify(subs(SymPy.simplify(t), rules...)) : SymPy.simplify(t)
         chvar(t, d) = length(d) > 0 ? subs(t, d...) : t
         OMc = chvar(OM, to_coords)
-        aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dim-1)
-        χᵢ = ntuple(i -> simp(norm(aᵢ[i])), dim-1)
-        eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dim-1)
-        χᵢ = (ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dim-1)..., one(Sym))
-        eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dim-1)
-        A₀ = simplify(hcat(components_canon.(eᵢ)...))
-        n = [simplify(det(hcat(A₀, [j == i ? one(Sym) : zero(Sym) for j ∈ 1:dim]))) for i ∈ 1:dim]
-        n = n / simplify(norm(n))
+        aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dimm1)
+        χᵢ = ntuple(i -> simp(norm(aᵢ[i])), dimm1)
+        eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dimm1)
+        χᵢ = (ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dimm1)..., one(Sym))
+        eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dimm1)
+        A₀ = SymPy.simplify(hcat(components_canon.(eᵢ)...))
+        n = [SymPy.simplify(det(hcat(A₀, [j == i ? one(Sym) : zero(Sym) for j ∈ 1:dim]))) for i ∈ 1:dim]
+        n = n / SymPy.simplify(norm(n))
         A = hcat(A₀,n)
         normalized_basis = Basis(A)
         eᵢ = ntuple(
@@ -179,7 +179,7 @@ end
 """
     GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}},SM::SubManifoldSym{dim}) where {order,dim}
 
-Calculates the gradient of `T` with respect to the coordinate system `SM`
+Calculate the gradient of `T` with respect to the coordinate system `SM`
 """
 GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {order,dim} =
     sum([∂(T, i, SM) ⊗ natvec(SM, i, :cont) for i = 1:dim-1])
@@ -188,7 +188,7 @@ GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 """
     SYMGRAD(T::Union{Sym,AbstractTens{order,dim,Sym}},SM::SubManifoldSym{dim}) where {order,dim}
 
-Calculates the symmetrized gradient of `T` with respect to the coordinate system `SM`
+Calculate the symmetrized gradient of `T` with respect to the coordinate system `SM`
 """
 SYMGRAD(
     T::Union{Sym,AbstractTens{order,dim,Sym}},
@@ -198,7 +198,7 @@ SYMGRAD(
 """
     DIV(T::AbstractTens{order,dim,Sym},SM::SubManifoldSym{dim}) where {order,dim}
 
-Calculates the divergence  of `T` with respect to the coordinate system `SM`
+Calculate the divergence  of `T` with respect to the coordinate system `SM`
 """
 DIV(T::AbstractTens{order,dim,Sym}, SM::SubManifoldSym{dim}) where {order,dim} =
     sum([∂(T, i, SM) ⋅ natvec(SM, i, :cont) for i = 1:dim-1])
@@ -206,7 +206,7 @@ DIV(T::AbstractTens{order,dim,Sym}, SM::SubManifoldSym{dim}) where {order,dim} =
 """
     LAPLACE(T::Union{Sym,AbstractTens{order,dim,Sym}},SM::SubManifoldSym{dim}) where {order,dim}
 
-Calculates the Laplace operator of `T` with respect to the coordinate system `SM`
+Calculate the Laplace operator of `T` with respect to the coordinate system `SM`
 """
 LAPLACE(
     T::Union{Sym,AbstractTens{order,dim,Sym}},
@@ -216,7 +216,7 @@ LAPLACE(
 """
     HESS(T::Union{Sym,AbstractTens{order,dim,Sym}},SM::SubManifoldSym{dim}) where {order,dim}
 
-Calculates the Hessian of `T` with respect to the coordinate system `SM`
+Calculate the Hessian of `T` with respect to the coordinate system `SM`
 """
 HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {order,dim} =
     GRAD(GRAD(T, SM), SM)
@@ -224,7 +224,7 @@ HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 # """
 #     coorsys_cartesian(coords = symbols("x y z", real = true))
 
-# Returns the cartesian coordinate system
+# Return the cartesian coordinate system
 
 # # Examples
 # ```julia
@@ -256,7 +256,7 @@ HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 # """
 #     coorsys_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
 
-# Returns the polar coordinate system
+# Return the polar coordinate system
 
 # # Examples
 # ```julia
@@ -289,7 +289,7 @@ HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 # """
 #     coorsys_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
 
-# Returns the cylindrical coordinate system
+# Return the cylindrical coordinate system
 
 # # Examples
 # ```julia
@@ -321,7 +321,7 @@ HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 # """
 #     coorsys_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
 
-# Returns the spherical coordinate system
+# Return the spherical coordinate system
 
 # # Examples
 # ```julia
@@ -367,7 +367,7 @@ HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, SM::SubManifoldSym{dim}) where {
 #     coorsys_spheroidal(coords = (symbols("ϕ", real = true),symbols("p", real = true),symbols("q", positive = true),),
 #                             c = symbols("c", positive = true),tmp_coords = (symbols("p̄ q̄", positive = true)...,),)
 
-# Returns the spheroidal coordinate system
+# Return the spheroidal coordinate system
 
 # # Examples
 # ```julia

@@ -7,7 +7,7 @@ abstract type AbstractCoorSystem{dim,T<:Number} <: Any end
     CoorSystemSym(OM::AbstractTens{1,dim,Sym},coords::NTuple{dim,Sym},
                   tmp_coords::NTuple = (),params::NTuple = ();rules::Dict = Dict(),tmp_var::Dict = Dict(),to_coords::Dict = Dict()) where {dim}
 
-Defines a new coordinate system either from
+Define a new coordinate system either from
 1. the position vector `OM`, the coordinates `coords`, the basis of unit vectors (`𝐞ᵢ`) `bnorm` and the Lamé coefficients `χᵢ`
 
     In this case the natural basis is formed by the vectors `𝐚ᵢ = χᵢ 𝐞ᵢ` directly calculated from the input data.
@@ -36,16 +36,16 @@ julia> OM = Tens(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q]) ;
 julia> Spheroidal = CoorSystemSym(OM, coords, tmp_coords, params; tmp_var = Dict(1-p^2 => p̄^2, q^2-1 => q̄^2), to_coords = Dict(p̄ => √(1-p^2), q̄ => √(q^2-1))) ;
 ```
 """
-struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
+struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
     OM::VEC
-    coords::NTuple{dim,Sym}
+    coords::NTuple{dim,T}
     normalized_basis::BNORM
     natural_basis::BNAT
     aᵢ::NTuple{dim}
     χᵢ::NTuple{dim}
     aⁱ::NTuple{dim}
     eᵢ::NTuple{dim}
-    Γ::Array{Sym,3}
+    Γ::Array{T,3}
     tmp_coords::NTuple
     params::NTuple
     rules::Dict
@@ -53,31 +53,31 @@ struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
     to_coords::Dict
     function CoorSystemSym(
         OM::VEC,
-        coords::NTuple{dim,Sym},
-        normalized_basis::AbstractBasis{dim,Sym},
+        coords::NTuple{dim,T},
+        normalized_basis::AbstractBasis{dim,T},
         χᵢ::NTuple{dim},
         tmp_coords::NTuple = (),
         params::NTuple = ();
         rules::Dict = Dict(),
         tmp_var::Dict = Dict(),
         to_coords::Dict = Dict(),
-    ) where {VEC,dim}
-        simp(t) = length(rules) > 0 ? simplify(subs(simplify(t), rules...)) : simplify(t)
+    ) where {dim,T,VEC}
+        simp(t) = length(rules) > 0 ? SymPy.simplify(subs(SymPy.simplify(t), rules...)) : SymPy.simplify(t)
         eᵢ = ntuple(
             i -> Tens(
-                Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)),
+                Vec{dim}(j -> j == i ? one(T) : zero(T)),
                 normalized_basis,
                 (:cov,),
             ),
             dim,
         )
         aᵢ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), normalized_basis, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(T)), normalized_basis, (:cov,)),
             dim,
         )
         aⁱ = ntuple(
             i -> Tens(
-                Vec{dim}(j -> j == i ? inv(χᵢ[i]) : zero(Sym)),
+                Vec{dim}(j -> j == i ? inv(χᵢ[i]) : zero(T)),
                 normalized_basis,
                 (:cont,),
             ),
@@ -90,7 +90,7 @@ struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
             metric(normalized_basis, :cont),
         )
         natural_basis = Basis(normalized_basis, χᵢ)
-        new{dim,typeof(OM),typeof(normalized_basis),typeof(natural_basis)}(
+        new{dim,T,VEC,typeof(normalized_basis),typeof(natural_basis)}(
             OM,
             coords,
             normalized_basis,
@@ -109,14 +109,14 @@ struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
     end
     function CoorSystemSym(
         OM::VEC,
-        coords::NTuple{dim,Sym},
+        coords::NTuple{dim,T},
         tmp_coords::NTuple = (),
         params::NTuple = ();
         rules::Dict = Dict(),
         tmp_var::Dict = Dict(),
         to_coords::Dict = Dict(),
-    ) where {VEC,dim}
-        simp(t) = length(rules) > 0 ? simplify(subs(simplify(t), rules...)) : simplify(t)
+    ) where {dim,T,VEC}
+        simp(t) = length(rules) > 0 ? SymPy.simplify(subs(SymPy.simplify(t), rules...)) : SymPy.simplify(t)
         chvar(t, d) = length(d) > 0 ? subs(t, d...) : t
         OMc = chvar(OM, to_coords)
         aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dim)
@@ -124,22 +124,22 @@ struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
         eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dim)
         χᵢ = ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dim)
         eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dim)
-        normalized_basis = Basis(simplify(hcat(components_canon.(eᵢ)...)))
+        normalized_basis = Basis(SymPy.simplify(hcat(components_canon.(eᵢ)...)))
         eᵢ = ntuple(
             i -> Tens(
-                Vec{dim}(j -> j == i ? one(Sym) : zero(Sym)),
+                Vec{dim}(j -> j == i ? one(T) : zero(T)),
                 normalized_basis,
                 (:cov,),
             ),
             dim,
         )
         aᵢ = ntuple(
-            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(Sym)), normalized_basis, (:cov,)),
+            i -> Tens(Vec{dim}(j -> j == i ? χᵢ[i] : zero(T)), normalized_basis, (:cov,)),
             dim,
         )
         aⁱ = ntuple(
             i -> Tens(
-                Vec{dim}(j -> j == i ? inv(χᵢ[i]) : zero(Sym)),
+                Vec{dim}(j -> j == i ? inv(χᵢ[i]) : zero(T)),
                 normalized_basis,
                 (:cont,),
             ),
@@ -152,7 +152,7 @@ struct CoorSystemSym{dim,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,Sym}
             metric(normalized_basis, :cont),
         )
         natural_basis = Basis(normalized_basis, χᵢ)
-        new{dim,typeof(OM),typeof(normalized_basis),typeof(natural_basis)}(
+        new{dim,T,VEC,typeof(normalized_basis),typeof(natural_basis)}(
             OMc,
             coords,
             normalized_basis,
@@ -207,14 +207,14 @@ function compute_Christoffel(coords, χ, γ, invγ)
 end
 
 """
-    ∂(t::AbstractTens{order,dim,Sym,A},xᵢ::Sym)
+    ∂(t::AbstractTens{order,dim,T,A},xᵢ::T)
 
-Returns the derivative of the tensor `t` with respect to the variable `x_i`
+Return the derivative of the tensor `t` with respect to the variable `x_i`
 
 # Examples
 ```julia
 
-julia> θ, ϕ, ℬˢ, 𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = init_spherical(symbols("θ ϕ", real = true)...) ;
+julia> (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical() ;
 
 julia> ∂(𝐞ʳ, ϕ) == sin(θ) * 𝐞ᵠ
 true
@@ -263,73 +263,73 @@ end
 function ∂(
     t::AbstractTens{order,dim,Sym},
     x::Sym,
-    CS::CoorSystemSym{dim},
+    CS::CoorSystemSym{dim,Sym},
 ) where {order,dim}
     ind = findfirst(i -> i == x, getcoords(CS))
     return ind === nothing ? zero(t) : ∂(t, ind, CS)
 end
 
 function ∂(
-    t::Sym,
-    x::Sym,
-    CS::CoorSystemSym{dim},
-) where {order,dim}
+    t::T,
+    x::T,
+    CS::CoorSystemSym{dim,T},
+) where {dim,T<:Number}
     ind = findfirst(i -> i == x, getcoords(CS))
     return ind === nothing ? zero(t) : ∂(t, ind, CS)
 end
 
 """
-    GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    GRAD(t::Union{t,AbstractTens{order,dim,T}},CS::CoorSystemSym{dim}) where {order,dim,T<:Number}
 
-Calculates the gradient of `T` with respect to the coordinate system `CS`
+Calculate the gradient of `t` with respect to the coordinate system `CS`
 """
-GRAD(T::Union{Sym,AbstractTens{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order,dim} =
-    sum([∂(T, i, CS) ⊗ natvec(CS, i, :cont) for i = 1:dim])
+GRAD(t::Union{T,AbstractTens{order,dim,T}}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:Number} =
+    sum([∂(t, i, CS) ⊗ natvec(CS, i, :cont) for i = 1:dim])
 
 
 """
-    SYMGRAD(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    SYMGRAD(t::Union{T,AbstractTens{order,dim,T}},CS::CoorSystemSym{dim}) where {order,dim,T<:Number}
 
-Calculates the symmetrized gradient of `T` with respect to the coordinate system `CS`
+Calculate the symmetrized gradient of `T` with respect to the coordinate system `CS`
 """
 SYMGRAD(
-    T::Union{Sym,AbstractTens{order,dim,Sym}},
-    CS::CoorSystemSym{dim},
-) where {order,dim} = sum([∂(T, i, CS) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
+    t::Union{T,AbstractTens{order,dim,T}},
+    CS::CoorSystemSym{dim,T},
+) where {order,dim,T<:Number} = sum([∂(t, i, CS) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
 
 
 """
-    DIV(T::AbstractTens{order,dim,Sym},CS::CoorSystemSym{dim}) where {order,dim}
+    DIV(t::AbstractTens{order,dim,Sym},CS::CoorSystemSym{dim}) where {order,dim,T<:Number}
 
-Calculates the divergence  of `T` with respect to the coordinate system `CS`
+Calculate the divergence  of `T` with respect to the coordinate system `CS`
 """
-DIV(T::AbstractTens{order,dim,Sym}, CS::CoorSystemSym{dim}) where {order,dim} =
-    sum([∂(T, i, CS) ⋅ natvec(CS, i, :cont) for i = 1:dim])
+DIV(t::AbstractTens{order,dim,T}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:Number} =
+    sum([∂(t, i, CS) ⋅ natvec(CS, i, :cont) for i = 1:dim])
 
 
 
 """
-    LAPLACE(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    LAPLACE(t::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim,T<:Number}
 
-Calculates the Laplace operator of `T` with respect to the coordinate system `CS`
+Calculate the Laplace operator of `T` with respect to the coordinate system `CS`
 """
 LAPLACE(
-    T::Union{Sym,AbstractTens{order,dim,Sym}},
-    CS::CoorSystemSym{dim},
-) where {order,dim} = DIV(GRAD(T, CS), CS)
+    t::Union{T,AbstractTens{order,dim,T}},
+    CS::CoorSystemSym{dim,T},
+) where {order,dim,T<:Number} = DIV(GRAD(t, CS), CS)
 
 """
-    HESS(T::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim}
+    HESS(t::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim,T<:Number}
 
-Calculates the Hessian of `T` with respect to the coordinate system `CS`
+Calculate the Hessian of `T` with respect to the coordinate system `CS`
 """
-HESS(T::Union{Sym,AbstractTens{order,dim,Sym}}, CS::CoorSystemSym{dim}) where {order,dim} =
-    GRAD(GRAD(T, CS), CS)
+HESS(t::Union{T,AbstractTens{order,dim,T}}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:Number} =
+    GRAD(GRAD(t, CS), CS)
 
 """
     coorsys_cartesian(coords = symbols("x y z", real = true))
 
-Returns the cartesian coordinate system
+Return the cartesian coordinate system
 
 # Examples
 ```julia
@@ -361,7 +361,7 @@ end
 """
     coorsys_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
 
-Returns the polar coordinate system
+Return the polar coordinate system
 
 # Examples
 ```julia
@@ -394,7 +394,7 @@ end
 """
     coorsys_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
 
-Returns the cylindrical coordinate system
+Return the cylindrical coordinate system
 
 # Examples
 ```julia
@@ -426,7 +426,7 @@ end
 """
     coorsys_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
 
-Returns the spherical coordinate system
+Return the spherical coordinate system
 
 # Examples
 ```julia
@@ -472,7 +472,7 @@ end
     coorsys_spheroidal(coords = (symbols("ϕ", real = true),symbols("p", real = true),symbols("q", positive = true),),
                             c = symbols("c", positive = true),tmp_coords = (symbols("p̄ q̄", positive = true)...,),)
 
-Returns the spheroidal coordinate system
+Return the spheroidal coordinate system
 
 # Examples
 ```julia
@@ -537,7 +537,7 @@ end
     @set_coorsys CS
     @set_coorsys(CS)
 
-Sets a coordinate system in order to avoid precising it in differential operators
+Set a coordinate system in order to avoid precising it in differential operators
 
 # Examples
 ```julia

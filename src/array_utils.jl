@@ -1,5 +1,3 @@
-const AbstractArray4{T} = AbstractArray{T,4}
-
 δkron(T::Type{<:Number}, i::Integer, j::Integer) = i == j ? one(T) : zero(T)
 
 struct Id2{dim,T<:Number} <: AbstractMatrix{T} end
@@ -10,23 +8,39 @@ function Base.replace_in_print_matrix(::Id2, i::Integer, j::Integer, s::Abstract
 end
 
 isidentity(a::AbstractMatrix{T}) where {T} = a ≈ Id2{size(a, 1),T}()
-isidentity(a::AbstractMatrix{Sym}) = a == Id2{size(a, 1),Sym}()
-
 isdiagonal(a::AbstractMatrix{T}) where {T} = norm(a - Diagonal(a)) <= eps(T)
-isdiagonal(a::AbstractMatrix{Sym}) = isdiag(a)
+
+isidentity(a::AbstractMatrix{Sym}) = a == Id2{size(a, 1),Sym}()
+isidentity(a::AbstractMatrix{Num}) = iszero(a - Id2{size(a, 1),Num}())
+
+# isapprox(x::Num, y::Num; kwargs...) = 
 
 simplifyif(x) = x
-simplifyif(x::Sym) = simplify(x)
-simplifyif(m::Matrix{Sym}) = simplify.(m)
-simplifyif(m::Symmetric{Sym}) = Symmetric(simplify.(m))
+simplifyif(x::Sym) = SymPy.simplify(x)
+simplifyif(m::Matrix{Sym}) = SymPy.simplify.(m)
+simplifyif(m::Symmetric{Sym}) = Symmetric(SymPy.simplify.(m))
+simplifyif(x::Num) = Symbolics.simplify(x)
+simplifyif(m::Matrix{Num}) = Symbolics.simplify.(m)
+simplifyif(m::Symmetric{Num}) = Symmetric(Symbolics.simplify.(m))
 
-@inline LinearAlgebra.issymmetric(t::Tensor{2, 2, T}) where {T <: Real} = @inbounds t[1,2] ≈ t[2,1]
+for SymType ∈ (Sym, Num)
+    @eval isdiagonal(a::AbstractMatrix{$SymType}) = isdiag(a)
 
-@inline function LinearAlgebra.issymmetric(t::Tensor{2, 3, T}) where {T <: Real}
+end
+
+@inline LinearAlgebra.issymmetric(t::Tensor{2, 2, T}) where {T <: Union{AbstractFloat, Complex{AbstractFloat}}} = @inbounds t[1,2] ≈ t[2,1]
+
+@inline function LinearAlgebra.issymmetric(t::Tensor{2, 3, T}) where {T <: Union{AbstractFloat, Complex{AbstractFloat}}}
     return @inbounds t[1,2] ≈ t[2,1] && t[1,3] ≈ t[3,1] && t[2,3] ≈ t[3,2]
 end
 
-function Tensors.isminorsymmetric(t::Tensor{4, dim, T}) where {dim, T <: Real}
+@inline LinearAlgebra.issymmetric(t::Tensor{2, 2, Num}) = @inbounds iszero(t[1,2] - t[2,1])
+
+@inline function LinearAlgebra.issymmetric(t::Tensor{2, 3, Num})
+    return @inbounds iszero(t[1,2] - t[2,1]) && iszero(t[1,3] - t[3,1]) && iszero(t[2,3] - t[3,2])
+end
+
+function Tensors.isminorsymmetric(t::Tensor{4, dim, T}) where {dim, T <: Union{AbstractFloat, Complex{AbstractFloat}}}
     @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if !(t[i,j,k,l] ≈ t[j,i,k,l]) || !(t[i,j,k,l] ≈ t[i,j,l,k])
             return false
@@ -35,9 +49,27 @@ function Tensors.isminorsymmetric(t::Tensor{4, dim, T}) where {dim, T <: Real}
     return true
 end
 
-function Tensors.ismajorsymmetric(t::FourthOrderTensor{dim, T}) where {dim, T <: Real}
+function Tensors.isminorsymmetric(t::Tensor{4, dim, Num}) where {dim}
+    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
+        if !iszero(t[i,j,k,l] - t[j,i,k,l]) || !iszero(t[i,j,k,l] - t[i,j,l,k])
+            return false
+        end
+    end
+    return true
+end
+
+function Tensors.ismajorsymmetric(t::FourthOrderTensor{dim, T}) where {dim, T <: Union{AbstractFloat, Complex{AbstractFloat}}}
     @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if !(t[i,j,k,l] ≈ t[k,l,i,j])
+            return false
+        end
+    end
+    return true
+end
+
+function Tensors.ismajorsymmetric(t::FourthOrderTensor{dim, Num}) where {dim}
+    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
+        if !(t[i,j,k,l] - t[k,l,i,j] == zero(Num))
             return false
         end
     end
@@ -47,7 +79,6 @@ end
 @inline function Tensors.majortranspose(S::SymmetricTensor{4, dim}) where {dim}
     SymmetricTensor{4, dim}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
 end
-
 
 function Tensors.otimes(
     t1::AbstractArray{T1,order1},
@@ -82,7 +113,6 @@ end
 
 Tensors.dcontract(t1::AbstractArray{T1,2}, t2::AbstractArray{T2,2}) where {T1,T2} =
     dot(AbstractArray{T1}(t1), AbstractArray{T2}(t2))
-
 
 function Tensors.dotdot(
     v1::AbstractArray{T1,order1},

@@ -341,7 +341,7 @@ end
 """
     angles(M::AbstractMatrix{T})
 
-Determines the Euler angles corresponding to the input matrix supposed to be a rotation matrix or at least a similarity
+Determine the Euler angles corresponding to the input matrix supposed to be a rotation matrix or at least a similarity
 
 # Examples
 ```julia
@@ -372,7 +372,7 @@ invvar(var) = invvar(Val(var))
 """
     vecbasis(ℬ::AbstractBasis, var = :cov)
 
-Returns the primal (if `var = :cov`) or dual (if `var = :cont`) basis
+Return the primal (if `var = :cov`) or dual (if `var = :cont`) basis
 """
 vecbasis(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.eᵢ
 vecbasis(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.eⁱ
@@ -460,7 +460,7 @@ strvecbasis(ℬ::AbstractBasis, i::AbstractString, var = :cov ; vec = "𝐞") = 
 """
     metric(ℬ::AbstractBasis, var = :cov)
 
-Returns the covariant (if `var = :cov`) or contravariant (if `var = :cont`) metric matrix
+Return the covariant (if `var = :cov`) or contravariant (if `var = :cont`) metric matrix
 """
 metric(ℬ::AbstractBasis, ::Val{:cov}) = ℬ.gᵢⱼ
 metric(ℬ::AbstractBasis, ::Val{:cont}) = ℬ.gⁱʲ
@@ -474,7 +474,7 @@ metric(ℬ::AbstractBasis, i::Integer, j::Integer, var = :cov) = metric(ℬ, Val
 """
     normalize(ℬ::AbstractBasis, var = cov)
 
-Builds a basis after normalization of column vectors of input matrix `v` where columns define either
+Build a basis after normalization of column vectors of input matrix `v` where columns define either
 - primal vectors ie `eᵢ=v[:,i]/norm(v[:,i])` if `var = :cov` as by default
 - dual vector ie `eⁱ=v[:,i]/norm(v[:,i])` if `var = :cont`.
 """
@@ -489,7 +489,7 @@ end
 """
     isorthogonal(ℬ::AbstractBasis)
 
-Checks whether the basis `ℬ` is orthogonal
+Check whether the basis `ℬ` is orthogonal
 """
 isorthogonal(ℬ::AbstractBasis) = isdiagonal(metric(ℬ))
 
@@ -500,7 +500,7 @@ isorthogonal(::OrthogonalBasis) = true
 """
     isorthonormal(ℬ::AbstractBasis)
 
-Checks whether the basis `ℬ` is orthonormal
+Check whether the basis `ℬ` is orthonormal
 """
 isorthonormal(ℬ::AbstractBasis) = isidentity(metric(ℬ))
 
@@ -508,13 +508,13 @@ isorthonormal(::OrthonormalBasis) = true
 
 
 for OP in (:(simplify), :(factor), :(subs), :(diff))
-    @eval  SymPy.$OP(b::Basis{dim,Sym}, args...; kwargs...) where {dim} =
-        Basis($OP(b.eᵢ, args...; kwargs...))
+    @eval  SymPy.$OP(b::AbstractBasis{dim,Sym}, args...; kwargs...) where {dim} =
+        Basis(SymPy.$OP(b.eᵢ, args...; kwargs...))
     @eval SymPy.$OP(b::CanonicalBasis{dim,Sym}, args...; kwargs...) where {dim} = b
 end
 
 for OP in (:(trigsimp), :(expand_trig))
-    @eval  $OP(b::Basis{dim,Sym}, args...; kwargs...) where {dim} =
+    @eval  $OP(b::AbstractBasis{dim,Sym}, args...; kwargs...) where {dim} =
         Basis($OP(b.eᵢ, args...; kwargs...))
     @eval $OP(b::CanonicalBasis{dim,Sym}, args...; kwargs...) where {dim} = b
 end

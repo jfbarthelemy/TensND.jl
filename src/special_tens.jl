@@ -246,7 +246,7 @@ end
 """
     init_spherical(coords = (symbols("θ ϕ", real = true)..., symbols("r", positive = true)); canonical = false)
 
-Returns the coordinates, base vectors and basis of the spherical basis.
+Return the coordinates, base vectors and basis of the spherical basis.
 Take care that the order of the 3 vectors is `𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ` so that
 the basis coincides with the canonical one when the angles are null and in consistency
 the coordinates are ordered as `θ, ϕ, r`.
@@ -269,7 +269,7 @@ SphericalBasis(coords[1:2]...)
 """
     init_rotated(coords = symbols("θ ϕ ψ", real = true); canonical = false)
 
-Returns the angles, base vectors and basis of the rotated basis.
+Return the angles, base vectors and basis of the rotated basis.
 Note that here the coordinates are angles and do not represent a valid parametrization of `ℝ³`
 
 # Examples
@@ -284,7 +284,7 @@ Basis(angles...)
 """
     rot3(θ, ϕ = 0, ψ = 0)
 
-Returns a rotation matrix with respect to the 3 Euler angles `θ, ϕ, ψ`
+Return a rotation matrix with respect to the 3 Euler angles `θ, ϕ, ψ`
 
 # Examples
 ```julia
@@ -304,7 +304,7 @@ rot3(θ, ϕ = 0, ψ = 0) = RotZYZ(ϕ, θ, ψ)
 """
     rot2(θ)
 
-Returns a 2D rotation matrix with respect to the angle `θ`
+Return a 2D rotation matrix with respect to the angle `θ`
 
 # Examples
 ```julia
@@ -320,7 +320,7 @@ rot2(θ) = Tensor{2,2}((cos(θ), sin(θ), -sin(θ), cos(θ)))
 """
     rot6(θ, ϕ = 0, ψ = 0)
 
-Returns a rotation matrix with respect to the 3 Euler angles `θ, ϕ, ψ`
+Return a rotation matrix with respect to the 3 Euler angles `θ, ϕ, ψ`
 
 # Examples
 ```julia
