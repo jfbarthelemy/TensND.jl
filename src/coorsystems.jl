@@ -62,7 +62,7 @@ struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
         tmp_var::Dict = Dict(),
         to_coords::Dict = Dict(),
     ) where {dim,T,VEC}
-        simp(t) = length(rules) > 0 ? SymPy.simplify(subs(SymPy.simplify(t), rules...)) : SymPy.simplify(t)
+        simp(t) = length(rules) > 0 ? tsimplify(tsubs(tsimplify(t), rules...)) : tsimplify(t)
         eᵢ = ntuple(
             i -> Tens(
                 Vec{dim}(j -> j == i ? one(T) : zero(T)),
@@ -116,15 +116,15 @@ struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
         tmp_var::Dict = Dict(),
         to_coords::Dict = Dict(),
     ) where {dim,T,VEC}
-        simp(t) = length(rules) > 0 ? SymPy.simplify(subs(SymPy.simplify(t), rules...)) : SymPy.simplify(t)
-        chvar(t, d) = length(d) > 0 ? subs(t, d...) : t
+        simp(t) = length(rules) > 0 ? tsimplify(tsubs(tsimplify(t), rules...)) : tsimplify(t)
+        chvar(t, d) = length(d) > 0 ? tsubs(t, d...) : t
         OMc = chvar(OM, to_coords)
         aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dim)
         χᵢ = ntuple(i -> simp(norm(aᵢ[i])), dim)
         eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dim)
         χᵢ = ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dim)
         eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dim)
-        normalized_basis = Basis(SymPy.simplify(hcat(components_canon.(eᵢ)...)))
+        normalized_basis = Basis(tsimplify(hcat(components_canon.(eᵢ)...)))
         eᵢ = ntuple(
             i -> Tens(
                 Vec{dim}(j -> j == i ? one(T) : zero(T)),
@@ -171,8 +171,8 @@ struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
     end
 end
 
-with_tmp_var(CS::AbstractCoorSystem, t) = length(CS.tmp_var) > 0 ? subs(t, CS.tmp_var...) : t
-only_coords(CS::AbstractCoorSystem, t) = length(CS.to_coords) > 0 ? subs(t, CS.to_coords...) : t
+with_tmp_var(CS::AbstractCoorSystem, t) = length(CS.tmp_var) > 0 ? tsubs(t, CS.tmp_var...) : t
+only_coords(CS::AbstractCoorSystem, t) = length(CS.to_coords) > 0 ? tsubs(t, CS.to_coords...) : t
 
 getcoords(CS::AbstractCoorSystem) = CS.coords
 getcoords(CS::AbstractCoorSystem, i::Integer) = getcoords(CS)[i]
@@ -200,7 +200,7 @@ function compute_Christoffel(coords, χ, γ, invγ)
     dim = length(coords)
     gᵢⱼ = [γ[i, j] * χ[i] * χ[j] for i ∈ 1:dim, j ∈ 1:dim]
     gⁱʲ = [invγ[i, j] / (χ[i] * χ[j]) for i ∈ 1:dim, j ∈ 1:dim]
-    ∂g = [SymPy.diff(gᵢⱼ[i, j], coords[k]) for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
+    ∂g = [tdiff(gᵢⱼ[i, j], coords[k]) for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
     Γᵢⱼₖ =
         [(∂g[i, k, j] + ∂g[j, k, i] - ∂g[i, j, k]) / 2 for i ∈ 1:dim, j ∈ 1:dim, k ∈ 1:dim]
     return ein"ijl,lk->ijk"(Γᵢⱼₖ, gⁱʲ)
@@ -233,9 +233,9 @@ Tens.TensRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 ```
 """
 ∂(t::AbstractTens{order,dim,Sym}, xᵢ...) where {order,dim} =
-    change_tens(Tens(SymPy.diff(components_canon(t), xᵢ...)), getbasis(t), getvar(t))
+    change_tens(Tens(tdiff(components_canon(t), xᵢ...)), getbasis(t), getvar(t))
 
-∂(t::Sym, xᵢ...) = SymPy.diff(t, xᵢ...)
+∂(t::Sym, xᵢ...) = tdiff(t, xᵢ...)
 
 function ∂(
     t::AbstractTens{order,dim,Sym},
@@ -247,7 +247,7 @@ function ∂(
     var = ntuple(_ -> :cont, order)
     t = Array(components(t, ℬ, var))
     Γ = Christoffel(CS)
-    data = diff.(t, getcoords(CS, i))
+    data = tdiff(t, getcoords(CS, i))
     for o ∈ 1:order
         ec1 = ntuple(j -> j == o ? order + 1 : j, order)
         ec2 = (order + 1, o)
@@ -258,7 +258,7 @@ function ∂(
 end
 
 ∂(t::Sym, i::Integer, CS::CoorSystemSym{dim}) where {dim} =
-    SymPy.diff(only_coords(CS, t), getcoords(CS, i))
+    tdiff(only_coords(CS, t), getcoords(CS, i))
 
 function ∂(
     t::AbstractTens{order,dim,Sym},

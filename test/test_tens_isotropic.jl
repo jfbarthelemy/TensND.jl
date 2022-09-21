@@ -43,10 +43,10 @@
                 k = E / 3(1 - 2ν)
                 μ = E / 2(1 + ν)
                 λ = E * ν / ((1 + ν) * (1 - 2ν))
-                ℂ = SymPy.simplify(3k * 𝕁 + 2μ * 𝕂)
-                @test ℂ == SymPy.simplify(TensISO{dim}(3k, 2μ))
-                𝕊 = SymPy.simplify(inv(ℂ))
-                @test SymPy.simplify.(KM(𝕊)) == [
+                ℂ = tsimplify(3k * 𝕁 + 2μ * 𝕂)
+                @test ℂ == tsimplify(TensISO{dim}(3k, 2μ))
+                𝕊 = tsimplify(inv(ℂ))
+                @test tsimplify.(KM(𝕊)) == [
                     1/E -ν/E -ν/E 0 0 0
                     -ν/E 1/E -ν/E 0 0 0
                     -ν/E -ν/E 1/E 0 0 0
@@ -54,20 +54,20 @@
                     0 0 0 0 (1+ν)/E 0
                     0 0 0 0 0 (1+ν)/E
                 ]
-                @test SymPy.simplify(ℂ ⊡ 𝕊) == 𝕀       
+                @test tsimplify(ℂ ⊡ 𝕊) == 𝕀       
                 
                 n = 𝐞(3)
                 Eᵒᵉᵈᵒ = E * (1 - ν) / ((1 + ν) * (1 - 2ν))
-                Kref = SymPy.simplify.([μ 0 0; 0 μ 0; 0 0 Eᵒᵉᵈᵒ])
-                @test factor(n ⋅ ℂ ⋅ n) == factor(dotdot(n, ℂ, n)) == Kref
+                Kref = tsimplify.([μ 0 0; 0 μ 0; 0 0 Eᵒᵉᵈᵒ])
+                @test tfactor(n ⋅ ℂ ⋅ n) == tfactor(dotdot(n, ℂ, n)) == Kref
                 # Hooke law
                 for i ∈ 1:3, j ∈ 1:3
                     @eval $(Symbol("ε$i$j")) = symbols($"ε$i$j", real = true)
                 end
                 𝛆 = Tens(SymmetricTensor{2,3}((i, j) -> eval(Symbol("ε$i$j"))))
                 𝛔 = ℂ ⊡ 𝛆
-                @test factor(𝛔) == factor(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
-                @test factor(SymPy.simplify(𝛔 ⊡ 𝛆)) == factor(SymPy.simplify(λ * tr(𝛆)^2 + 2μ * 𝛆 ⊡ 𝛆))
+                @test tfactor(𝛔) == tfactor(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
+                @test tfactor(tsimplify(𝛔 ⊡ 𝛆)) == tfactor(tsimplify(λ * tr(𝛆)^2 + 2μ * 𝛆 ⊡ 𝛆))
                             
                 @test 𝕀 == 𝟏 ⊠ˢ 𝟏
                 @test 3𝕁 == 𝟏 ⊗ 𝟏
@@ -75,8 +75,8 @@
                 @test 𝕁 ⊙ 𝕀 == 𝕁 ⊙ 𝕁 == 1
                 @test 𝕂 ⊙ 𝕀 == 𝕂 ⊙ 𝕂 == 5
                 @test 𝕂 ⊙ 𝕁 == 𝕁 ⊙ 𝕂 == 0
-                @test SymPy.simplify(ℂ ⊙ 𝕁) == SymPy.simplify(3k)
-                @test SymPy.simplify(ℂ ⊙ 𝕂) == SymPy.simplify(10μ)
+                @test tsimplify(ℂ ⊙ 𝕁) == tsimplify(3k)
+                @test tsimplify(ℂ ⊙ 𝕂) == tsimplify(10μ)
             
 
             end

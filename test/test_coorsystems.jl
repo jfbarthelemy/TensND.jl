@@ -1,5 +1,5 @@
 @testsection "Coordinate systems" begin
-    s∂ = SymPy.simplify ∘ ∂
+    s∂ = tsimplify ∘ ∂
     (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ = init_cartesian()
     (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical()
 
@@ -30,8 +30,8 @@
         𝐞ʳ, 𝐞ᶿ = unitvec(Polar)
         ℬᵖ = normalized_basis(Polar)
         f = SymFunction("f", real = true)(r, θ)
-        @test SymPy.simplify(LAPLACE(f, Polar)) ==
-              SymPy.simplify(∂(r * ∂(f, r), r) / r + ∂(f, θ, θ) / r^2)
+        @test tsimplify(LAPLACE(f, Polar)) ==
+              tsimplify(∂(r * ∂(f, r), r) / r + ∂(f, θ, θ) / r^2)
 
         # Cylindrical
         Cylindrical = coorsys_cylindrical()
@@ -41,8 +41,8 @@
         r, θ, z = rθz
         𝐯 = Tens(Vec{3}(i -> SymFunction("v$(rθz[i])", real = true)(rθz...)), ℬᶜ)
         vʳ, vᶿ, vᶻ = getarray(𝐯)
-        @test SymPy.simplify(DIV(𝐯, Cylindrical)) ==
-              SymPy.simplify(∂(vʳ, r) + vʳ / r + ∂(vᶿ, θ) / r + ∂(vᶻ, z))
+        @test tsimplify(DIV(𝐯, Cylindrical)) ==
+              tsimplify(∂(vʳ, r) + vʳ / r + ∂(vᶿ, θ) / r + ∂(vᶻ, z))
 
         # Spherical
         Spherical = coorsys_spherical()
@@ -53,8 +53,8 @@
             @eval $(Symbol(σⁱʲ)) = SymFunction($σⁱʲ, real = true)($r)
         end
         𝛔 = σʳʳ * 𝐞ʳ ⊗ 𝐞ʳ + σᶿᶿ * 𝐞ᶿ ⊗ 𝐞ᶿ + σᵠᵠ * 𝐞ᵠ ⊗ 𝐞ᵠ
-        div𝛔 = SymPy.simplify(DIV(𝛔, Spherical))
-        @test SymPy.simplify(div𝛔 ⋅ 𝐞ʳ) == SymPy.simplify(∂(σʳʳ, r) + (2σʳʳ - σᶿᶿ - σᵠᵠ) / r)
+        div𝛔 = tsimplify(DIV(𝛔, Spherical))
+        @test tsimplify(div𝛔 ⋅ 𝐞ʳ) == tsimplify(∂(σʳʳ, r) + (2σʳʳ - σᶿᶿ - σᵠᵠ) / r)
 
         # Concentric sphere - hydrostatic part
         θ, ϕ, r = getcoords(Spherical)
@@ -67,16 +67,16 @@
         ℂ = 3k * 𝕁 + 2μ * 𝕂
         u = SymFunction("u", real = true)(r)
         𝐮 = u * 𝐞ʳ
-        𝛆 = SymPy.simplify(SYMGRAD(𝐮, Spherical))
-        𝛔 = SymPy.simplify(ℂ ⊡ 𝛆)
-        # 𝛔 = SymPy.simplify(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
-        @test dsolve(factor(SymPy.simplify(DIV(𝛔, Spherical) ⋅ 𝐞ʳ)), u) ==
+        𝛆 = tsimplify(SYMGRAD(𝐮, Spherical))
+        𝛔 = tsimplify(ℂ ⊡ 𝛆)
+        # 𝛔 = tsimplify(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
+        @test dsolve(tfactor(tsimplify(DIV(𝛔, Spherical) ⋅ 𝐞ʳ)), u) ==
               Eq(u, symbols("C1") / r^2 + symbols("C2") * r)
 
         # Spheroidal
         Spheroidal = coorsys_spheroidal()
         OM = getOM(Spheroidal)
-        @test SymPy.simplify(LAPLACE(OM[1]^2, Spheroidal)) == 2
+        @test tsimplify(LAPLACE(OM[1]^2, Spheroidal)) == 2
 
 
     end

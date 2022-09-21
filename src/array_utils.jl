@@ -7,25 +7,44 @@ function Base.replace_in_print_matrix(::Id2, i::Integer, j::Integer, s::Abstract
     i == j ? s : Base.replace_with_centered_mark(s)
 end
 
-isidentity(a::AbstractMatrix{T}) where {T} = a ≈ Id2{size(a, 1),T}()
+isidentity(a::AbstractMatrix{T}) where {T} = a ≈ I
 isdiagonal(a::AbstractMatrix{T}) where {T} = norm(a - Diagonal(a)) <= eps(T)
-
-isidentity(a::AbstractMatrix{Sym}) = a == Id2{size(a, 1),Sym}()
-isidentity(a::AbstractMatrix{Num}) = iszero(a - Id2{size(a, 1),Num}())
 
 # isapprox(x::Num, y::Num; kwargs...) = 
 
-simplifyif(x) = x
-simplifyif(x::Sym) = SymPy.simplify(x)
-simplifyif(m::Matrix{Sym}) = SymPy.simplify.(m)
-simplifyif(m::Symmetric{Sym}) = Symmetric(SymPy.simplify.(m))
-simplifyif(x::Num) = Symbolics.simplify(x)
-simplifyif(m::Matrix{Num}) = Symbolics.simplify.(m)
-simplifyif(m::Symmetric{Num}) = Symmetric(Symbolics.simplify.(m))
+for OP in (:(tsimplify), :(tfactor), :(tsubs), :(ttrigsimp), :(texpand_trig))
+    @eval $OP(x, args...; kwargs...) = x
+end
+
+for OP in (:(simplify), :(factor), :(subs), :(diff))
+    @eval $(Symbol("t",OP))(x::Sym, args...; kwargs...) = SymPy.$OP(x, args...; kwargs...)
+end
+for OP in (:(trigsimp), :(expand_trig))
+    @eval $(Symbol("t",OP))(x::Sym, args...; kwargs...) = sympy.$OP(x, args...; kwargs...)
+end
+for OP in (:(tsimplify), :(tfactor), :(tsubs), :(tdiff), :(ttrigsimp), :(texpand_trig))
+    @eval $OP(m::AbstractArray{Sym}, args...; kwargs...) = $OP.(m, args...; kwargs...)
+    @eval $OP(m::Array{Sym}, args...; kwargs...) = $OP.(m, args...; kwargs...)
+    @eval $OP(m::Symmetric{Sym}, args...; kwargs...) = Symmetric($OP.(m, args...; kwargs...))
+end
+
+tsimplify(x::Num, args...; kwargs...) = Symbolics.simplify(x, args...; kwargs...)
+tsubs(x::Num, d...) = substitute(x, Dict(d...))
+function tdiff(y::Num, x...; kwargs...)
+    for xᵢ ∈ x
+        y = Symbolics.Differential(xᵢ)(y)
+    end
+    return expand_derivatives(y)
+end
+for OP in (:(tsimplify), :(tsubs), :(tdiff))
+    @eval $OP(m::AbstractArray{Num}, args...; kwargs...) = $OP.(m, args...; kwargs...)
+    @eval $OP(m::Array{Num}, args...; kwargs...) = $OP.(m, args...; kwargs...)
+    @eval $OP(m::Symmetric{Num}, args...; kwargs...) = Symmetric($OP.(m, args...; kwargs...))
+end
 
 for SymType ∈ (Sym, Num)
     @eval isdiagonal(a::AbstractMatrix{$SymType}) = isdiag(a)
-
+    @eval isidentity(a::AbstractMatrix{$SymType}) = isone(a)
 end
 
 @inline LinearAlgebra.issymmetric(t::Tensor{2, 2, T}) where {T <: Union{AbstractFloat, Complex{AbstractFloat}}} = @inbounds t[1,2] ≈ t[2,1]
@@ -213,4 +232,5 @@ const ⊗ˢ = sotimes
 const sboxtimes = otimesul
 
 export isidentity, contract, qcontract, otimesu, otimesul, sboxtimes, sotimes, ⊙, ⊠, ⊠ˢ, ⊗ˢ
+export tsimplify, tfactor, tsubs, tdiff, ttrigsimp, texpand_trig
 export ⋅, ⊡, ⊗

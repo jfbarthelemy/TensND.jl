@@ -133,7 +133,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             eᵢ = Matrix(eᵢ)
-            gᵢⱼ = simplifyif(Symmetric(transpose(eᵢ) * eᵢ))
+            gᵢⱼ = tsimplify(Symmetric(transpose(eᵢ) * eᵢ))
             if isidentity(gᵢⱼ)
                 return RotatedBasis(eᵢ)
             elseif isdiagonal(gᵢⱼ)
@@ -141,11 +141,11 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
                 return OrthogonalBasis(RotatedBasis(eᵢ .* transpose(inv.(χ))), χ)
             else
                 if T == Sym
-                    gⁱʲ = simplifyif(Symmetric(inv(Matrix(gᵢⱼ))))
+                    gⁱʲ = tsimplify(Symmetric(inv(Matrix(gᵢⱼ))))
                 else
-                    gⁱʲ = simplifyif(inv(gᵢⱼ))
+                    gⁱʲ = tsimplify(inv(gᵢⱼ))
                 end
-                eⁱ = simplifyif(eᵢ * transpose(gⁱʲ))
+                eⁱ = tsimplify(eᵢ * transpose(gⁱʲ))
                 new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
             end
         end
@@ -157,7 +157,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             return CanonicalBasis{dim,T}()
         else
             eⁱ = Matrix(eⁱ)
-            gⁱʲ = simplifyif(Symmetric(transpose(eⁱ) * eⁱ))
+            gⁱʲ = tsimplify(Symmetric(transpose(eⁱ) * eⁱ))
             if isidentity(gⁱʲ)
                 return RotatedBasis(eⁱ)
             elseif isdiagonal(gⁱʲ)
@@ -165,11 +165,11 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
                 return OrthogonalBasis(RotatedBasis(eⁱ .* transpose(uχ)), uχ)
             else
                 if T == Sym
-                    gᵢⱼ = simplifyif(Symmetric(inv(Matrix(gⁱʲ))))
+                    gᵢⱼ = tsimplify(Symmetric(inv(Matrix(gⁱʲ))))
                 else
-                    gᵢⱼ = simplifyif(inv(gⁱʲ))
+                    gᵢⱼ = tsimplify(inv(gⁱʲ))
                 end
-                eᵢ = simplifyif(eⁱ * transpose(gᵢⱼ))
+                eᵢ = tsimplify(eⁱ * transpose(gᵢⱼ))
                 new{dim,T}(eᵢ, eⁱ, gᵢⱼ, gⁱʲ)
             end
         end
@@ -506,17 +506,15 @@ isorthonormal(ℬ::AbstractBasis) = isidentity(metric(ℬ))
 
 isorthonormal(::OrthonormalBasis) = true
 
-
-for OP in (:(simplify), :(factor), :(subs), :(diff))
-    @eval  SymPy.$OP(b::AbstractBasis{dim,Sym}, args...; kwargs...) where {dim} =
-        Basis(SymPy.$OP(b.eᵢ, args...; kwargs...))
-    @eval SymPy.$OP(b::CanonicalBasis{dim,Sym}, args...; kwargs...) where {dim} = b
-end
-
-for OP in (:(trigsimp), :(expand_trig))
-    @eval  $OP(b::AbstractBasis{dim,Sym}, args...; kwargs...) where {dim} =
+for OP in (:(tsimplify), :(tfactor), :(tsubs), :(tdiff), :(ttrigsimp), :(texpand_trig))
+    @eval $OP(b::AbstractBasis{dim,Sym}, args...; kwargs...) where {dim} =
         Basis($OP(b.eᵢ, args...; kwargs...))
     @eval $OP(b::CanonicalBasis{dim,Sym}, args...; kwargs...) where {dim} = b
+end
+for OP in (:(tsimplify), :(tsubs), :(tdiff))
+    @eval $OP(b::AbstractBasis{dim,Num}, args...; kwargs...) where {dim} =
+        Basis($OP(b.eᵢ, args...; kwargs...))
+    @eval $OP(b::CanonicalBasis{dim,Num}, args...; kwargs...) where {dim} = b
 end
 
 

@@ -60,17 +60,17 @@ struct SubManifoldSym{dim,VEC,BNORM,BNAT,TENSA,TENSB} <: AbstractCoorSystem{dim,
         to_coords::Dict = Dict(),
     ) where {VEC,dimm1}
         dim = dimm1 + 1
-        simp(t) = length(rules) > 0 ? SymPy.simplify(subs(SymPy.simplify(t), rules...)) : SymPy.simplify(t)
-        chvar(t, d) = length(d) > 0 ? subs(t, d...) : t
+        simp(t) = length(rules) > 0 ? tsimplify(tsubs(tsimplify(t), rules...)) : tsimplify(t)
+        chvar(t, d) = length(d) > 0 ? tsubs(t, d...) : t
         OMc = chvar(OM, to_coords)
         aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dimm1)
         χᵢ = ntuple(i -> simp(norm(aᵢ[i])), dimm1)
         eᵢ = ntuple(i -> simp(aᵢ[i] / χᵢ[i]), dimm1)
         χᵢ = (ntuple(i -> simp(chvar(χᵢ[i], to_coords)), dimm1)..., one(Sym))
         eᵢ = ntuple(i -> simp(chvar(eᵢ[i], to_coords)), dimm1)
-        A₀ = SymPy.simplify(hcat(components_canon.(eᵢ)...))
-        n = [SymPy.simplify(det(hcat(A₀, [j == i ? one(Sym) : zero(Sym) for j ∈ 1:dim]))) for i ∈ 1:dim]
-        n = n / SymPy.simplify(norm(n))
+        A₀ = tsimplify(hcat(components_canon.(eᵢ)...))
+        n = [tsimplify(det(hcat(A₀, [j == i ? one(Sym) : zero(Sym) for j ∈ 1:dim]))) for i ∈ 1:dim]
+        n = n / tsimplify(norm(n))
         A = hcat(A₀,n)
         normalized_basis = Basis(A)
         eᵢ = ntuple(
@@ -145,7 +145,7 @@ function ∂(
     var = ntuple(_ -> :cont, order)
     t = Array(components(t, ℬ, var))
     Γ = Christoffel(SM)
-    data = diff.(t, getcoords(SM, i))
+    data = tdiff(t, getcoords(SM, i))
     for o ∈ 1:order
         ec1 = ntuple(j -> j == o ? order + 1 : j, order)
         ec2 = (order + 1, o)
@@ -156,7 +156,7 @@ function ∂(
 end
 
 ∂(t::Sym, i::Integer, SM::SubManifoldSym{dim}) where {dim} =
-    SymPy.diff(only_coords(SM, t), getcoords(SM, i))
+    tdiff(only_coords(SM, t), getcoords(SM, i))
 
 function ∂(
     t::AbstractTens{order,dim,Sym},

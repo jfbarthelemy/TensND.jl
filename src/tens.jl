@@ -559,47 +559,36 @@ TensND.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 change_tens_canon(t::AbstractTens) = change_tens(t, CanonicalBasis{getdim(t),eltype(t)}())
 
 
-for OP in (:(diff),)
-    @eval SymPy.$OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
-        change_tens(Tens($OP(components_canon(t), args...; kwargs...)), getbasis(t), getvar(t))
-    @eval SymPy.$OP(t::AbstractArray{Sym}, args...; kwargs...) = $OP.(t, args...; kwargs...)
-    @eval SymPy.$OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
-        Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
-end
-
-for OP in (:(simplify), :(factor), :(subs))
-    @eval SymPy.$OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
-        Tens(SymPy.$OP(getarray(t), args...; kwargs...), SymPy.$OP(getbasis(t), args...; kwargs...), getvar(t))
-    @eval SymPy.$OP(t::AbstractArray{Sym}, args...; kwargs...) = SymPy.$OP.(t, args...; kwargs...)
-    @eval SymPy.$OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
-        Tensors.get_base(typeof(t))(SymPy.$OP.(Tensors.get_data(t), args...; kwargs...))
-end
-
-for OP in (:(trigsimp), :(expand_trig))
-    @eval $OP(t::AbstractTens{order,dim}, args...; kwargs...) where {order,dim} =
-        Tens($OP(getarray(t); kwargs...), $OP(getbasis(t), args...; kwargs...), getvar(t))
-    @eval $OP(t::AbstractArray{Sym}, args...; kwargs...) = sympy.$OP.(t, args...; kwargs...)
+for OP in (:(tsimplify), :(tfactor), :(tsubs), :(ttrigsimp), :(texpand_trig))
     @eval $OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
-        Tensors.get_base(typeof(t))(sympy.$OP.(Tensors.get_data(t), args...; kwargs...))
-    @eval $OP(t::Sym, args...; kwargs...) = sympy.$OP.(t, args...; kwargs...)
+        Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
+    @eval $OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+        Tens($OP(getarray(t), args...; kwargs...), $OP(getbasis(t), args...; kwargs...), getvar(t))
 end
+for OP in (:(tdiff),)
+    @eval $OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
+        Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
+    @eval $OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+        Tens($OP(getarray(t), args...; kwargs...), getbasis(t), getvar(t))
+end
+diff_with_basis(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+        change_tens(Tens(diff(components_canon(t), args...; kwargs...)), getbasis(t), getvar(t))
 
 
-# SymPy.simplify(t::AbstractTens{order,dim,Sym}; kwargs...) where {order,dim} = Tens(simplify(data(t); kwargs...), basis(t), getvar(t))
-# SymPy.simplify(t::AbstractArray{Sym}; kwargs...) = simplify.(t; kwargs...)
-# SymPy.simplify(t::Tensors.AllTensors{dim, Sym}; kwargs...) where {dim} = Tensors.get_base(typeof(t))(simplify.(Tensors.get_data(t); kwargs...))
-
-# sympy.trigsimp(t::AbstractTens{order,dim,Sym}; kwargs...) where {order,dim} = Tens(trigsimp(data(t); kwargs...), basis(t), getvar(t))
-# sympy.trigsimp(t::AbstractArray{Sym}; kwargs...) = trigsimp.(t; kwargs...)
-# sympy.trigsimp(t::Tensors.AllTensors{dim, Sym}; kwargs...) where {dim} = Tensors.get_base(typeof(t))(trigsimp.(Tensors.get_data(t); kwargs...))
-
-# SymPy.factor(t::AbstractTens{order,dim,Sym}; kwargs...) where {order,dim} = Tens(factor(data(t); kwargs...), basis(t), getvar(t))
-# SymPy.factor(t::AbstractArray{Sym}; kwargs...) = factor.(t; kwargs...)
-# SymPy.factor(t::Tensors.AllTensors{dim, Sym}; kwargs...) where {dim} = Tensors.get_base(typeof(t))(factor.(Tensors.get_data(t); kwargs...))
-
-# SymPy.subs(t::AbstractTens{order,dim,Sym}, d...; kwargs...) where {order,dim} = Tens(subs(data(t), d...; kwargs...), basis(t), getvar(t))
-# SymPy.subs(t::AbstractArray{Sym}, d...; kwargs...) = subs.(t, d...; kwargs...)
-# SymPy.subs(t::Tensors.AllTensors{dim, Sym}, d...; kwargs...) where {dim} = Tensors.get_base(typeof(t))(subs.(Tensors.get_data(t), d...; kwargs...))
+for OP in (:(tsimplify), :(tsubs))
+    @eval $OP(t::Tensors.AllTensors{dim,Num}, args...; kwargs...) where {dim} =
+        Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
+    @eval $OP(t::AbstractTens{order,dim,Num}, args...; kwargs...) where {order,dim} =
+        Tens($OP(getarray(t), args...; kwargs...), $OP(getbasis(t), args...; kwargs...), getvar(t))
+end
+for OP in (:(tdiff),)
+    @eval $OP(t::Tensors.AllTensors{dim,Num}, args...; kwargs...) where {dim} =
+        Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
+    @eval $OP(t::AbstractTens{order,dim,Num}, args...; kwargs...) where {order,dim} =
+        Tens($OP(getarray(t), args...; kwargs...), getbasis(t), getvar(t))
+end
+diff_with_basis(t::AbstractTens{order,dim,Num}, args...; kwargs...) where {order,dim} =
+        change_tens(Tens(diff(components_canon(t), args...; kwargs...)), getbasis(t), getvar(t))
 
 
 ##############
@@ -1311,7 +1300,7 @@ export proj_tens, best_sym_tens
 export getorder, arraytype, getdata, getarray, getbasis, getvar
 export intrinsic
 export components, components_canon, change_tens, change_tens_canon
-export trigsimp, expand_trig
+export diff_with_basis
 export KM, invKM
 export getbasis, getvar
 export tensbasis

@@ -134,7 +134,6 @@ for FUNC in (:tensId2, :tensId4, :tensJ4, :tensK4, :ISO)
     @eval $FUNC(args...) = $FUNC(Val.(args)...)
 end
 
-
 getdata(t::TensISO) = t.data
 getarray(t::TensISO) = Array(t)
 getbasis(::TensISO{order,dim,T}) where {order,dim,T} = CanonicalBasis{dim,T}()
@@ -238,15 +237,18 @@ end
 intrinsic(A::TensISO{4}) = println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
 intrinsic(A::TensISO{2}) = println("(", getdata(A)[1], ") 𝟏")
 
-for OP in (:(simplify), :(factor), :(subs), :(diff))
-    @eval SymPy.$OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =
-        TensISO{dim}(SymPy.$OP.(getdata(A), args...; kwargs...))
+for OP in (:(tsimplify), :(tfactor), :(tsubs), :(tdiff), :(ttrigsimp), :(texpand_trig))
+    @eval $OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+        TensISO{dim}($OP(getdata(A), args...; kwargs...))
 end
 
-for OP in (:(trigsimp), :(expand_trig))
-    @eval $OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =
-        TensISO{dim}(sympy.$OP.(getdata(A), args...; kwargs...))
+for OP in (:(tsimplify), :(tsubs), :(tdiff))
+    @eval $OP(A::TensISO{order,dim,Num}, args...; kwargs...) where {order,dim} =
+        TensISO{dim}($OP(getdata(A), args...; kwargs...))
 end
+
+
+
 
 """
     KM(v::AllIsotropic{dim}; kwargs...)
