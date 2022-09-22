@@ -171,11 +171,11 @@ struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
     end
 end
 
-with_tmp_var(CS::AbstractCoorSystem, t) = length(CS.tmp_var) > 0 ? tsubs(t, CS.tmp_var...) : t
-only_coords(CS::AbstractCoorSystem, t) = length(CS.to_coords) > 0 ? tsubs(t, CS.to_coords...) : t
+with_tmp_var(CS::CoorSystemSym, t) = length(CS.tmp_var) > 0 ? tsubs(t, CS.tmp_var...) : t
+only_coords(CS::CoorSystemSym, t) = length(CS.to_coords) > 0 ? tsubs(t, CS.to_coords...) : t
 
-getcoords(CS::AbstractCoorSystem) = CS.coords
-getcoords(CS::AbstractCoorSystem, i::Integer) = getcoords(CS)[i]
+getcoords(CS::CoorSystemSym) = CS.coords
+getcoords(CS::CoorSystemSym, i::Integer) = getcoords(CS)[i]
 
 @pure getdim(::AbstractCoorSystem{dim}) where {dim} = dim
 
@@ -232,16 +232,16 @@ Tens.TensRotated{2, 3, Sym, SymmetricTensor{2, 3, Sym, 6}}
 # var: (:cont, :cont)
 ```
 """
-∂(t::AbstractTens{order,dim,Sym}, xᵢ...) where {order,dim} =
+∂(t::AbstractTens{order,dim,T}, xᵢ...) where {order,dim,T<:SymType} =
     change_tens(Tens(tdiff(components_canon(t), xᵢ...)), getbasis(t), getvar(t))
 
-∂(t::Sym, xᵢ...) = tdiff(t, xᵢ...)
+∂(t::SymType, xᵢ...) = tdiff(t, xᵢ...)
 
 function ∂(
-    t::AbstractTens{order,dim,Sym},
+    t::AbstractTens{order,dim,T},
     i::Integer,
     CS::CoorSystemSym{dim},
-) where {order,dim}
+) where {order,dim,T<:SymType}
     t = only_coords(CS, t)
     ℬ = natural_basis(CS)
     var = ntuple(_ -> :cont, order)
@@ -257,14 +257,14 @@ function ∂(
     return change_tens(Tens(data, ℬ, var), normalized_basis(CS), var)
 end
 
-∂(t::Sym, i::Integer, CS::CoorSystemSym{dim}) where {dim} =
+∂(t::T, i::Integer, CS::CoorSystemSym{dim,T}) where {dim,T<:SymType} =
     tdiff(only_coords(CS, t), getcoords(CS, i))
 
 function ∂(
-    t::AbstractTens{order,dim,Sym},
-    x::Sym,
-    CS::CoorSystemSym{dim,Sym},
-) where {order,dim}
+    t::AbstractTens{order,dim,T},
+    x::T,
+    CS::CoorSystemSym{dim,T},
+) where {order,dim,T<:SymType}
     ind = findfirst(i -> i == x, getcoords(CS))
     return ind === nothing ? zero(t) : ∂(t, ind, CS)
 end
@@ -273,7 +273,7 @@ function ∂(
     t::T,
     x::T,
     CS::CoorSystemSym{dim,T},
-) where {dim,T<:Number}
+) where {dim,T<:SymType}
     ind = findfirst(i -> i == x, getcoords(CS))
     return ind === nothing ? zero(t) : ∂(t, ind, CS)
 end
@@ -283,7 +283,7 @@ end
 
 Calculate the gradient of `t` with respect to the coordinate system `CS`
 """
-GRAD(t::Union{T,AbstractTens{order,dim,T}}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:Number} =
+GRAD(t::Union{T,AbstractTens{order,dim,T}}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:SymType} =
     sum([∂(t, i, CS) ⊗ natvec(CS, i, :cont) for i = 1:dim])
 
 
@@ -295,7 +295,7 @@ Calculate the symmetrized gradient of `T` with respect to the coordinate system 
 SYMGRAD(
     t::Union{T,AbstractTens{order,dim,T}},
     CS::CoorSystemSym{dim,T},
-) where {order,dim,T<:Number} = sum([∂(t, i, CS) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
+) where {order,dim,T<:SymType} = sum([∂(t, i, CS) ⊗ˢ natvec(CS, i, :cont) for i = 1:dim])
 
 
 """
@@ -303,7 +303,7 @@ SYMGRAD(
 
 Calculate the divergence  of `T` with respect to the coordinate system `CS`
 """
-DIV(t::AbstractTens{order,dim,T}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:Number} =
+DIV(t::AbstractTens{order,dim,T}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:SymType} =
     sum([∂(t, i, CS) ⋅ natvec(CS, i, :cont) for i = 1:dim])
 
 
@@ -316,14 +316,14 @@ Calculate the Laplace operator of `T` with respect to the coordinate system `CS`
 LAPLACE(
     t::Union{T,AbstractTens{order,dim,T}},
     CS::CoorSystemSym{dim,T},
-) where {order,dim,T<:Number} = DIV(GRAD(t, CS), CS)
+) where {order,dim,T<:SymType} = DIV(GRAD(t, CS), CS)
 
 """
     HESS(t::Union{Sym,AbstractTens{order,dim,Sym}},CS::CoorSystemSym{dim}) where {order,dim,T<:Number}
 
 Calculate the Hessian of `T` with respect to the coordinate system `CS`
 """
-HESS(t::Union{T,AbstractTens{order,dim,T}}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:Number} =
+HESS(t::Union{T,AbstractTens{order,dim,T}}, CS::CoorSystemSym{dim,T}) where {order,dim,T<:SymType} =
     GRAD(GRAD(t, CS), CS)
 
 """
@@ -354,7 +354,7 @@ function coorsys_cartesian(coords = symbols("x y z", real = true))
     dim = length(coords)
     𝐗, 𝐄, ℬ = init_cartesian(coords)
     OM = sum([𝐗[i] * 𝐄[i] for i = 1:dim])
-    χᵢ = ntuple(_ -> one(Sym), dim)
+    χᵢ = ntuple(_ -> one(eltype(coords)), dim)
     return CoorSystemSym(OM, coords, ℬ, χᵢ)
 end
 
@@ -388,7 +388,7 @@ function coorsys_polar(
 )
     (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = init_polar(coords, canonical = canonical)
     OM = r * 𝐞ʳ
-    return CoorSystemSym(OM, coords, ℬᵖ, (one(Sym), r))
+    return CoorSystemSym(OM, coords, ℬᵖ, (one(eltype(coords)), r))
 end
 
 """
@@ -420,7 +420,8 @@ function coorsys_cylindrical(
 )
     (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical(coords, canonical = canonical)
     OM = r * 𝐞ʳ + z * 𝐞ᶻ
-    return CoorSystemSym(OM, coords, ℬᶜ, (one(Sym), r, one(Sym)))
+
+    return CoorSystemSym(OM, coords, ℬᶜ, (one(eltype(coords)), r, one(eltype(coords))))
 end
 
 """
@@ -465,7 +466,7 @@ function coorsys_spherical(
     (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical(coords, canonical = canonical)
     OM = r * 𝐞ʳ
     rules = Dict(abs(sin(θ)) => sin(θ))
-    return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(Sym)); rules = rules)
+    return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(eltype(coords))); rules = rules)
 end
 
 """
@@ -558,15 +559,15 @@ julia> LAPLACE(1/r)
 macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
     m = @__MODULE__
     return quote
-            $m.∂(t::AbstractTens{order,dim,Sym}, i::Integer) where {order,dim} = $m.∂(t, i, $(esc(CS)))
-            $m.∂(t::AbstractTens{order,dim,Sym}, x::Sym) where {order,dim}  = $m.∂(t, x, $(esc(CS)))
-            $m.∂(t::Sym, i::Integer) = $m.∂(t, i, $(esc(CS)))
-            $m.∂(t::Sym, x::Sym) = $m.∂(t, x, $(esc(CS)))
-            $m.GRAD(t::Union{Sym,AbstractTens}) = $m.GRAD(t, $(esc(CS)))
-            $m.SYMGRAD(t::Union{Sym,AbstractTens}) = $m.SYMGRAD(t, $(esc(CS)))
+            $m.∂(t::AbstractTens{order,dim,T}, i::Integer) where {order,dim,T<:SymType} = $m.∂(t, i, $(esc(CS)))
+            $m.∂(t::AbstractTens{order,dim,T}, x::Sym) where {order,dim,T<:SymType}  = $m.∂(t, x, $(esc(CS)))
+            $m.∂(t::SymType, i::Integer) = $m.∂(t, i, $(esc(CS)))
+            $m.∂(t::SymType, x::Sym) = $m.∂(t, x, $(esc(CS)))
+            $m.GRAD(t::Union{T,AbstractTens}) where {T<:SymType} = $m.GRAD(t, $(esc(CS)))
+            $m.SYMGRAD(t::Union{T,AbstractTens}) where {T<:SymType} = $m.SYMGRAD(t, $(esc(CS)))
             $m.DIV(t::AbstractTens) = $m.DIV(t, $(esc(CS)))
-            $m.LAPLACE(t::Union{Sym,AbstractTens}) = $m.LAPLACE(t, $(esc(CS)))
-            $m.HESS(t::Union{Sym,AbstractTens}) = $m.HESS(t, $(esc(CS)))
+            $m.LAPLACE(t::Union{T,AbstractTens}) where {T<:SymType} = $m.LAPLACE(t, $(esc(CS)))
+            $m.HESS(t::Union{T,AbstractTens}) where {T<:SymType} = $m.HESS(t, $(esc(CS)))
 
             if $(esc(coords)) === nothing
                 coords = string.(getcoords($(esc(CS))))
@@ -576,11 +577,11 @@ macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
                 coords = (coords..., dim)
             end
             ℬ = normalized_basis($(esc(CS)))
-            $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
 
-            # Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-            # Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-            # Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            # Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            # Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+            # Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
 
         end
 end

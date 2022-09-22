@@ -74,7 +74,7 @@ for order ∈ (2, 4)
         newt = change_tens(t, basis)
         for sym ∈ proj
             (projt, d, drel) = proj_tens(sym, newt)
-            if d == zero(T) || drel < ε
+            if iszero(d) || drel < ε
                 return projt, d, drel, sym
             end
         end
@@ -216,11 +216,11 @@ function intrinsic(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i
     s = ""
     for i ∈ ind
         x = t[i]
-        if x ≠ zero(T)
+        if !iszero(x)
             if !firstprint
                 s *= " + "
             end
-            if x ≠ one(T)
+            if !isone(x)
                 s *= "(" * string(x) * ")"
             end
             j = Tuple(i)
@@ -339,7 +339,7 @@ for B in (AbstractBasis, OrthogonalBasis, OrthonormalBasis)
         ℬ::$B{dim},
         var::NTuple{order,Symbol},
     ) where {order,dim,T}
-        if ℬ == getbasis(t)
+        if isequal(ℬ , getbasis(t))
             return components(t, var)
         else
             return components(TensOrthonormal(t), ℬ, var)
@@ -371,7 +371,7 @@ function components(
     ℬ::AbstractBasis{dim},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if ℬ == getbasis(t)
+    if isequal(ℬ , getbasis(t))
         return components(t, var)
     else
         bb = Dict()
@@ -400,7 +400,7 @@ function components(
     ℬ::OrthogonalBasis{dim},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if ℬ == getbasis(t)
+    if isequal(ℬ , getbasis(t))
         return components(t, var)
     else
         m = Array(components(t, relevant_OrthonormalBasis(ℬ)))
@@ -422,7 +422,7 @@ function components(
     t::TensOrthonormal{order,dim,T},
     ℬ::OrthonormalBasis{dim},
 ) where {order,dim,T}
-    if ℬ == getbasis(t)
+    if isequal(ℬ , getbasis(t))
         return getarray(t)
     else
         bb = vecbasis(getbasis(t))' * vecbasis(ℬ)
@@ -500,7 +500,7 @@ Tens{1, 3, Sym, Vec{3, Sym}}
 ```
 """
 function change_tens(t::AbstractTens, ℬ::AbstractBasis, newvar::NTuple)
-    if ℬ == getbasis(t) && newvar == getvar(t)
+    if isequal(ℬ, getbasis(t)) && newvar == getvar(t)
         return t
     else
         return Tens(components(t, ℬ, newvar), ℬ, newvar)
@@ -508,7 +508,7 @@ function change_tens(t::AbstractTens, ℬ::AbstractBasis, newvar::NTuple)
 end
 
 function change_tens(t::AbstractTens, newbasis::AbstractBasis)
-    if newbasis == getbasis(t)
+    if isequal(newbasis, getbasis(t))
         return t
     else
         return Tens(components(t, newbasis, getvar(t)), newbasis, getvar(t))
@@ -776,7 +776,7 @@ function Tensors.otimes(
     t1::AbstractTens{order1,dim},
     t2::AbstractTens{order2,dim},
 ) where {order1,order2,dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -790,7 +790,7 @@ function Tensors.otimes(
     t1::TensOrthonormal{order1,dim},
     t2::TensOrthonormal{order2,dim},
 ) where {order1,order2,dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -1211,7 +1211,7 @@ function sotimes(
     t1::AbstractTens{1,dim},
     t2::AbstractTens{1,dim},
 ) where {dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -1236,7 +1236,7 @@ function sotimes(
     t1::TensOrthonormal{1,dim},
     t2::TensOrthonormal{1,dim},
 ) where {dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -1282,14 +1282,12 @@ Tensors.minortranspose(
     t::TensOrthonormal{order,dim,T,<:FourthOrderTensor},
 ) where {order,dim,T} = Tens(minortranspose(getarray(t)), getbasis(t))
 
-function tensbasis(ℬ::AbstractBasis, i::Integer, ::Val{:cov})
-    T = eltype(ℬ)
-    t = [T(Int(j == i)) for j ∈ 1:getdim(ℬ)]
+function tensbasis(ℬ::AbstractBasis{dim,T}, i::Integer, ::Val{:cov}) where {dim,T}
+    t = [T(Int(j == i)) for j ∈ 1:dim]
     return Tens(t, ℬ, (:cont,))
 end
-function tensbasis(ℬ::AbstractBasis, i::Integer, ::Val{:cont})
-    T = eltype(ℬ)
-    t = [T(Int(j == i)) for j ∈ 1:getdim(ℬ)]
+function tensbasis(ℬ::AbstractBasis{dim,T}, i::Integer, ::Val{:cont}) where {dim,T}
+    t = [T(Int(j == i)) for j ∈ 1:dim]
     return Tens(t, ℬ, (:cov,))
 end
 tensbasis(ℬ::AbstractBasis, i::Integer, var = :cov) = tensbasis(ℬ, i, Val(var))

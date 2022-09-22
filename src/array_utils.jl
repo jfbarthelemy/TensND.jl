@@ -42,10 +42,10 @@ for OP in (:(tsimplify), :(tsubs), :(tdiff))
     @eval $OP(m::Symmetric{Num}, args...; kwargs...) = Symmetric($OP.(m, args...; kwargs...))
 end
 
-for SymType ∈ (Sym, Num)
-    @eval isdiagonal(a::AbstractMatrix{$SymType}) = isdiag(a)
-    @eval isidentity(a::AbstractMatrix{$SymType}) = isone(a)
-end
+const SymType = Union{Sym,Num}
+
+isdiagonal(a::AbstractMatrix{T}) where {T<:SymType} = isdiag(a)
+isidentity(a::AbstractMatrix{T}) where {T<:SymType} = isone(a)
 
 @inline LinearAlgebra.issymmetric(t::Tensor{2, 2, T}) where {T <: Union{AbstractFloat, Complex{AbstractFloat}}} = @inbounds t[1,2] ≈ t[2,1]
 

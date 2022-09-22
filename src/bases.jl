@@ -112,7 +112,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
     function Basis(ℬ::AbstractBasis{dim,T}, χᵢ::V) where {dim,T,V}
         Χ = collect(χᵢ)
         invΧ = inv.(Χ)
-        if Χ == one.(Χ)
+        if all(isone.(Χ))
             return ℬ
         else
             if ℬ isa OrthonormalBasis
@@ -140,7 +140,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
                 χ = sqrt.(diag(gᵢⱼ))
                 return OrthogonalBasis(RotatedBasis(eᵢ .* transpose(inv.(χ))), χ)
             else
-                if T == Sym
+                if T <: SymType
                     gⁱʲ = tsimplify(Symmetric(inv(Matrix(gᵢⱼ))))
                 else
                     gⁱʲ = tsimplify(inv(gᵢⱼ))
@@ -164,7 +164,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
                 uχ = inv.(sqrt.(diag(gⁱʲ)))
                 return OrthogonalBasis(RotatedBasis(eⁱ .* transpose(uχ)), uχ)
             else
-                if T == Sym
+                if T <: SymType
                     gᵢⱼ = tsimplify(Symmetric(inv(Matrix(gⁱʲ))))
                 else
                     gᵢⱼ = tsimplify(inv(gⁱʲ))
@@ -274,7 +274,7 @@ struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
             return new{dim,T}(eᵢ, eⁱ, angles(R))
         end
     end
-    function RotatedBasis(θ::T) where {T<:Number}
+    function RotatedBasis(θ::T) where {T<:Union{AbstractFloat,Complex{AbstractFloat}}}
         dim = 2
         cθ = cos(θ)
         sθ = sin(θ)
@@ -285,15 +285,15 @@ struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
             return new{dim,T}(eᵢ, eⁱ, angles(eᵢ))
         end
     end
-    function RotatedBasis(θ::Sym)
+    function RotatedBasis(θ::T) where {T<:SymType}
         dim = 2
         cθ = cos(θ)
         sθ = sin(θ)
         eᵢ = eⁱ = [cθ -sθ; sθ cθ]
         if isidentity(eᵢ)
-            return CanonicalBasis{dim,Sym}()
+            return CanonicalBasis{dim,T}()
         else
-            return new{dim,Sym}(eᵢ, eⁱ, (θ = θ,))
+            return new{dim,T}(eᵢ, eⁱ, (θ = θ,))
         end
     end
 end
@@ -310,7 +310,7 @@ struct OrthogonalBasis{dim,T} <: AbstractBasis{dim,T}
     gⁱʲ::Diagonal{T,Vector{T}}
     function OrthogonalBasis(parent::OrthonormalBasis{dim,T}, λ::Vector) where {dim,T}
         λ = T.(λ)
-        if λ == one.(λ)
+        if all(isone.(λ))
             return parent
         else
             eᵢ = [λ[j] * parent[i, j] for i ∈ 1:dim, j ∈ 1:dim]
