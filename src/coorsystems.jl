@@ -56,11 +56,11 @@ struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
         coords::NTuple{dim,T},
         normalized_basis::AbstractBasis{dim,T},
         χᵢ::NTuple{dim},
-        tmp_coords::NTuple = (),
-        params::NTuple = ();
-        rules::Dict = Dict(),
-        tmp_var::Dict = Dict(),
-        to_coords::Dict = Dict(),
+        tmp_coords::NTuple=(),
+        params::NTuple=();
+        rules::Dict=Dict(),
+        tmp_var::Dict=Dict(),
+        to_coords::Dict=Dict()
     ) where {dim,T,VEC}
         simp(t) = length(rules) > 0 ? tsimplify(tsubs(tsimplify(t), rules...)) : tsimplify(t)
         eᵢ = ntuple(
@@ -83,12 +83,12 @@ struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
             ),
             dim,
         )
-        Γ = compute_Christoffel(
+        Γ = simp(compute_Christoffel(
             coords,
             χᵢ,
             metric(normalized_basis, :cov),
             metric(normalized_basis, :cont),
-        )
+        ))
         natural_basis = Basis(normalized_basis, χᵢ)
         new{dim,T,VEC,typeof(normalized_basis),typeof(natural_basis)}(
             OM,
@@ -110,13 +110,13 @@ struct CoorSystemSym{dim,T<:Number,VEC,BNORM,BNAT} <: AbstractCoorSystem{dim,T}
     function CoorSystemSym(
         OM::VEC,
         coords::NTuple{dim,T},
-        tmp_coords::NTuple = (),
-        params::NTuple = ();
-        rules::Dict = Dict(),
-        tmp_var::Dict = Dict(),
-        to_coords::Dict = Dict(),
+        tmp_coords::NTuple=(),
+        params::NTuple=();
+        rules::Dict=Dict(),
+        tmp_var::Dict=Dict(),
+        to_coords::Dict=Dict()
     ) where {dim,T,VEC}
-        simp(t) = length(rules) > 0 ? tsimplify(tsubs(tsimplify(t), rules...)) : tsimplify(t)
+        simp(t) = length(rules) > 0 ? tsimplify(tsubs(t, rules...)) : tsimplify(t)
         chvar(t, d) = length(d) > 0 ? tsubs(t, d...) : t
         OMc = chvar(OM, to_coords)
         aᵢ = ntuple(i -> simp(chvar(∂(OMc, coords[i]), tmp_var)), dim)
@@ -189,12 +189,11 @@ Christoffel(CS::AbstractCoorSystem) = CS.Γ
 
 natvec(CS::AbstractCoorSystem, ::Val{:cov}) = CS.aᵢ
 natvec(CS::AbstractCoorSystem, ::Val{:cont}) = CS.aⁱ
-natvec(CS::AbstractCoorSystem, var = :cov) = natvec(CS, Val(var))
-natvec(CS::AbstractCoorSystem, i::Integer, var = :cov) = natvec(CS, var)[i]
+natvec(CS::AbstractCoorSystem, var=:cov) = natvec(CS, Val(var))
+natvec(CS::AbstractCoorSystem, i::Integer, var=:cov) = natvec(CS, var)[i]
 
 unitvec(CS::AbstractCoorSystem) = CS.eᵢ
 unitvec(CS::AbstractCoorSystem, i::Integer) = unitvec(CS)[i]
-
 
 function compute_Christoffel(coords, χ, γ, invγ)
     dim = length(coords)
@@ -350,13 +349,16 @@ Tens.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 # var: (:cont,)
 ``` 
 """
-function coorsys_cartesian(coords = symbols("x y z", real = true))
-    dim = length(coords)
+function coorsys_cartesian(coords::NTuple{3,T}=symbols("x y z", real=true)) where {T<:SymType}
+    dim = 3
     𝐗, 𝐄, ℬ = init_cartesian(coords)
     OM = sum([𝐗[i] * 𝐄[i] for i = 1:dim])
     χᵢ = ntuple(_ -> one(eltype(coords)), dim)
     return CoorSystemSym(OM, coords, ℬ, χᵢ)
 end
+coorsys_cartesian(::Val{Sym}, coords=symbols("x y z", real=true)) = coorsys_cartesian(coords)
+coorsys_cartesian(::Val{Num}, coords=Tuple(@variables x y z)) = coorsys_cartesian(coords)
+
 
 """
     coorsys_polar(coords = (symbols("r", positive = true), symbols("θ", real = true)); canonical = false)
@@ -383,13 +385,17 @@ julia> LAPLACE(f, Polar)
 ``` 
 """
 function coorsys_polar(
-    coords = (symbols("r", positive = true), symbols("θ", real = true));
-    canonical = false,
-)
-    (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = init_polar(coords, canonical = canonical)
+    coords::NTuple{2,T}=(symbols("r", positive=true), symbols("θ", real=true));
+    canonical=false
+) where {T<:SymType}
+    (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = init_polar(coords, canonical=canonical)
     OM = r * 𝐞ʳ
     return CoorSystemSym(OM, coords, ℬᵖ, (one(eltype(coords)), r))
 end
+coorsys_polar(::Val{Sym}, coords=(symbols("r", positive=true),
+        symbols("θ", real=true)); canonical=false) = coorsys_polar(coords; canonical=canonical)
+coorsys_polar(::Val{Num}, coords=Tuple(@variables r θ); canonical=false) = coorsys_polar(coords; canonical=canonical)
+
 
 """
     coorsys_cylindrical(coords = (symbols("r", positive = true), symbols("θ", real = true), symbols("z", real = true)); canonical = false)
@@ -411,18 +417,22 @@ julia> DIV(𝐯, Cylindrical)
 ``` 
 """
 function coorsys_cylindrical(
-    coords = (
-        symbols("r", positive = true),
-        symbols("θ", real = true),
-        symbols("z", real = true),
+    coords::NTuple{3,T}=(
+        symbols("r", positive=true),
+        symbols("θ", real=true),
+        symbols("z", real=true),
     );
-    canonical = false,
-)
-    (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical(coords, canonical = canonical)
+    canonical=false
+) where {T<:SymType}
+    (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical(coords, canonical=canonical)
     OM = r * 𝐞ʳ + z * 𝐞ᶻ
 
     return CoorSystemSym(OM, coords, ℬᶜ, (one(eltype(coords)), r, one(eltype(coords))))
 end
+coorsys_cylindrical(::Val{Sym}, coords=(symbols("r", positive=true),
+        symbols("θ", real=true), symbols("z", real=true)); canonical=false) = coorsys_cylindrical(coords; canonical=canonical)
+coorsys_cylindrical(::Val{Num}, coords=Tuple(@variables r θ z); canonical=false) = coorsys_cylindrical(coords; canonical=canonical)
+
 
 """
     coorsys_spherical(coords = (symbols("θ", real = true), symbols("ϕ", real = true), symbols("r", positive = true)); canonical = false)
@@ -456,18 +466,21 @@ dr                  r                 r
 ``` 
 """
 function coorsys_spherical(
-    coords = (
-        symbols("θ", real = true),
-        symbols("ϕ", real = true),
-        symbols("r", positive = true),
+    coords::NTuple{3,T}=(
+        symbols("θ", real=true),
+        symbols("ϕ", real=true),
+        symbols("r", positive=true),
     );
-    canonical = false,
-)
-    (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical(coords, canonical = canonical)
+    canonical=false
+) where {T<:SymType}
+    (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical(coords, canonical=canonical)
     OM = r * 𝐞ʳ
-    rules = Dict(abs(sin(θ)) => sin(θ))
-    return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(eltype(coords))); rules = rules)
+    rules = Dict(abs(sin(θ)) => sin(θ), 1 // 1 => 1, 2 // 1 => 2)
+    return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(eltype(coords))); rules=rules)
 end
+coorsys_spherical(::Val{Sym}, coords=(symbols("θ", real=true),
+        symbols("ϕ", real=true), symbols("r", positive=true)); canonical=false) = coorsys_spherical(coords; canonical=canonical)
+coorsys_spherical(::Val{Num}, coords=Tuple(@variables θ ϕ r); canonical=false) = coorsys_spherical(coords; canonical=canonical)
 
 """
     coorsys_spheroidal(coords = (symbols("ϕ", real = true),symbols("p", real = true),symbols("q", positive = true),),
@@ -494,21 +507,21 @@ julia> LAPLACE(OM[1]^2, Spheroidal)
 ``` 
 """
 function coorsys_spheroidal(
-    coords = (
-        symbols("ϕ", real = true),
-        symbols("p", real = true),
-        symbols("q", positive = true),
+    coords::NTuple{3,T}=(
+        symbols("ϕ", real=true),
+        symbols("p", real=true),
+        symbols("q", positive=true),
     ),
-    c = symbols("c", positive = true),
-    tmp_coords = (symbols("p̄ q̄", positive = true)...,),
-)
+    c=symbols("c", positive=true),
+    tmp_coords=symbols("p̄ q̄", positive=true),
+) where {T<:SymType}
     ϕ, p, q = coords
     params = (c,)
     p̄, q̄ = tmp_coords
     OM = Tens(c * [p̄ * q̄ * cos(ϕ), p̄ * q̄ * sin(ϕ), p * q])
     # OM = Tens(c * [√(1 - p^2) * √(q^2 - 1) * cos(ϕ), √(1 - p^2) * √(q^2 - 1) * sin(ϕ), p * q])
     ℬ = RotatedBasis(
-        Sym[
+        T[
             -sin(ϕ) -p*sqrt(q^2 - 1)*cos(ϕ)/sqrt(q^2 - p^2) q*sqrt(1 - p^2)*cos(ϕ)/sqrt(q^2 - p^2)
             cos(ϕ) -p*sqrt(q^2 - 1)*sin(ϕ)/sqrt(q^2 - p^2) q*sqrt(1 - p^2)*sin(ϕ)/sqrt(q^2 - p^2)
             0 q*sqrt(1 - p^2)/sqrt(q^2 - p^2) p*sqrt(q^2 - 1)/sqrt(q^2 - p^2)
@@ -528,11 +541,25 @@ function coorsys_spheroidal(
         χᵢ,
         tmp_coords,
         params;
-        tmp_var = tmp_var,
-        to_coords = to_coords,
+        tmp_var=tmp_var,
+        to_coords=to_coords
     )
 end
+coorsys_spheroidal(::Val{Sym}, coords=(
+        symbols("ϕ", real=true),
+        symbols("p", real=true),
+        symbols("q", positive=true),
+    ),
+    c=symbols("c", positive=true),
+    tmp_coords=symbols("p̄ q̄", positive=true)) = coorsys_spheroidal(coords, c, tmp_coords)
+coorsys_spheroidal(::Val{Num}, coords=Tuple(@variables ϕ p q),
+    c=(@variables c)[1], tmp_coords=Tuple(@variables p̄ q̄)) = coorsys_spheroidal(coords, c, tmp_coords)
 
+
+for cs in (:coorsys_cartesian, :coorsys_polar, :coorsys_cylindrical, :coorsys_spherical, :coorsys_spheroidal)
+    @eval $cs(T::Type, args...; kwargs...) = $cs(Val(T), args...; kwargs...)
+end
+    
 
 """
     @set_coorsys CS
@@ -556,40 +583,40 @@ julia> LAPLACE(1/r)
 0
 ``` 
 """
-macro set_coorsys(CS = coorsys_cartesian(), vec = '𝐞', coords = nothing)
+macro set_coorsys(CS=coorsys_cartesian(), vec='𝐞', coords=nothing)
     m = @__MODULE__
     return quote
-            $m.∂(t::AbstractTens{order,dim,T}, i::Integer) where {order,dim,T<:SymType} = $m.∂(t, i, $(esc(CS)))
-            $m.∂(t::AbstractTens{order,dim,T}, x::Sym) where {order,dim,T<:SymType}  = $m.∂(t, x, $(esc(CS)))
-            $m.∂(t::SymType, i::Integer) = $m.∂(t, i, $(esc(CS)))
-            $m.∂(t::SymType, x::Sym) = $m.∂(t, x, $(esc(CS)))
-            $m.GRAD(t::Union{T,AbstractTens}) where {T<:SymType} = $m.GRAD(t, $(esc(CS)))
-            $m.SYMGRAD(t::Union{T,AbstractTens}) where {T<:SymType} = $m.SYMGRAD(t, $(esc(CS)))
-            $m.DIV(t::AbstractTens) = $m.DIV(t, $(esc(CS)))
-            $m.LAPLACE(t::Union{T,AbstractTens}) where {T<:SymType} = $m.LAPLACE(t, $(esc(CS)))
-            $m.HESS(t::Union{T,AbstractTens}) where {T<:SymType} = $m.HESS(t, $(esc(CS)))
+        $m.∂(t::AbstractTens{order,dim,T}, i::Integer) where {order,dim,T<:SymType} = $m.∂(t, i, $(esc(CS)))
+        $m.∂(t::AbstractTens{order,dim,T}, x::Sym) where {order,dim,T<:SymType} = $m.∂(t, x, $(esc(CS)))
+        $m.∂(t::SymType, i::Integer) = $m.∂(t, i, $(esc(CS)))
+        $m.∂(t::SymType, x::Sym) = $m.∂(t, x, $(esc(CS)))
+        $m.GRAD(t::Union{T,AbstractTens}) where {T<:SymType} = $m.GRAD(t, $(esc(CS)))
+        $m.SYMGRAD(t::Union{T,AbstractTens}) where {T<:SymType} = $m.SYMGRAD(t, $(esc(CS)))
+        $m.DIV(t::AbstractTens) = $m.DIV(t, $(esc(CS)))
+        $m.LAPLACE(t::Union{T,AbstractTens}) where {T<:SymType} = $m.LAPLACE(t, $(esc(CS)))
+        $m.HESS(t::Union{T,AbstractTens}) where {T<:SymType} = $m.HESS(t, $(esc(CS)))
 
-            if $(esc(coords)) === nothing
-                coords = string.(getcoords($(esc(CS))))
-            end
-            dim = getdim($(esc(CS)))
-            if length(coords) == dim-1
-                coords = (coords..., dim)
-            end
-            ℬ = normalized_basis($(esc(CS)))
-            $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-
-            # Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-            # Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-            # Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
-
+        if $(esc(coords)) === nothing
+            coords = string.(getcoords($(esc(CS))))
         end
+        dim = getdim($(esc(CS)))
+        if length(coords) == dim - 1
+            coords = (coords..., dim)
+        end
+        ℬ = normalized_basis($(esc(CS)))
+        $m.intrinsic(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec=$(esc(vec)), coords=coords)
+
+        # Base.show(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+        # Base.print(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+        # Base.display(t::AbstractTens{order,dim,T}) where {order,dim,T<:SymType} = intrinsic(change_tens(t, ℬ); vec = $(esc(vec)), coords = coords)
+
+    end
 end
 
-function intrinsic(t::AbstractTens{order,dim,T}, CS::AbstractCoorSystem; vec = '𝐞') where {order,dim,T}
+function intrinsic(t::AbstractTens{order,dim,T}, CS::AbstractCoorSystem; vec='𝐞') where {order,dim,T}
     coords = string.(getcoords(CS))
     ℬ = normalized_basis(CS)
-    return intrinsic(change_tens(t, ℬ); vec = vec, coords = coords)
+    return intrinsic(change_tens(t, ℬ); vec=vec, coords=coords)
 end
 
 export ∂, CoorSystemSym, Lame, Christoffel
