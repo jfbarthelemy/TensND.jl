@@ -152,7 +152,7 @@ function ∂(
         ec3 = ntuple(j -> j, order)
         data += einsum(EinCode((ec1, ec2), ec3), (t, view(Γ, i, :, :)))
     end
-    return change_tens(Tens(data, ℬ, var), normalized_basis(SM), var)
+    return change_tens(Tens(simprules(data,SM), ℬ, var), normalized_basis(SM), var)
 end
 
 ∂(t::Sym, i::Integer, SM::SubManifoldSym{dim}) where {dim} =
@@ -171,7 +171,7 @@ function ∂(
     t::Sym,
     x::Sym,
     SM::SubManifoldSym{dim},
-) where {order,dim}
+) where {dim}
     ind = findfirst(i -> i == x, getcoords(SM))
     return ind === nothing ? zero(t) : ∂(t, ind, SM)
 end

@@ -186,6 +186,7 @@ natural_basis(CS::AbstractCoorSystem) = CS.natural_basis
 
 Lame(CS::AbstractCoorSystem) = CS.χᵢ
 Christoffel(CS::AbstractCoorSystem) = CS.Γ
+simprules(t, CS::AbstractCoorSystem) = length(CS.rules) > 0 ? tsimplify(tsubs(tsimplify(t), CS.rules...)) : tsimplify(t)
 
 natvec(CS::AbstractCoorSystem, ::Val{:cov}) = CS.aᵢ
 natvec(CS::AbstractCoorSystem, ::Val{:cont}) = CS.aⁱ
@@ -253,7 +254,7 @@ function ∂(
         ec3 = ntuple(j -> j, order)
         data += einsum(EinCode((ec1, ec2), ec3), (t, view(Γ, i, :, :)))
     end
-    return change_tens(Tens(data, ℬ, var), normalized_basis(CS), var)
+    return change_tens(Tens(simprules(data,CS), ℬ, var), normalized_basis(CS), var)
 end
 
 ∂(t::T, i::Integer, CS::CoorSystemSym{dim,T}) where {dim,T<:SymType} =
@@ -475,7 +476,7 @@ function coorsys_spherical(
 ) where {T<:SymType}
     (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical(coords, canonical=canonical)
     OM = r * 𝐞ʳ
-    rules = Dict(abs(sin(θ)) => sin(θ), 1 // 1 => 1, 2 // 1 => 2)
+    rules = Dict(abs(sin(θ)) => sin(θ), transpose(tan(θ)) => tan(θ), 1 // 1 => 1, 2 // 1 => 2)
     return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(eltype(coords))); rules=rules)
 end
 coorsys_spherical(::Val{Sym}, coords=(symbols("θ", real=true),

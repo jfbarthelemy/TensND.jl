@@ -174,7 +174,7 @@ for OP in (:+, :-, :*)
     ) where {order,dim,T,N} = TensISO{dim}($OP.(getdata(A1), ntuple(_ -> A2.λ, N)))
     @eval @inline Base.$OP(
         A1::UniformScaling,
-        A2::TensISO{order,dim},
+        A2::TensISO{order,dim,T,N},
     ) where {order,dim,T,N} = TensISO{dim}($OP.(ntuple(_ -> A1.λ, N), getdata(A2)))
     @eval @inline function Base.$OP(
         A1::TensISO{order,dim,T,N},
