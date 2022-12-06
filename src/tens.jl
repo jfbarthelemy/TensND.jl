@@ -640,7 +640,7 @@ end
 # ) where {order1,order2,dim} = t1, change_tens(t2, basis(t1), getvar(t1))
 
 
-for OP in (:(==), :(!=))
+for OP in (:(==), :(!=), :(isequal))
     @eval @inline function Base.$OP(
         t1::AbstractTens{order,dim},
         t2::AbstractTens{order,dim},
