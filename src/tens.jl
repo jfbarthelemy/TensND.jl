@@ -1290,8 +1290,8 @@ function tensbasis(ℬ::AbstractBasis{dim,T}, i::Integer, ::Val{:cont}) where {d
     t = [T(Int(j == i)) for j ∈ 1:dim]
     return Tens(t, ℬ, (:cov,))
 end
-tensbasis(ℬ::AbstractBasis, i::Integer, var = :cov) = tensbasis(ℬ, i, Val(var))
-tensbasis(ℬ::AbstractBasis, var = :cov) = ntuple(i -> tensbasis(ℬ, i, Val(var)), getdim(ℬ))
+tensbasis(ℬ::AbstractBasis{dim,T}, i::Integer, var = :cov) where {dim,T} = tensbasis(ℬ, i, Val(var))
+tensbasis(ℬ::AbstractBasis{dim,T}, var = :cov) where {dim,T} = ntuple(i -> tensbasis(ℬ, i, Val(var)), getdim(ℬ))
 
 export AbstractTens, Tens
 export proj_tens, best_sym_tens
