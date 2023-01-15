@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>N-layer sphere · TensND.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://jfbarthelemy.github.io/TensND.jl/tuto/nlayersphere/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">TensND.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../man/getting_started/">Getting started</a></li><li><a class="tocitem" href="../../man/bases/">Bases</a></li><li><a class="tocitem" href="../../man/tensors/">Tensors</a></li><li><a class="tocitem" href="../../man/coorsystems/">Coordinate systems and differential operators</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li class="is-active"><a class="tocitem" href>N-layer sphere</a></li></ul></li><li><a class="tocitem" href="../../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>N-layer sphere</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>N-layer sphere</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/jfbarthelemy/TensND.jl/blob/master/docs/src/tuto/nlayersphere.md#" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="N-layer-sphere"><a class="docs-heading-anchor" href="#N-layer-sphere">N-layer sphere</a><a id="N-layer-sphere-1"></a><a class="docs-heading-anchor-permalink" href="#N-layer-sphere" title="Permalink"></a></h1><pre><code class="language-julia hljs">using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
+sympy.init_printing(use_unicode=true)
+
+Spherical = coorsys_spherical()
+θ, ϕ, r = getcoords(Spherical)
+𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ = unitvec(Spherical)
+ℬˢ = normalized_basis(Spherical)
+𝐱 = getOM(Spherical)
+𝐞₁, 𝐞₂, 𝐞₃ = unitvec(coorsys_cartesian())
+𝕀, 𝕁, 𝕂 = ISO(Val(3),Val(Sym))
+𝟏 = tensId2(Val(3),Val(Sym))
+k, μ = symbols(&quot;k μ&quot;, positive = true)
+λ = k -2μ/3
+
+u = SymFunction(&quot;u&quot;, real = true)
+𝐮ˢᵖʰ = u(r) * 𝐞ʳ
+𝛆ˢᵖʰ = SYMGRAD(𝐮ˢᵖʰ, Spherical)
+𝛔ˢᵖʰ = λ * tr(𝛆ˢᵖʰ) * 𝟏 + 2μ * 𝛆ˢᵖʰ
+𝐓ˢᵖʰ = 𝛔ˢᵖʰ ⋅ 𝐞ʳ
+div𝛔ˢᵖʰ = DIV(𝛔ˢᵖʰ, Spherical) ;
+eqˢᵖʰ = factor(simplify(div𝛔ˢᵖʰ ⋅ 𝐞ʳ))
+solˢᵖʰ = dsolve(eqˢᵖʰ, u(r))
+ûˢᵖʰ = solˢᵖʰ.rhs()
+T̂ˢᵖʰ = factor(simplify(subs(𝐓ˢᵖʰ ⋅ 𝐞ʳ, u(r) =&gt; ûˢᵖʰ)))
+
+𝐄 = 𝟏 - 3𝐞₃⊗𝐞₃
+fᶿ = simplify(𝐞ᶿ ⋅ 𝐄 ⋅ 𝐞ʳ)
+fʳ = simplify(𝐞ʳ ⋅ 𝐄 ⋅ 𝐞ʳ)
+uᶿ = SymFunction(&quot;uᶿ&quot;, real = true)
+uʳ = SymFunction(&quot;uʳ&quot;, real = true)
+𝐮ᵈᵉᵛ = uᶿ(r) * fᶿ * 𝐞ᶿ + uʳ(r) * fʳ * 𝐞ʳ
+𝛆ᵈᵉᵛ = SYMGRAD(𝐮ᵈᵉᵛ, Spherical)
+𝛔ᵈᵉᵛ = λ * tr(𝛆ᵈᵉᵛ) * 𝟏 + 2μ * 𝛆ᵈᵉᵛ
+𝐓ᵈᵉᵛ = 𝛔ᵈᵉᵛ ⋅ 𝐞ʳ
+div𝛔ᵈᵉᵛ = simplify(DIV(𝛔ᵈᵉᵛ, Spherical))
+eqᶿᵈᵉᵛ = factor(simplify(div𝛔ᵈᵉᵛ ⋅ 𝐞ᶿ / fᶿ))
+eqʳᵈᵉᵛ = factor(simplify(div𝛔ᵈᵉᵛ ⋅ 𝐞ʳ / fʳ))
+α, Λ = symbols(&quot;α Λ&quot;, real = true)
+eqᵈᵉᵛ = factor(simplify(subs([eqᶿᵈᵉᵛ,eqʳᵈᵉᵛ], uᶿ(r) =&gt; r^α, uʳ(r) =&gt; Λ*r^α)))
+αΛ = solve([eq.doit() for eq ∈ eqᵈᵉᵛ], [α, Λ])
+ûᶿᵈᵉᵛ = sum([Sym(&quot;C$(i+2)&quot;) * r^αΛ[i][1] for i ∈ 1:length(αΛ)])
+ûʳᵈᵉᵛ = sum([Sym(&quot;C$(i+2)&quot;) * αΛ[i][2] * r^αΛ[i][1] for i ∈ 1:length(αΛ)])
+T̂ᶿᵈᵉᵛ = factor(simplify(subs(simplify(𝐓ᵈᵉᵛ ⋅ 𝐞ᶿ / fᶿ), uᶿ(r) =&gt; ûᶿᵈᵉᵛ, uʳ(r) =&gt; ûʳᵈᵉᵛ)))
+T̂ʳᵈᵉᵛ = factor(simplify(subs(simplify(𝐓ᵈᵉᵛ ⋅ 𝐞ʳ / fʳ), uᶿ(r) =&gt; ûᶿᵈᵉᵛ, uʳ(r) =&gt; ûʳᵈᵉᵛ)))</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../man/coorsystems/">« Coordinate systems and differential operators</a><a class="docs-footer-nextpage" href="../../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.5 on <span class="colophon-date" title="Sunday 15 January 2023 17:59">Sunday 15 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

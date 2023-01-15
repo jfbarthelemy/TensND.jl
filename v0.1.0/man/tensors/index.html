@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Tensors · TensND.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://jfbarthelemy.github.io/TensND.jl/man/tensors/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">TensND.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../getting_started/">Getting started</a></li><li><a class="tocitem" href="../bases/">Bases</a></li><li class="is-active"><a class="tocitem" href>Tensors</a></li><li><a class="tocitem" href="../coorsystems/">Coordinate systems and differential operators</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tuto/nlayersphere/">N-layer sphere</a></li></ul></li><li><a class="tocitem" href="../../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Manual</a></li><li class="is-active"><a href>Tensors</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Tensors</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/jfbarthelemy/TensND.jl/blob/master/docs/src/man/tensors.md#" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Tensors"><a class="docs-heading-anchor" href="#Tensors">Tensors</a><a id="Tensors-1"></a><a class="docs-heading-anchor-permalink" href="#Tensors" title="Permalink"></a></h1><p>A tensor, parametrized by an order and a dimension, is in general defined by</p><ul><li>an array or a set of condensed parameters (e.g. isotropic tensors),</li><li>a basis,</li><li>a set of variances (covariant <code>:cov</code> or contravariant <code>:cont</code>) useful if the basis is not orthonormal.</li></ul><p>In practice, the type of basis conditions the type of tensor (<code>TensCanonical</code>, <code>TensRotated</code>, <code>TensOrthogonal</code>, <code>Tens</code> or even <code>TensISO</code> in case of isotropic tensor).</p><pre><code class="language-julia hljs">julia&gt; ℬ = Basis(Sym[0 1 1; 1 0 1; 1 1 0])
+Basis{3, Sym}
+→ basis: 3×3 Matrix{Sym}:
+ 0  1  1
+ 1  0  1
+ 1  1  0
+→ dual basis: 3×3 Matrix{Sym}:
+ -1/2   1/2   1/2
+  1/2  -1/2   1/2
+  1/2   1/2  -1/2
+→ covariant metric tensor: 3×3 Symmetric{Sym, Matrix{Sym}}:
+ 2  1  1
+ 1  2  1
+ 1  1  2
+→ contravariant metric tensor: 3×3 Symmetric{Sym, Matrix{Sym}}:
+  3/4  -1/4  -1/4
+ -1/4   3/4  -1/4
+ -1/4  -1/4   3/4
+
+julia&gt; V = Tens(Tensor{1,3}(i -&gt; symbols(&quot;v$i&quot;, real = true)))
+(v1)𝐞¹ + (v2)𝐞² + (v3)𝐞³
+
+julia&gt; components(V, ℬ, (:cont,))
+3-element Vector{Sym}:
+ -v1/2 + v2/2 + v3/2
+  v1/2 - v2/2 + v3/2
+  v1/2 + v2/2 - v3/2
+
+julia&gt; components(V, ℬ, (:cov,))
+3-element Vector{Sym}:
+ v₂ + v₃
+ v₁ + v₃
+ v₁ + v₂
+
+julia&gt; ℬ̄ = normalize(ℬ)
+Basis{3, Sym}
+→ basis: 3×3 Matrix{Sym}:
+         0  sqrt(2)/2  sqrt(2)/2
+ sqrt(2)/2          0  sqrt(2)/2
+ sqrt(2)/2  sqrt(2)/2          0
+→ dual basis: 3×3 Matrix{Sym}:
+ -sqrt(2)/2   sqrt(2)/2   sqrt(2)/2
+  sqrt(2)/2  -sqrt(2)/2   sqrt(2)/2
+  sqrt(2)/2   sqrt(2)/2  -sqrt(2)/2
+→ covariant metric tensor: 3×3 Symmetric{Sym, Matrix{Sym}}:
+   1  1/2  1/2
+ 1/2    1  1/2
+ 1/2  1/2    1
+→ contravariant metric tensor: 3×3 Symmetric{Sym, Matrix{Sym}}:
+  3/2  -1/2  -1/2
+ -1/2   3/2  -1/2
+ -1/2  -1/2   3/2
+
+julia&gt; components(V, ℬ̄, (:cov,))
+3-element Vector{Sym}:
+ sqrt(2)*v2/2 + sqrt(2)*v3/2
+ sqrt(2)*v1/2 + sqrt(2)*v3/2
+ sqrt(2)*v1/2 + sqrt(2)*v2/2
+
+julia&gt; T = Tens(Tensor{2,3}((i, j) -&gt; symbols(&quot;t$i$j&quot;, real = true)))
+(t11)𝐞¹⊗𝐞¹ + (t21)𝐞²⊗𝐞¹ + (t31)𝐞³⊗𝐞¹ + (t12)𝐞¹⊗𝐞² + (t22)𝐞²⊗𝐞² + (t32)𝐞³⊗𝐞² + (t13)𝐞¹⊗𝐞³ + (t23)𝐞²⊗𝐞³ + (t33)𝐞³⊗𝐞³
+
+julia&gt; components(T, ℬ, (:cov, :cov))
+3×3 Matrix{Sym}:
+ t₂₂ + t₂₃ + t₃₂ + t₃₃  t₂₁ + t₂₃ + t₃₁ + t₃₃  t₂₁ + t₂₂ + t₃₁ + t₃₂
+ t₁₂ + t₁₃ + t₃₂ + t₃₃  t₁₁ + t₁₃ + t₃₁ + t₃₃  t₁₁ + t₁₂ + t₃₁ + t₃₂
+ t₁₂ + t₁₃ + t₂₂ + t₂₃  t₁₁ + t₁₃ + t₂₁ + t₂₃  t₁₁ + t₁₂ + t₂₁ + t₂₂
+
+julia&gt; factor(simplify(components(T, ℬ, (:cont, :cov))))
+3×3 Matrix{Sym}:
+ -(t12 + t13 - t22 - t23 - t32 - t33)/2  -(t11 + t13 - t21 - t23 - t31 - t33)/2  -(t11 + t12 - t21 - t22 - t31 - t32)/2
+  (t12 + t13 - t22 - t23 + t32 + t33)/2   (t11 + t13 - t21 - t23 + t31 + t33)/2   (t11 + t12 - t21 - t22 + t31 + t32)/2
+  (t12 + t13 + t22 + t23 - t32 - t33)/2   (t11 + t13 + t21 + t23 - t31 - t33)/2   (t11 + t12 + t21 + t22 - t31 - t32)/2</code></pre><p>Special tensors are available</p><ul><li><code>tensId2(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: second-order identity (<code>𝟏ᵢⱼ = δᵢⱼ = 1 if i=j otherwise 0</code>)</li><li><code>tensId4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order identity with minor symmetries (<code>𝕀 = 𝟏 ⊠ˢ 𝟏</code> i.e. <code>(𝕀)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2</code>)</li><li><code>tensJ4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order spherical projector (<code>𝕁 = (𝟏 ⊗ 𝟏) / dim</code> i.e. <code>(𝕁)ᵢⱼₖₗ = δᵢⱼδₖₗ/dim</code>)</li><li><code>tensK4(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: fourth-order deviatoric projector (<code>𝕂 = 𝕀 - 𝕁</code> i.e. <code>(𝕂)ᵢⱼₖₗ = (δᵢₖδⱼₗ+δᵢₗδⱼₖ)/2 - δᵢⱼδₖₗ/dim</code>)</li><li><code>ISO(::Val{dim} = Val(3), ::Val{T} = Val(Sym)) where {dim,T&lt;:Number}</code>: returns <code>𝕀, 𝕁, 𝕂</code></li></ul><p>The useful tensor products are the following:</p><ul><li><code>⊗</code> tensor product</li><li><code>⊗ˢ</code> symmetrized tensor product</li><li><code>⊠</code> modified tensor product</li><li><code>⊠ˢ</code> symmetrized modified tensor product</li><li><code>⋅</code> contracted product</li><li><code>⊡</code> double contracted product</li><li><code>⊙</code> quadruple contracted product</li></ul><p><strong><em>NOTE:</em></strong> more information about modified tensor products can be found in <a href="https://sbrisard.github.io/posts/20140226-decomposition_of_transverse_isotropic_fourth-rank_tensors.html">Sébastien Brisard&#39;s blog</a>.</p><pre><code class="language-julia hljs">julia&gt; 𝟏 = tensId2(3, Sym)
+(1) 𝟏
+
+julia&gt; 𝕀, 𝕁, 𝕂 = ISO(3, Sym) ;
+
+julia&gt; 𝕀 == 𝟏 ⊠ˢ 𝟏
+true
+
+julia&gt; 𝕁 == (𝟏 ⊗ 𝟏)/3
+true
+
+julia&gt; a = Tens(Vec{3}((i,) -&gt; symbols(&quot;a$i&quot;, real = true))) ;
+
+julia&gt; b = Tens(Vec{3}((i,) -&gt; symbols(&quot;b$i&quot;, real = true))) ;
+
+julia&gt; a ⊗ b
+(a1*b1)𝐞¹⊗𝐞¹ + (a2*b1)𝐞²⊗𝐞¹ + (a3*b1)𝐞³⊗𝐞¹ + (a1*b2)𝐞¹⊗𝐞² + (a2*b2)𝐞²⊗𝐞² + (a3*b2)𝐞³⊗𝐞² + (a1*b3)𝐞¹⊗𝐞³ + (a2*b3)𝐞²⊗𝐞³ + (a3*b3)𝐞³⊗𝐞³
+
+julia&gt; a ⊗ˢ b
+(a1*b1)𝐞¹⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞²⊗𝐞¹ + (a1*b3/2 + a3*b1/2)𝐞³⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞¹⊗𝐞² + (a2*b2)𝐞²⊗𝐞² + (a2*b3/2 + a3*b2/2)𝐞³⊗𝐞² + (a1*b3/2 + a3*b1/2)𝐞¹⊗𝐞³
+ + (a2*b3/2 + a3*b2/2)𝐞²⊗𝐞³ + (a3*b3)𝐞³⊗𝐞³
+
+julia&gt; (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical()
+((θ, ϕ, r), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Sym[cos(θ)*cos(ϕ) -sin(ϕ) sin(θ)*cos(ϕ); sin(ϕ)*cos(θ) cos(ϕ) sin(θ)*sin(ϕ); -sin(θ) 0 cos(θ)])
+
+julia&gt; R = rot3(θ, ϕ)
+3×3 RotZYZ{Sym} with indices SOneTo(3)×SOneTo(3)(ϕ, θ, 0):
+ cos(θ)⋅cos(ϕ)  -sin(ϕ)  sin(θ)⋅cos(ϕ)
+ sin(ϕ)⋅cos(θ)   cos(ϕ)  sin(θ)⋅sin(ϕ)
+       -sin(θ)        0         cos(θ)
+
+julia&gt; A = Tens(R * a)
+(a1*cos(θ)*cos(ϕ) - a2*sin(ϕ) + a3*sin(θ)*cos(ϕ))𝐞¹ + (a1*sin(ϕ)*cos(θ) + a2*cos(ϕ) + a3*sin(θ)*sin(ϕ))𝐞² + (-a1*sin(θ) + a3*cos(θ))𝐞³
+
+julia&gt; simplify(change_tens(A, ℬˢ))
+(a1)𝐞¹ + (a2)𝐞² + (a3)𝐞³</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bases/">« Bases</a><a class="docs-footer-nextpage" href="../coorsystems/">Coordinate systems and differential operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.5 on <span class="colophon-date" title="Sunday 15 January 2023 17:59">Sunday 15 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
