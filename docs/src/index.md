@@ -15,13 +15,13 @@ This Julia package provides tools to perform tensor calculations of any order an
 The package can be installed with the Julia package manager. From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
 ```julia
-pkg> add https://github.com/jfbarthelemy/TensND.jl.git
+pkg> add TensND
 ```
 
 Or, equivalently, via the `Pkg` API:
 
 ```julia
-julia> import Pkg; Pkg.add("https://github.com/jfbarthelemy/TensND.jl.git")
+julia> import Pkg; Pkg.add("TensND")
 ```
 
 ## Manual outline
@@ -52,7 +52,7 @@ Depth = 1
   author  = {Jean-François Barthélémy},
   title   = {TensND.jl},
   url     = {https://github.com/jfbarthelemy/TensND.jl},
-  version = {v0.1.0},
+  version = {v0.1.1},
   year    = {2021},
   month   = {8}
 }

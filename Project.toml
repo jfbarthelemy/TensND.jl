@@ -1,7 +1,7 @@
 name = "TensND"
 uuid = "474b5345-2588-4284-8a58-2430a1a40cb0"
 authors = ["Jean-François Barthélémy"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
@@ -18,7 +18,7 @@ Latexify = "0.15"
 OMEinsum = "0.6, 0.7"
 Rotations = "1"
 SymPy = "1"
-Symbolics = "4"
+Symbolics = "4, 5"
 Tensors = "1"
 TimerOutputs = "0.5"
 julia = "1.7, 1.8"
