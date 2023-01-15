@@ -16,7 +16,7 @@
 [ci-img]: https://github.com/jfbarthelemy/TensND.jl/workflows/CI/badge.svg?branch=main
 [ci-url]: https://github.com/jfbarthelemy/TensND.jl/actions/workflows/CI.yml?query=branch%3Amain
 
-[issues-url]: https://github.com/Ferrite-FEM/TensND.jl/issues
+[issues-url]: https://github.com/jfbarthelemy/TensND.jl/issues
 
 ## Introduction
 
@@ -70,13 +70,13 @@ julia> div𝛔 = simplify(DIV(𝛔)) ; intrinsic(div𝛔)
 The package can be installed with the Julia package manager. From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
 ```julia
-pkg> add https://github.com/jfbarthelemy/TensND.jl.git
+pkg> add TensND
 ```
 
 Or, equivalently, via the `Pkg` API:
 
 ```julia
-julia> import Pkg; Pkg.add("https://github.com/jfbarthelemy/TensND.jl.git")
+julia> import Pkg; Pkg.add("TensND")
 ```
 
 ## Documentation
