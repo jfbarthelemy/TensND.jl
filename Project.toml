@@ -4,7 +4,6 @@ authors = ["Jean-François Barthélémy"]
 version = "0.1.1"
 
 [deps]
-Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
@@ -14,7 +13,6 @@ Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
-Latexify = "0.15, 0.16"
 OMEinsum = "0.6, 0.7"
 Rotations = "1"
 SymPy = "1"
