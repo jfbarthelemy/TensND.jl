@@ -14,7 +14,7 @@ Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
-Latexify = "0.15"
+Latexify = "0.15, 0.16"
 OMEinsum = "0.6, 0.7"
 Rotations = "1"
 SymPy = "1"
