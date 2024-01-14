@@ -357,7 +357,7 @@ function coorsys_cartesian(coords::NTuple{3,T}=symbols("x y z", real=true)) wher
     χᵢ = ntuple(_ -> one(eltype(coords)), dim)
     return CoorSystemSym(OM, coords, ℬ, χᵢ)
 end
-coorsys_cartesian(::Val{Sym}, coords=symbols("x y z", real=true)) = coorsys_cartesian(coords)
+coorsys_cartesian(::Val{<:Sym}, coords=symbols("x y z", real=true)) = coorsys_cartesian(coords)
 coorsys_cartesian(::Val{Num}, coords=Tuple(@variables x y z)) = coorsys_cartesian(coords)
 
 
@@ -393,7 +393,7 @@ function coorsys_polar(
     OM = r * 𝐞ʳ
     return CoorSystemSym(OM, coords, ℬᵖ, (one(eltype(coords)), r))
 end
-coorsys_polar(::Val{Sym}, coords=(symbols("r", positive=true),
+coorsys_polar(::Val{<:Sym}, coords=(symbols("r", positive=true),
         symbols("θ", real=true)); canonical=false) = coorsys_polar(coords; canonical=canonical)
 coorsys_polar(::Val{Num}, coords=Tuple(@variables r θ); canonical=false) = coorsys_polar(coords; canonical=canonical)
 
@@ -430,7 +430,7 @@ function coorsys_cylindrical(
 
     return CoorSystemSym(OM, coords, ℬᶜ, (one(eltype(coords)), r, one(eltype(coords))))
 end
-coorsys_cylindrical(::Val{Sym}, coords=(symbols("r", positive=true),
+coorsys_cylindrical(::Val{<:Sym}, coords=(symbols("r", positive=true),
         symbols("θ", real=true), symbols("z", real=true)); canonical=false) = coorsys_cylindrical(coords; canonical=canonical)
 coorsys_cylindrical(::Val{Num}, coords=Tuple(@variables r θ z); canonical=false) = coorsys_cylindrical(coords; canonical=canonical)
 
@@ -479,7 +479,7 @@ function coorsys_spherical(
     rules = Dict(abs(sin(θ)) => sin(θ), transpose(tan(θ)) => tan(θ), 1 // 1 => 1, 2 // 1 => 2)
     return CoorSystemSym(OM, coords, ℬˢ, (r, r * sin(θ), one(eltype(coords))); rules=rules)
 end
-coorsys_spherical(::Val{Sym}, coords=(symbols("θ", real=true),
+coorsys_spherical(::Val{<:Sym}, coords=(symbols("θ", real=true),
         symbols("ϕ", real=true), symbols("r", positive=true)); canonical=false) = coorsys_spherical(coords; canonical=canonical)
 coorsys_spherical(::Val{Num}, coords=Tuple(@variables θ ϕ r); canonical=false) = coorsys_spherical(coords; canonical=canonical)
 
@@ -546,7 +546,7 @@ function coorsys_spheroidal(
         to_coords=to_coords
     )
 end
-coorsys_spheroidal(::Val{Sym}, coords=(
+coorsys_spheroidal(::Val{<:Sym}, coords=(
         symbols("ϕ", real=true),
         symbols("p", real=true),
         symbols("q", positive=true),

@@ -17,15 +17,15 @@ for OP in (:(tsimplify), :(tfactor), :(tsubs), :(ttrigsimp), :(texpand_trig))
 end
 
 for OP in (:(simplify), :(factor), :(subs), :(diff))
-    @eval $(Symbol("t",OP))(x::Sym, args...; kwargs...) = SymPy.$OP(x, args...; kwargs...)
+    @eval $(Symbol("t",OP))(x::T, args...; kwargs...) where {T<:Sym} = SymPy.$OP(x, args...; kwargs...)
 end
 for OP in (:(trigsimp), :(expand_trig))
-    @eval $(Symbol("t",OP))(x::Sym, args...; kwargs...) = sympy.$OP(x, args...; kwargs...)
+    @eval $(Symbol("t",OP))(x::T, args...; kwargs...) where {T<:Sym} = sympy.$OP(x, args...; kwargs...)
 end
 for OP in (:(tsimplify), :(tfactor), :(tsubs), :(tdiff), :(ttrigsimp), :(texpand_trig))
-    @eval $OP(m::AbstractArray{Sym}, args...; kwargs...) = $OP.(m, args...; kwargs...)
-    @eval $OP(m::Array{Sym}, args...; kwargs...) = $OP.(m, args...; kwargs...)
-    @eval $OP(m::Symmetric{Sym}, args...; kwargs...) = Symmetric($OP.(m, args...; kwargs...))
+    @eval $OP(m::AbstractArray{T}, args...; kwargs...) where {T<:Sym} = $OP.(m, args...; kwargs...)
+    @eval $OP(m::Array{T}, args...; kwargs...) where {T<:Sym} = $OP.(m, args...; kwargs...)
+    @eval $OP(m::Symmetric{T}, args...; kwargs...) where {T<:Sym} = Symmetric($OP.(m, args...; kwargs...))
 end
 
 tsimplify(x::Num, args...; kwargs...) = Symbolics.simplify(x, args...; kwargs...)

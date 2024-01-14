@@ -33,6 +33,7 @@ function superscriptnumber(i::Integer)
     return join(c)
 end
 
+diago(M::AbstractMatrix) = [M[i,i] for i in 1:min(size(M)...)]
 
 """
     Basis(v::AbstractMatrix{T}, ::Val{:cov})
@@ -99,7 +100,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
         elseif isidentity(gᵢⱼ)
             return RotatedBasis(eᵢ)
         elseif isdiag(gᵢⱼ)
-            χ = sqrt.(diag(gᵢⱼ))
+            χ = sqrt.(diago(gᵢⱼ))
             return OrthogonalBasis(RotatedBasis(eᵢ .* transpose(inv.(χ))), χ)
         else
             eᵢ = Matrix(eᵢ)
@@ -137,7 +138,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             if isidentity(gᵢⱼ)
                 return RotatedBasis(eᵢ)
             elseif isdiagonal(gᵢⱼ)
-                χ = sqrt.(diag(gᵢⱼ))
+                χ = sqrt.(diago(gᵢⱼ))
                 return OrthogonalBasis(RotatedBasis(eᵢ .* transpose(inv.(χ))), χ)
             else
                 if T <: SymType
@@ -161,7 +162,7 @@ struct Basis{dim,T} <: AbstractBasis{dim,T}
             if isidentity(gⁱʲ)
                 return RotatedBasis(eⁱ)
             elseif isdiagonal(gⁱʲ)
-                uχ = inv.(sqrt.(diag(gⁱʲ)))
+                uχ = inv.(sqrt.(diago(gⁱʲ)))
                 return OrthogonalBasis(RotatedBasis(eⁱ .* transpose(uχ)), uχ)
             else
                 if T <: SymType
@@ -507,9 +508,9 @@ isorthonormal(ℬ::AbstractBasis) = isidentity(metric(ℬ))
 isorthonormal(::OrthonormalBasis) = true
 
 for OP in (:(tsimplify), :(tfactor), :(tsubs), :(tdiff), :(ttrigsimp), :(texpand_trig))
-    @eval $OP(b::AbstractBasis{dim,Sym}, args...; kwargs...) where {dim} =
+    @eval $OP(b::AbstractBasis{dim,<:Sym}, args...; kwargs...) where {dim} =
         Basis($OP(b.eᵢ, args...; kwargs...))
-    @eval $OP(b::CanonicalBasis{dim,Sym}, args...; kwargs...) where {dim} = b
+    @eval $OP(b::CanonicalBasis{dim,<:Sym}, args...; kwargs...) where {dim} = b
 end
 for OP in (:(tsimplify), :(tsubs), :(tdiff))
     @eval $OP(b::AbstractBasis{dim,Num}, args...; kwargs...) where {dim} =

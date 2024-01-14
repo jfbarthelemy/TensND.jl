@@ -339,7 +339,7 @@ for B in (AbstractBasis, OrthogonalBasis, OrthonormalBasis)
         ℬ::$B{dim},
         var::NTuple{order,Symbol},
     ) where {order,dim,T}
-        if isequal(ℬ , getbasis(t))
+        if ℬ == getbasis(t)
             return components(t, var)
         else
             return components(TensOrthonormal(t), ℬ, var)
@@ -359,7 +359,7 @@ function components(t::Tens{order,dim,T}, var::NTuple{order,Symbol}) where {orde
                 g_or_G = metric(getbasis(t), var[i])
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, Val(order))
-                m = einsum(EinCode((ec1, ec2), ec3), (m, g_or_G))
+                m = T.(einsum(EinCode((ec1, ec2), ec3), (m, g_or_G)))
             end
         end
         return m
@@ -371,7 +371,7 @@ function components(
     ℬ::AbstractBasis{dim},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if isequal(ℬ , getbasis(t))
+    if ℬ == getbasis(t)
         return components(t, var)
     else
         bb = Dict()
@@ -388,7 +388,7 @@ function components(
             if c ≠ I
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, Val(order))
-                m = einsum(EinCode((ec1, ec2), ec3), (m, c))
+                m = T.(einsum(EinCode((ec1, ec2), ec3), (m, c)))
             end
         end
         return m
@@ -400,7 +400,7 @@ function components(
     ℬ::OrthogonalBasis{dim},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if isequal(ℬ , getbasis(t))
+    if ℬ == getbasis(t)
         return components(t, var)
     else
         m = Array(components(t, relevant_OrthonormalBasis(ℬ)))
@@ -422,7 +422,7 @@ function components(
     t::TensOrthonormal{order,dim,T},
     ℬ::OrthonormalBasis{dim},
 ) where {order,dim,T}
-    if isequal(ℬ , getbasis(t))
+    if ℬ == getbasis(t)
         return getarray(t)
     else
         bb = vecbasis(getbasis(t))' * vecbasis(ℬ)
@@ -433,7 +433,7 @@ function components(
             if bb ≠ I
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, Val(order))
-                m = einsum(EinCode((ec1, ec2), ec3), (m, bb))
+                m = T.(einsum(EinCode((ec1, ec2), ec3), (m, bb)))
             end
         end
         return m
@@ -500,7 +500,7 @@ Tens{1, 3, Sym, Vec{3, Sym}}
 ```
 """
 function change_tens(t::AbstractTens, ℬ::AbstractBasis, newvar::NTuple)
-    if isequal(ℬ, getbasis(t)) && newvar == getvar(t)
+    if ℬ == getbasis(t) && newvar == getvar(t)
         return t
     else
         return Tens(components(t, ℬ, newvar), ℬ, newvar)
@@ -508,7 +508,7 @@ function change_tens(t::AbstractTens, ℬ::AbstractBasis, newvar::NTuple)
 end
 
 function change_tens(t::AbstractTens, newbasis::AbstractBasis)
-    if isequal(newbasis, getbasis(t))
+    if newbasis == getbasis(t)
         return t
     else
         return Tens(components(t, newbasis, getvar(t)), newbasis, getvar(t))
@@ -560,18 +560,18 @@ change_tens_canon(t::AbstractTens) = change_tens(t, CanonicalBasis{getdim(t),elt
 
 
 for OP in (:(tsimplify), :(tfactor), :(tsubs), :(ttrigsimp), :(texpand_trig))
-    @eval $OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
+    @eval $OP(t::Tensors.AllTensors{dim,T}, args...; kwargs...) where {dim,T<:Sym} =
         Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
-    @eval $OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+    @eval $OP(t::AbstractTens{order,dim,T}, args...; kwargs...) where {order,dim,T<:Sym} =
         Tens($OP(getarray(t), args...; kwargs...), $OP(getbasis(t), args...; kwargs...), getvar(t))
 end
 for OP in (:(tdiff),)
-    @eval $OP(t::Tensors.AllTensors{dim,Sym}, args...; kwargs...) where {dim} =
+    @eval $OP(t::Tensors.AllTensors{dim,T}, args...; kwargs...) where {dim,T<:Sym} =
         Tensors.get_base(typeof(t))($OP.(Tensors.get_data(t), args...; kwargs...))
-    @eval $OP(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+    @eval $OP(t::AbstractTens{order,dim,T}, args...; kwargs...) where {order,dim,T<:Sym} =
         Tens($OP(getarray(t), args...; kwargs...), getbasis(t), getvar(t))
 end
-diff_with_basis(t::AbstractTens{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+diff_with_basis(t::AbstractTens{order,dim,T}, args...; kwargs...) where {order,dim,T<:Sym} =
         change_tens(Tens(diff(components_canon(t), args...; kwargs...)), getbasis(t), getvar(t))
 
 
@@ -661,14 +661,14 @@ for OP in (:+, :-)
     @eval @inline function Base.$OP(
         t1::AllTensOrthogonal{order,dim,T},
         t2::UniformScaling{T},
-    ) where {order,dim,T<:SymPy.SymbolicObject}
+    ) where {order,dim,T<:Sym}
         nt1 = TensOrthonormal(t1)
         return Tens($OP(getarray(nt1), t2), getbasis(nt1), getvar(nt1))
     end
     @eval @inline function Base.$OP(
         t1::UniformScaling{T},
         t2::AllTensOrthogonal{order,dim,T},
-    ) where {order,dim,T<:SymPy.SymbolicObject}
+    ) where {order,dim,T<:Sym}
         nt2 = TensOrthonormal(t2)
         return Tens($OP(t1, getarray(nt2)), getbasis(nt2), getvar(nt2))
     end
@@ -776,7 +776,7 @@ function Tensors.otimes(
     t1::AbstractTens{order1,dim},
     t2::AbstractTens{order2,dim},
 ) where {order1,order2,dim}
-    if isequal(t1, t2)
+    if t1 == t2
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -790,7 +790,7 @@ function Tensors.otimes(
     t1::TensOrthonormal{order1,dim},
     t2::TensOrthonormal{order2,dim},
 ) where {order1,order2,dim}
-    if isequal(t1, t2)
+    if t1 == t2
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -825,7 +825,7 @@ function scontract(
     ec1 = ntuple(i -> i, order1)
     ec2 = ntuple(i -> order1 - 1 + i, order2)
     ec3 = (ec1[begin:end-1]..., ec2[begin+1:end]...)
-    return einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2)))
+    return T1.(einsum(EinCode((ec1, ec2), ec3), (AbstractArray{T1}(t1), AbstractArray{T2}(t2))))
 end
 
 scontract(t1::AbstractArray{T1,1}, t2::AbstractArray{T2,1}) where {T1,T2} =
@@ -1211,7 +1211,7 @@ function sotimes(
     t1::AbstractTens{1,dim},
     t2::AbstractTens{1,dim},
 ) where {dim}
-    if isequal(t1, t2)
+    if t1 == t2
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -1236,7 +1236,7 @@ function sotimes(
     t1::TensOrthonormal{1,dim},
     t2::TensOrthonormal{1,dim},
 ) where {dim}
-    if isequal(t1, t2)
+    if t1 == t2
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)

@@ -238,7 +238,7 @@ intrinsic(A::TensISO{4}) = println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[
 intrinsic(A::TensISO{2}) = println("(", getdata(A)[1], ") 𝟏")
 
 for OP in (:(tsimplify), :(tfactor), :(tsubs), :(tdiff), :(ttrigsimp), :(texpand_trig))
-    @eval $OP(A::TensISO{order,dim,Sym}, args...; kwargs...) where {order,dim} =
+    @eval $OP(A::TensISO{order,dim}, args...; kwargs...) where {order,dim} =
         TensISO{dim}($OP(getdata(A), args...; kwargs...))
 end
 
@@ -339,13 +339,13 @@ for order ∈ (2, 4)
             A2::AbstractTensor{$order,dim,T},
         ) where {dim,T<:Number} = $OP(A1.λ * one(A2), A2)
         @eval @inline Base.$OP(
-            A1::AbstractTensor{$order,dim,Sym},
-            A2::UniformScaling{Sym},
-        ) where {dim} = $OP(A1, A2.λ * one(A1))
+            A1::AbstractTensor{$order,dim,T},
+            A2::UniformScaling{T},
+        ) where {dim,T<:SymType} = $OP(A1, A2.λ * one(A1))
         @eval @inline Base.$OP(
-            A1::UniformScaling{Sym},
-            A2::AbstractTensor{$order,dim,Sym},
-        ) where {dim} = $OP(A1.λ * one(A2), A2)
+            A1::UniformScaling{T},
+            A2::AbstractTensor{$order,dim,T},
+        ) where {dim,T<:SymType} = $OP(A1.λ * one(A2), A2)
     end
 end
 
