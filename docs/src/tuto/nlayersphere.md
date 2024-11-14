@@ -2,7 +2,6 @@
 
 ```julia
 using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
-sympy.init_printing(use_unicode=true)
 
 Spherical = coorsys_spherical()
 θ, ϕ, r = getcoords(Spherical)
@@ -39,7 +38,7 @@ div𝛔ᵈᵉᵛ = simplify(DIV(𝛔ᵈᵉᵛ, Spherical))
 eqᶿᵈᵉᵛ = factor(simplify(div𝛔ᵈᵉᵛ ⋅ 𝐞ᶿ / fᶿ))
 eqʳᵈᵉᵛ = factor(simplify(div𝛔ᵈᵉᵛ ⋅ 𝐞ʳ / fʳ))
 α, Λ = symbols("α Λ", real = true)
-eqᵈᵉᵛ = factor(simplify(subs([eqᶿᵈᵉᵛ,eqʳᵈᵉᵛ], uᶿ(r) => r^α, uʳ(r) => Λ*r^α)))
+eqᵈᵉᵛ = factor.(simplify.(subs.([eqᶿᵈᵉᵛ,eqʳᵈᵉᵛ], uᶿ(r) => r^α, uʳ(r) => Λ*r^α)))
 αΛ = solve([eq.doit() for eq ∈ eqᵈᵉᵛ], [α, Λ])
 ûᶿᵈᵉᵛ = sum([Sym("C$(i+2)") * r^αΛ[i][1] for i ∈ 1:length(αΛ)])
 ûʳᵈᵉᵛ = sum([Sym("C$(i+2)") * αΛ[i][2] * r^αΛ[i][1] for i ∈ 1:length(αΛ)])

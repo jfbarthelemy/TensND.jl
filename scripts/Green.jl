@@ -1,5 +1,5 @@
 using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
-sympy.init_printing(use_unicode=true)
+# sympy.init_printing(use_unicode=true)
 
 Polar = coorsys_polar() ; r, θ = getcoords(Polar) ; 𝐞ʳ, 𝐞ᶿ = unitvec(Polar)
 @set_coorsys Polar

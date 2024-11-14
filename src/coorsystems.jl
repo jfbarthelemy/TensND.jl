@@ -350,8 +350,7 @@ Tens.TensCanonical{1, 3, Sym, Vec{3, Sym}}
 # var: (:cont,)
 ``` 
 """
-function coorsys_cartesian(coords::NTuple{3,T}=symbols("x y z", real=true)) where {T<:SymType}
-    dim = 3
+function coorsys_cartesian(coords::NTuple{dim,T}=symbols("x y z", real=true)) where {dim,T<:SymType}
     𝐗, 𝐄, ℬ = init_cartesian(coords)
     OM = sum([𝐗[i] * 𝐄[i] for i = 1:dim])
     χᵢ = ntuple(_ -> one(eltype(coords)), dim)
