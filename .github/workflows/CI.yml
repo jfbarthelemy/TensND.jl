@@ -46,16 +46,15 @@ jobs:
       - name: Install dependencies on Ubuntu
         if: runner.os == 'Linux'
         run: |
-          julia -e 'Pkg = Base.require(Base.PkgId(Base.UUID(0x44cfe95a1eb252eab672e2afdf69b78f), "Pkg"))'
-          julia -e 'Pkg.add("PyCall"); Pkg.add("SymPy")'
-          julia -e 'ENV["PYTHON"] = "/usr/bin/python3"; Pkg.build("PyCall")'
+          julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.add("SymPy")'
+          julia -e 'using Pkg; ENV["PYTHON"] = "/usr/bin/python3"; Pkg.build("PyCall")'
           julia -e 'using PyCall; pyimport_conda("sympy", "sympy")'
 
       - name: Install dependencies on Windows
         if: runner.os == 'Windows'
         run: |
           julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.add("SymPy")'
-          julia -e 'ENV["PYTHON"] = ""; Pkg.build("PyCall")'
+          julia -e 'using Pkg; ENV["PYTHON"] = ""; Pkg.build("PyCall")'
           julia -e 'using PyCall; pyimport_conda("sympy", "sympy")'
 
       - name: Build package
