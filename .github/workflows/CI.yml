@@ -48,8 +48,8 @@ jobs:
         run: |
           julia -e '
             using Pkg; Pkg.add("PyCall"); Pkg.add("SymPy")
+            Pkg.add("Conda"); using Conda; Conda.add("sympy")
             ENV["PYTHON"] = "/usr/bin/python3"; Pkg.build("PyCall")
-            using Conda; Conda.add("sympy")
             using PyCall; pyimport_conda("sympy", "sympy")'
 
       - name: Install dependencies on Windows
