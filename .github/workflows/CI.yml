@@ -1,7 +1,9 @@
 name: CI
+
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
+
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -18,13 +20,19 @@ jobs:
           - windows-latest
         arch:
           - x64
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: actions/cache@v4
+
+      - name: Cache Julia artifacts
+        uses: actions/cache@v4
         env:
           cache-name: cache-artifacts
         with:
@@ -34,25 +42,39 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
-      - run: |
+
+      - name: Install dependencies on Ubuntu
+        if: runner.os == 'Linux'
+        run: |
           julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.add("SymPy")'
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            julia -e 'ENV["PYTHON"] = "/usr/bin/python3"; Pkg.build("PyCall")'
-            julia -e 'using PyCall; pyimport_conda("sympy", "sympy")'
-          else
-            julia -e 'ENV["PYTHON"] = ""; Pkg.build("PyCall")'
-            julia -e 'using PyCall; pyimport_conda("sympy", "sympy")'
-          fi
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+          julia -e 'ENV["PYTHON"] = "/usr/bin/python3"; Pkg.build("PyCall")'
+          julia -e 'using PyCall; pyimport_conda("sympy", "sympy")'
+
+      - name: Install dependencies on Windows
+        if: runner.os == 'Windows'
+        run: |
+          julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.add("SymPy")'
+          julia -e 'ENV["PYTHON"] = ""; Pkg.build("PyCall")'
+          julia -e 'using PyCall; pyimport_conda("sympy", "sympy")'
+
+      - name: Build package
+        uses: julia-actions/julia-buildpkg@v1
+
+      - name: Run tests
+        uses: julia-actions/julia-runtest@v1
+
   docs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v2
         with:
           version: '1'
+
       - run: |
           julia --project=docs -e '
             using Pkg
@@ -61,6 +83,7 @@ jobs:
             ENV["PYTHON"] = ""
             Pkg.build("PyCall")
             Pkg.instantiate()'
+
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
@@ -73,6 +96,7 @@ jobs:
             end
             DocMeta.setdocmeta!(TensND, :DocTestSetup, docmeta; recursive=true)
             doctest(TensND)'
+
       - run: julia --project=docs --color=yes -e 'using Pkg; Pkg.instantiate(); include("docs/make.jl")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
