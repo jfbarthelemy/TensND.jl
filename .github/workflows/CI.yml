@@ -43,17 +43,7 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
 
-      - name: Install dependencies on Ubuntu
-        if: runner.os == 'Linux'
-        run: |
-          julia -e '
-            using Pkg; Pkg.add("PyCall"); Pkg.add("SymPy")
-            Pkg.add("Conda"); using Conda; Conda.add("sympy")
-            ENV["PYTHON"] = "/usr/bin/python3"; Pkg.build("PyCall")
-            using PyCall; pyimport_conda("sympy", "sympy")'
-
-      - name: Install dependencies on Windows
-        if: runner.os == 'Windows'
+      - name: Install dependencies
         run: |
           julia -e '
             using Pkg; Pkg.add("PyCall"); Pkg.add("SymPy")
