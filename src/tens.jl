@@ -949,8 +949,7 @@ function Tensors.dcontract(
     t2::AbstractTens{order2,dim},
 ) where {order1,order2,dim}
     nt1, nt2 = same_basis(t1, t2)
-    var =
-        (invvar(getvar(nt1)[end-1]), invvar(getvar(nt1)[end]), getvar(nt2)[begin+2:end]...)
+    var = (invvar(getvar(nt1)[end-1]), invvar(getvar(nt1)[end]), getvar(nt2)[begin+2:end]...)
     nt2 = change_tens(nt2, getbasis(nt2), var)
     data = Tensors.dcontract(getarray(nt1), getarray(nt2))
     var = (getvar(nt1)[begin:end-2]..., getvar(nt2)[begin+2:end]...)
@@ -968,8 +967,7 @@ end
 
 function Tensors.dcontract(t1::AbstractTens{2,dim}, t2::AbstractTens{2,dim}) where {dim}
     nt1, nt2 = same_basis(t1, t2)
-    var =
-        (invvar(getvar(nt1)[end-1]), invvar(getvar(nt1)[end]), getvar(nt2)[begin+2:end]...)
+    var = (invvar(getvar(nt1)[end-1]), invvar(getvar(nt1)[end]), getvar(nt2)[begin+2:end]...)
     nt2 = change_tens(nt2, getbasis(nt2), var)
     return Tensors.dcontract(getarray(nt1), getarray(nt2))
 end

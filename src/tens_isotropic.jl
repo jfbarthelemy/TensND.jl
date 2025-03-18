@@ -287,7 +287,7 @@ Tensors.dcontract(A::TensISO{2,dim}, B::TensISO{4,dim}) where {dim} =
 Tensors.dcontract(A::TensISO{4,dim}, B::TensISO{4,dim}) where {dim} =
     TensISO{dim}(getdata(A)[1] * getdata(B)[1], getdata(A)[2] * getdata(B)[2])
 
-Tensors.dcontract(A::TensISO{2}, B::AbstractTens) = getdata(A)[1] * contract(B, 1, 2)
+Tensors.dcontract(A::TensISO{2,dim}, B::AbstractTens) where {dim} = getdata(A)[1] * contract(B, 1, 2)
 Tensors.dcontract(A::AbstractTens{order}, B::TensISO{2}) where {order} =
     contract(A, order - 1, order) * getdata(B)[1]
 
@@ -326,7 +326,6 @@ function Tensors.dcontract(
         contract(m, order - 1, order) ⊗ Id2{dim,T}() * (getdata(B)[1] - getdata(B)[2]) / dim
     return Tens(newm, getbasis(nA))
 end
-
 
 for order ∈ (2, 4)
     for OP ∈ (:+, :-, :*)
