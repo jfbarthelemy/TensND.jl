@@ -288,7 +288,7 @@ Tensors.dcontract(A::TensISO{4,dim}, B::TensISO{4,dim}) where {dim} =
     TensISO{dim}(getdata(A)[1] * getdata(B)[1], getdata(A)[2] * getdata(B)[2])
 
 Tensors.dcontract(A::TensISO{2,dim}, B::AbstractTens{order,dim}) where {order,dim} = getdata(A)[1] * contract(B, 1, 2)
-Tensors.dcontract(A::AbstractTens{order,dim}, B::TensISO{2,dim}) where {order, dim} = contract(A, order - 1, order) * getdata(B)[1]
+Tensors.dcontract(A::AbstractTens{order,dim}, B::TensISO{2,dim}) where {order,dim} = contract(A, order - 1, order) * getdata(B)[1]
 
 Tensors.dcontract(A::TensISO{4,dim}, B::TensOrthonormal{2}) where {dim} =
     getdata(A)[2] * B + (getdata(A)[1] - getdata(A)[2]) * tr(B) * I / dim
