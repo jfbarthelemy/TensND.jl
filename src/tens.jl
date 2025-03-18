@@ -965,22 +965,6 @@ function Tensors.dcontract(
     return Tens(data, getbasis(nt1))
 end
 
-function Tensors.dcontract(t1::AbstractTens{2,dim}, t2::AbstractTens{2,dim}) where {dim}
-    nt1, nt2 = same_basis(t1, t2)
-    var = (invvar(getvar(nt1)[end-1]), invvar(getvar(nt1)[end]), getvar(nt2)[begin+2:end]...)
-    nt2 = change_tens(nt2, getbasis(nt2), var)
-    return Tensors.dcontract(getarray(nt1), getarray(nt2))
-end
-
-function Tensors.dcontract(
-    t1::TensOrthonormal{2,dim},
-    t2::TensOrthonormal{2,dim},
-) where {dim}
-    nt1, nt2 = same_basis(t1, t2)
-    return Tensors.dcontract(getarray(nt1), getarray(nt2))
-end
-
-
 """
     dotdot(v1::AbstractTens{order1,dim}, S::AbstractTens{orderS,dim}, v2::AbstractTens{order2,dim})
 
