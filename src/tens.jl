@@ -320,12 +320,12 @@ function components(
     t::TensOrthogonal{order,dim,T},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if var == getvar(t)
+    if isequal(var, getvar(t))
         return getarray(t)
     else
         m = Array(getarray(t))
         ℬ = getbasis(t)
-        g_or_G = ntuple(i -> getvar(t, i) == var[i] ? I : metric(ℬ, var[i]), order)
+        g_or_G = ntuple(i -> isequal(getvar(t, i), var[i]) ? I : metric(ℬ, var[i]), order)
         for ind ∈ CartesianIndices(m)
             m[ind] *= prod([g_or_G[i][ind[i], ind[i]] for i ∈ 1:order])
         end
@@ -339,7 +339,7 @@ for B in (AbstractBasis, OrthogonalBasis, OrthonormalBasis)
         ℬ::$B{dim},
         var::NTuple{order,Symbol},
     ) where {order,dim,T}
-        if ℬ == getbasis(t)
+        if isequal(ℬ, getbasis(t))
             return components(t, var)
         else
             return components(TensOrthonormal(t), ℬ, var)
@@ -348,14 +348,14 @@ for B in (AbstractBasis, OrthogonalBasis, OrthonormalBasis)
 end
 
 function components(t::Tens{order,dim,T}, var::NTuple{order,Symbol}) where {order,dim,T}
-    if var == getvar(t)
+    if isequal(var, getvar(t))
         return getarray(t)
     else
         m = Array(getarray(t))
         ec1 = ntuple(i -> i, Val(order))
         newcp = order + 1
         for i ∈ 1:order
-            if getvar(t, i) ≠ var[i]
+            if !isequal(getvar(t, i), var[i])
                 g_or_G = metric(getbasis(t), var[i])
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, Val(order))
@@ -371,10 +371,10 @@ function components(
     ℬ::AbstractBasis{dim},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if ℬ == getbasis(t)
+    if isequal(ℬ, getbasis(t))
         return components(t, var)
     else
-        bb = Dict()
+        bb = Dict{Tuple{Symbol, Symbol}, AbstractMatrix}()
         for v1 ∈ (:cov, :cont), v2 ∈ (:cov, :cont)
             if v1 ∈ getvar(t) && v2 ∈ var
                 bb[v1, v2] = vecbasis(getbasis(t), invvar(v1))' * vecbasis(ℬ, v2)
@@ -400,7 +400,7 @@ function components(
     ℬ::OrthogonalBasis{dim},
     var::NTuple{order,Symbol},
 ) where {order,dim,T}
-    if ℬ == getbasis(t)
+    if isequal(ℬ, getbasis(t))
         return components(t, var)
     else
         m = Array(components(t, relevant_OrthonormalBasis(ℬ)))
@@ -422,7 +422,7 @@ function components(
     t::TensOrthonormal{order,dim,T},
     ℬ::OrthonormalBasis{dim},
 ) where {order,dim,T}
-    if ℬ == getbasis(t)
+    if isequal(ℬ, getbasis(t))
         return getarray(t)
     else
         bb = vecbasis(getbasis(t))' * vecbasis(ℬ)
@@ -500,7 +500,7 @@ Tens{1, 3, Sym, Vec{3, Sym}}
 ```
 """
 function change_tens(t::AbstractTens, ℬ::AbstractBasis, newvar::NTuple)
-    if ℬ == getbasis(t) && newvar == getvar(t)
+    if isequal(ℬ, getbasis(t)) && isequal(newvar, getvar(t))
         return t
     else
         return Tens(components(t, ℬ, newvar), ℬ, newvar)
@@ -508,7 +508,7 @@ function change_tens(t::AbstractTens, ℬ::AbstractBasis, newvar::NTuple)
 end
 
 function change_tens(t::AbstractTens, newbasis::AbstractBasis)
-    if newbasis == getbasis(t)
+    if isequal(newbasis, getbasis(t))
         return t
     else
         return Tens(components(t, newbasis, getvar(t)), newbasis, getvar(t))
@@ -516,7 +516,7 @@ function change_tens(t::AbstractTens, newbasis::AbstractBasis)
 end
 
 function change_tens(t::AbstractTens, newvar::NTuple)
-    if newvar == getvar(t)
+    if isequal(newvar, getvar(t))
         return t
     else
         return Tens(components(t, getbasis(t), newvar), getbasis(t), newvar)
@@ -776,7 +776,7 @@ function Tensors.otimes(
     t1::AbstractTens{order1,dim},
     t2::AbstractTens{order2,dim},
 ) where {order1,order2,dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -790,7 +790,7 @@ function Tensors.otimes(
     t1::TensOrthonormal{order1,dim},
     t2::TensOrthonormal{order2,dim},
 ) where {order1,order2,dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -1193,7 +1193,7 @@ function sotimes(
     t1::AbstractTens{1,dim},
     t2::AbstractTens{1,dim},
 ) where {dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)
@@ -1218,7 +1218,7 @@ function sotimes(
     t1::TensOrthonormal{1,dim},
     t2::TensOrthonormal{1,dim},
 ) where {dim}
-    if t1 == t2
+    if isequal(t1, t2)
         return otimes(t1)
     else
         nt1, nt2 = same_basis(t1, t2)

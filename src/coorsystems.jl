@@ -186,7 +186,8 @@ natural_basis(CS::AbstractCoorSystem) = CS.natural_basis
 
 Lame(CS::AbstractCoorSystem) = CS.χᵢ
 Christoffel(CS::AbstractCoorSystem) = CS.Γ
-simprules(t, CS::AbstractCoorSystem) = length(CS.rules) > 0 ? tsimplify(tsubs(tsimplify(t), CS.rules...)) : tsimplify(t)
+# simprules(t, CS::AbstractCoorSystem) = length(CS.rules) > 0 ? tsimplify(tsubs(tsimplify(t), CS.rules...)) : tsimplify(t)
+simprules(t, CS::AbstractCoorSystem) = length(CS.rules) > 0 ? tsubs(t, CS.rules...) : t
 
 natvec(CS::AbstractCoorSystem, ::Val{:cov}) = CS.aᵢ
 natvec(CS::AbstractCoorSystem, ::Val{:cont}) = CS.aⁱ
