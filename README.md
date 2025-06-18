@@ -91,7 +91,7 @@ julia> import Pkg; Pkg.add("TensND")
   author  = {Jean-François Barthélémy},
   title   = {TensND.jl},
   url     = {https://github.com/jfbarthelemy/TensND.jl},
-  version = {v0.1.4},
+  version = {v0.1.5},
   year    = {2021},
   month   = {8}
 }
