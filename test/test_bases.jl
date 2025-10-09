@@ -9,8 +9,8 @@
             @test vecbasis(bv, :cont) == T[1 0 0; 0 1 -1; 0 0 1]
             @test metric(bv) == T[1 0 0; 0 2 1; 0 1 1]
             @test metric(bv, :cont) == bv.gⁱʲ == T[1 0 0; 0 1 -1; 0 -1 2]
-            @test vecbasis(bv, :cont)' * vecbasis(bv, :cov) == I
-            @test metric(bv, :cont)' * metric(bv, :cov) == I
+            @test isone(vecbasis(bv, :cont)' * vecbasis(bv, :cov))
+            @test isone(metric(bv, :cont)' * metric(bv, :cov))
             @test !isorthogonal(bv)
 
             bw = Basis(vecbasis(bv, :cont), :cont)
@@ -19,8 +19,8 @@
             @test vecbasis(bw, :cont) == T[1 0 0; 0 1 -1; 0 0 1]
             @test metric(bw) == T[1 0 0; 0 2 1; 0 1 1]
             @test metric(bw, :cont) == T[1 0 0; 0 1 -1; 0 -1 2]
-            @test vecbasis(bw, :cont)' * vecbasis(bw, :cov) == I
-            @test metric(bw, :cont)' * metric(bw, :cov) == I
+            @test isone(vecbasis(bw, :cont)' * vecbasis(bw, :cov))
+            @test isone(metric(bw, :cont)' * metric(bw, :cov))
             @test !isorthogonal(bw)
 
             nb = normalize(bv)
@@ -73,8 +73,8 @@
                     v = rand(T, 3, 3)
                 end
                 @test eltype(bv) == T
-                @test vecbasis(bv, :cont)' * vecbasis(bv, :cov) == I
-                @test metric(bv, :cont)' * metric(bv, :cov) == I
+                @test isone(vecbasis(bv, :cont)' * vecbasis(bv, :cov))
+                @test isone(metric(bv, :cont)' * metric(bv, :cov))
             end
 
         end

@@ -94,24 +94,23 @@ format = Documenter.HTML(;
 #     end
 # end
 
-makedocs(;
+makedocs(
     modules = [TensND],
     authors = "Jean-François Barthélémy <jfbarthelemy@users.noreply.github.com> and contributors",
-    repo = "https://github.com/jfbarthelemy/TensND.jl/blob/{commit}{path}#{line}",
     sitename = "TensND.jl",
-    format = format,
-    pages = Any[
+    format = Documenter.HTML(repolink = "https://github.com/jfbarthelemy/TensND.jl"; size_threshold_warn=1_000_000, size_threshold=1_000_000),
+    pages = [
         "Home" => "index.md",
         "Manual" => [
             "man/getting_started.md",
             "man/bases.md",
             "man/tensors.md",
             "man/coorsystems.md",
-            ],
+        ],
         "Tutorials" => [
             "tuto/nlayersphere.md",
-            ],
-        "API" => "api.md",    
+        ],
+        "API" => "api.md",
     ],
 )
 
