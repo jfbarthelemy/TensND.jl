@@ -18,6 +18,8 @@
 
 [issues-url]: https://github.com/jfbarthelemy/TensND.jl/issues
 
+[![DOI](https://zenodo.org/badge/394914455.svg)](https://doi.org/10.5281/zenodo.17985768)
+
 ## Introduction
 
 This Julia package provides tools to perform tensor calculations of any order and any dimension in arbitrary coordinate systems (cartesian, polar, cylindrical, spherical, spheroidal or any user defined coordinate systems...). In particular differential operators are available: gradient, symmetrized gradient, divergence, Laplace, Hessian. The implementation of this library is much inspired by the Maple library [Tens3d](http://jean.garrigues.perso.centrale-marseille.fr/tens3d.html) developed by Jean Garrigues.
@@ -84,18 +86,11 @@ julia> import Pkg; Pkg.add("TensND")
 <!-- - [**STABLE**][docs-stable-url] &mdash; **most recently tagged version of the documentation.** -->
 - [**DEV**][docs-dev-url] &mdash; **development version of the documentation.**
 
-## Citing TensND.jl
+## Citation
 
-```latex
-@misc{TensND.jl,
-  author  = {Jean-François Barthélémy},
-  title   = {TensND.jl},
-  url     = {https://github.com/jfbarthelemy/TensND.jl},
-  version = {v0.1.5},
-  year    = {2021},
-  month   = {8}
-}
-```
+[![DOI](https://zenodo.org/badge/394914455.svg)](https://doi.org/10.5281/zenodo.17985768)
+
+See [CITATION.cff](CITATION.cff) for citation details.
 
 ## Related packages
 
