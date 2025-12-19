@@ -203,7 +203,7 @@ for OP in (:show, :print, :display)
             $OP(vecbasis(getbasis(t)))
         end
 
-        # Base.$OP(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T} = intrinsic(t; vec= vec, coords = coords)        
+        # Base.$OP(t::AbstractTens{order,dim,T}; vec = '𝐞', coords = ntuple(i -> i, dim)) where {order,dim,T} = intrinsic(t; vec= vec, coords = coords)
     end
 end
 
@@ -385,7 +385,7 @@ function components(
         newcp = order + 1
         for i ∈ 1:order
             c = bb[getvar(t, i), var[i]]
-            if c ≠ I
+            if c ≠ 1I
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, Val(order))
                 m = T.(einsum(EinCode((ec1, ec2), ec3), (m, c)))
@@ -430,7 +430,7 @@ function components(
         ec1 = ntuple(i -> i, Val(order))
         newcp = order + 1
         for i ∈ 1:order
-            if bb ≠ I
+            if bb ≠ 1I
                 ec2 = (i, newcp)
                 ec3 = ntuple(j -> j ≠ i ? j : newcp, Val(order))
                 m = T.(einsum(EinCode((ec1, ec2), ec3), (m, bb)))

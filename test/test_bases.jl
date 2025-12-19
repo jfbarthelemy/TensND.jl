@@ -29,7 +29,7 @@
             θ, ϕ, ψ = T == Sym ? symbols("θ, ϕ, ψ", real = true) : rand(T, 3)
             br = Basis(θ, ϕ, ψ)
             @test br isa RotatedBasis
-            @test opequal(metric(br), I)
+            @test opequal(metric(br), 1I)
             @test opequal(vecbasis(br, :cont), vecbasis(br, :cov))
             if T == Sym
                 @test angles(br) == (θ = θ, ϕ = ϕ, ψ = ψ)
@@ -38,7 +38,7 @@
                 @test angbr.θ ≈ θ && angbr.ϕ ≈ ϕ && angbr.ψ ≈ ψ
                 angbr = angles(Array(br))
                 @test angbr.θ ≈ θ && angbr.ϕ ≈ ϕ && angbr.ψ ≈ ψ
-            end                
+            end
             λ = T == Sym ? [symbols("λ$i", real = true) for i in 1:getdim(br)] : rand(getdim(br))
             e = vecbasis(br, :cov) .* λ'
             bo = Basis(e)
@@ -46,7 +46,7 @@
             @test bo isa AllOrthogonalBasis
 
             br = Basis(θ)
-            @test opequal(metric(br), I)
+            @test opequal(metric(br), 1I)
             @test opequal(vecbasis(br, :cont), vecbasis(br, :cov))
             if T == Sym
                 @test angles(br) == (θ = θ,)

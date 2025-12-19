@@ -2,7 +2,7 @@
     for T ∈ (Sym, Float64), dim ∈ (2, 3)
         @testsection "type $T, dim $dim" begin
             𝟏 = tensId2(Val(dim), Val(T))
-            @test opequal(𝟏, I)
+            @test opequal(𝟏, 1I)
             @test opequal(tr(𝟏), dim)
 
             if T == Sym
@@ -54,8 +54,8 @@
                     0 0 0 0 (1+ν)/E 0
                     0 0 0 0 0 (1+ν)/E
                 ]
-                @test tsimplify(ℂ ⊡ 𝕊) == 𝕀       
-                
+                @test tsimplify(ℂ ⊡ 𝕊) == 𝕀
+
                 n = 𝐞(3)
                 Eᵒᵉᵈᵒ = E * (1 - ν) / ((1 + ν) * (1 - 2ν))
                 Kref = tsimplify.([μ 0 0; 0 μ 0; 0 0 Eᵒᵉᵈᵒ])
@@ -68,7 +68,7 @@
                 𝛔 = ℂ ⊡ 𝛆
                 @test tfactor(𝛔) == tfactor(λ * tr(𝛆) * 𝟏 + 2μ * 𝛆)
                 @test tfactor(tsimplify(𝛔 ⊡ 𝛆)) == tfactor(tsimplify(λ * tr(𝛆)^2 + 2μ * 𝛆 ⊡ 𝛆))
-                            
+
                 @test 𝕀 == 𝟏 ⊠ˢ 𝟏
                 @test 3𝕁 == 𝟏 ⊗ 𝟏
                 @test 𝕀 ⊙ 𝕀 == 6
@@ -77,7 +77,7 @@
                 @test 𝕂 ⊙ 𝕁 == 𝕁 ⊙ 𝕂 == 0
                 @test tsimplify(ℂ ⊙ 𝕁) == tsimplify(3k)
                 @test tsimplify(ℂ ⊙ 𝕂) == tsimplify(10μ)
-            
+
 
             end
 
