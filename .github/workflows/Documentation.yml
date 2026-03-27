@@ -1,0 +1,56 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # Skip intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
+      pull-requests: read
+      contents: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - name: Install dependencies
+        shell: julia --project=docs/ --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.develop(PackageSpec(path=pwd()))
+          ENV["PYTHON"] = ""
+          Pkg.build("PyCall")
+          Pkg.instantiate()
+      - name: Run doctests
+        shell: julia --project=docs/ --color=yes {0}
+        run: |
+          using Documenter: DocMeta, doctest
+          using TensND
+          docmeta = quote
+              import Pkg; Pkg.add("Tensors")
+              import Pkg; Pkg.add("OMEinsum")
+              import Pkg; Pkg.add("Rotations")
+              using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations, TensND
+          end
+          DocMeta.setdocmeta!(TensND, :DocTestSetup, docmeta; recursive=true)
+          doctest(TensND)
+      - name: Build and deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+        run: julia --project=docs/ docs/make.jl
