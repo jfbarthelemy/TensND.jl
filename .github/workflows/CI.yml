@@ -41,31 +41,31 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
-      # - name: Install dependencies
-      #   run: |
-      #     julia -e '
-      #       using Pkg
-      #       Pkg.add("PyCall")
-      #       Pkg.add("SymPy")
-      #       ENV["PYTHON"] = ""
-      #       try
-      #         Pkg.build("PyCall")
-      #       catch e
-      #         @warn "PyCall build failed, retrying..." exception=e
-      #         sleep(5)
-      #         Pkg.build("PyCall")
-      #       end
-      #       using PyCall
-      #       pyimport_conda("sympy", "sympy")'
       - name: Install dependencies
         run: |
           julia -e '
             using Pkg
             Pkg.add("PyCall")
             Pkg.add("SymPy")
-            ENV["PYTHON"] = Sys.iswindows() ? "python" : ""
-            Pkg.build("PyCall")
+            ENV["PYTHON"] = ""
+            try
+              Pkg.build("PyCall")
+            catch e
+              @warn "PyCall build failed, retrying..." exception=e
+              sleep(5)
+              Pkg.build("PyCall")
+            end
             using PyCall
             pyimport_conda("sympy", "sympy")'
+      # - name: Install dependencies
+      #   run: |
+      #     julia -e '
+      #       using Pkg
+      #       Pkg.add("PyCall")
+      #       Pkg.add("SymPy")
+      #       ENV["PYTHON"] = Sys.iswindows() ? "python" : ""
+      #       Pkg.build("PyCall")
+      #       using PyCall
+      #       pyimport_conda("sympy", "sympy")'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
