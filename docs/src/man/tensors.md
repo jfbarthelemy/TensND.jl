@@ -102,9 +102,6 @@ The useful tensor products are the following:
 - `⊡` double contracted product
 - `⊙` quadruple contracted product
 
-**_NOTE:_**
-more information about modified tensor products can be found in [Sébastien Brisard's blog](https://sbrisard.github.io/posts/20140226-decomposition_of_transverse_isotropic_fourth-rank_tensors.html).
-
 ```julia
 julia> 𝟏 = tensId2(3, Sym)
 (1) 𝟏
@@ -127,7 +124,28 @@ julia> a ⊗ b
 julia> a ⊗ˢ b
 (a1*b1)𝐞¹⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞²⊗𝐞¹ + (a1*b3/2 + a3*b1/2)𝐞³⊗𝐞¹ + (a1*b2/2 + a2*b1/2)𝐞¹⊗𝐞² + (a2*b2)𝐞²⊗𝐞² + (a2*b3/2 + a3*b2/2)𝐞³⊗𝐞² + (a1*b3/2 + a3*b1/2)𝐞¹⊗𝐞³
  + (a2*b3/2 + a3*b2/2)𝐞²⊗𝐞³ + (a3*b3)𝐞³⊗𝐞³
+```
 
+The predefined spherical coordinate system `init_spherical()` provides the local orthonormal basis
+``(\mathbf{e}_\theta, \mathbf{e}_\varphi, \mathbf{e}_r)`` in terms of polar angle ``\theta`` (from the ``z``-axis) and azimuthal angle ``\varphi``:
+
+```math
+\mathbf{e}_\theta = \cos\theta\cos\varphi\,\mathbf{e}_1 + \cos\theta\sin\varphi\,\mathbf{e}_2 - \sin\theta\,\mathbf{e}_3
+```
+
+```math
+\mathbf{e}_\varphi = -\sin\varphi\,\mathbf{e}_1 + \cos\varphi\,\mathbf{e}_2
+```
+
+```math
+\mathbf{e}_r = \sin\theta\cos\varphi\,\mathbf{e}_1 + \sin\theta\sin\varphi\,\mathbf{e}_2 + \cos\theta\,\mathbf{e}_3
+```
+
+The rotation matrix ``R = [\mathbf{e}_\theta \mid \mathbf{e}_\varphi \mid \mathbf{e}_r]`` encodes this change of basis.
+For any vector ``\mathbf{A}`` in the canonical frame, `change_tens(A, ℬˢ)` returns its components in the spherical basis.
+The example below verifies that if ``\mathbf{A} = R\,\mathbf{a}``, then expressing ``\mathbf{A}`` in ``\mathcal{B}^s`` recovers the original components ``(a_1, a_2, a_3)``:
+
+```julia
 julia> (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical()
 ((θ, ϕ, r), (Sym[1, 0, 0], Sym[0, 1, 0], Sym[0, 0, 1]), Sym[cos(θ)*cos(ϕ) -sin(ϕ) sin(θ)*cos(ϕ); sin(ϕ)*cos(θ) cos(ϕ) sin(θ)*sin(ϕ); -sin(θ) 0 cos(θ)])
 
@@ -142,4 +160,82 @@ julia> A = Tens(R * a)
 
 julia> simplify(change_tens(A, ℬˢ))
 (a1)𝐞¹ + (a2)𝐞² + (a3)𝐞³
+```
+
+## Transverse isotropy and orthotropy
+
+### TensWalpole
+
+A transversely isotropic 4th-order tensor with symmetry axis ``\mathbf{n}`` is decomposed in the Walpole basis:
+
+```math
+L = \ell_1 W_1 + \ell_2 W_2 + \ell_3 W_3 + \ell_4 W_4 + \ell_5 W_5 + \ell_6 W_6
+```
+
+where ``\mathbf{n}_n = \mathbf{n}\otimes\mathbf{n}``, ``\mathbf{n}_T = \mathbf{1} - \mathbf{n}_n`` and
+
+| Tensor | Expression |
+| ------ | ----------- |
+| ``W_1`` | ``\mathbf{n}_n\otimes\mathbf{n}_n`` |
+| ``W_2`` | ``(\mathbf{n}_T\otimes\mathbf{n}_T)/2`` |
+| ``W_3`` | ``(\mathbf{n}_n\otimes\mathbf{n}_T)/\sqrt{2}`` |
+| ``W_4`` | ``(\mathbf{n}_T\otimes\mathbf{n}_n)/\sqrt{2}`` |
+| ``W_5`` | ``\mathbf{n}_T\,\overline{\boxtimes}^s\,\mathbf{n}_T - (\mathbf{n}_T\otimes\mathbf{n}_T)/2`` |
+| ``W_6`` | ``\mathbf{n}_T\,\overline{\boxtimes}^s\,\mathbf{n}_n + \mathbf{n}_n\,\overline{\boxtimes}^s\,\mathbf{n}_T`` |
+
+The double contraction follows the **synthetic Walpole rule**:
+
+```math
+L\colon M \equiv \left(\begin{bmatrix}\ell_1 & \ell_3\\\ell_4 & \ell_2\end{bmatrix}\begin{bmatrix}m_1 & m_3\\m_4 & m_2\end{bmatrix},\; \ell_5 m_5,\; \ell_6 m_6\right)
+```
+
+For major-symmetric tensors (``\ell_3=\ell_4``), use `N=5`; for general tensors, `N=6`.
+
+```julia
+julia> n = 𝐞(3) ;
+
+julia> W1, W2, W3, W4, W5, W6 = Walpole(n) ;
+
+julia> L = TensWalpole(2., 1., 0.5, 0.3, 0.8, n)
+(2.0) W₁ˢ + (1.0) W₂ˢ + (0.5) W₃ˢ + (0.3) W₄ˢ + (0.8) W₅ˢ
+  axis n = (0.0, 0.0, 1.0)
+
+julia> maximum(abs.(getarray(L ⊡ inv(L)) - getarray(tensId4(Val(3), Val(Float64)))))
+0.0
+
+julia> 𝕀, 𝕁, 𝕂 = ISO() ; L2 = fromISO(3𝕁 + 2𝕂, n)
+(1.6666666666666667) W₁ˢ + (2.3333333333333335) W₂ˢ + (0.4714045207910317) W₃ˢ + (2.0) W₄ˢ + (2.0) W₅ˢ
+  axis n = (0.0, 0.0, 1.0)
+```
+
+### TensOrtho
+
+An orthotropic 4th-order tensor in material frame ``(\mathbf{e}_1,\mathbf{e}_2,\mathbf{e}_3)``
+with ``P_m = \mathbf{e}_m\otimes\mathbf{e}_m`` has 9 independent elastic constants:
+
+```math
+\mathbb{C} = C_{11}P_1{\otimes}P_1 + C_{22}P_2{\otimes}P_2 + C_{33}P_3{\otimes}P_3
++ C_{12}(P_1{\otimes}P_2+P_2{\otimes}P_1) + C_{13}(P_1{\otimes}P_3+P_3{\otimes}P_1) + C_{23}(P_2{\otimes}P_3+P_3{\otimes}P_2)
++ 2C_{44}(P_2\,\overline{\boxtimes}^s P_3) + 2C_{55}(P_1\,\overline{\boxtimes}^s P_3) + 2C_{66}(P_1\,\overline{\boxtimes}^s P_2)
+```
+
+The Kelvin-Mandel matrix in the material frame (ordering ``11,22,33,23,13,12``) is block-diagonal.
+Use `KM_material(t)` to retrieve it; `KM(t)` gives the matrix in the canonical frame.
+
+```julia
+julia> ℬ = CanonicalBasis{3,Float64}() ;
+
+julia> t = TensOrtho(10., 8., 9., 3., 2., 4., 2.5, 3., 1.5, ℬ) ;
+
+julia> KM_material(t)
+6×6 Matrix{Float64}:
+ 10.0   3.0   2.0  0.0  0.0  0.0
+  3.0   8.0   4.0  0.0  0.0  0.0
+  2.0   4.0   9.0  0.0  0.0  0.0
+  0.0   0.0   0.0  5.0  0.0  0.0
+  0.0   0.0   0.0  0.0  6.0  0.0
+  0.0   0.0   0.0  0.0  0.0  3.0
+
+julia> maximum(abs.(getarray(t) ⊡ getarray(inv(t)) - getarray(tensId4(Val(3), Val(Float64)))))
+0.0
 ```

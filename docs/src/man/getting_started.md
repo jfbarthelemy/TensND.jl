@@ -15,9 +15,8 @@ The package relies on the definition of
 
   - a tensor is determined by a set of data (array or synthetic parameters) corresponding to its `order`, a basis and a tuple of variances
   - depending on the type of basis, the type of tensor can be `TensCanonical{order,dim,T,A}`, `TensRotated{order,dim,T,A}`, `TensOrthogonal{order,dim,T,A}` or `Tens{order,dim,T,A}` if the data are stored under the form of an array or a `Tensor` object (see [Tensors.jl](https://github.com/Ferrite-FEM/Tensors.jl)), or the type can be `TensISO{order,dim,T,N}` if the tensor is isotropic and data are stored under the form of a set of parameters (one for order 2 and two for order 4).
-  
-  **_NOTE:_**
-      More material symmetry types such as transverse isotropy or orthotropy will be added in the future.
+  - `TensWalpole{T,N}` if the tensor is transversely isotropic (Walpole basis, N=5 for major-symmetric or N=6 for general case).
+  - `TensOrtho{T}` if the tensor is orthotropic (9 elastic constants in a material frame).
 
 - **coordinate systems**
 
