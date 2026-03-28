@@ -158,11 +158,72 @@
     end
 
     # ═══════════════════════════════════════════════════════════════════════════
-    @testsection "TensWalpole — isISO / isTI" begin
-        @test !isISO(tensW1(n3))
-        @test  isTI(tensW1(n3))
+    @testsection "TensWalpole — isISO / isTI / isOrtho" begin
+        W = tensW1(n3)
+        @test !isISO(W)
+        @test  isTI(W)
+        @test !isOrtho(W)
         𝕀, 𝕁, 𝕂 = ISO(Val(3), Val(Float64))
         @test !isTI(𝕁)
+        @test !isOrtho(𝕁)
+    end
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    @testsection "TensOrtho — isISO / isTI / isOrtho" begin
+        frame3 = CanonicalBasis{3,Float64}()
+        t = TensOrtho(10., 8., 9., 3., 2., 4., 2.5, 3., 1.5, frame3)
+        @test !isISO(t)
+        @test !isTI(t)
+        @test  isOrtho(t)
+        # universal fallback
+        @test !isOrtho(42)
+        @test !isOrtho("string")
+    end
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    @testsection "TensWalpole — show" begin
+        L5 = TensWalpole(1.0, 2.0, 0.5, 3.0, 4.0, n3)   # N=5
+        L6 = TensWalpole(1.0, 2.0, 0.5, 0.3, 3.0, 4.0, n3)   # N=6
+        buf5 = IOBuffer()
+        show(buf5, L5)
+        s5 = String(take!(buf5))
+        @test contains(s5, "W") && contains(s5, "axis")
+
+        buf6 = IOBuffer()
+        show(buf6, L6)
+        s6 = String(take!(buf6))
+        @test contains(s6, "W") && contains(s6, "axis")
+    end
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    @testsection "TensOrtho — show" begin
+        frame3 = CanonicalBasis{3,Float64}()
+        t = TensOrtho(10., 8., 9., 3., 2., 4., 2.5, 3., 1.5, frame3)
+        buf = IOBuffer()
+        show(buf, t)
+        s = String(take!(buf))
+        @test contains(s, "C₁₁") && contains(s, "frame")
+    end
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    @testsection "TensWalpole — tsimplify (symbolic, _rebuild)" begin
+        ℓ₁, ℓ₂, ℓ₃ = symbols("ℓ₁ ℓ₂ ℓ₃", real = true)
+        L = TensWalpole(ℓ₁, ℓ₂, ℓ₃, ℓ₁+ℓ₂, ℓ₂+ℓ₃, n3s)   # N=6
+        Ls = tsimplify(L)
+        @test Ls isa TensWalpole   # _rebuild preserves type
+        @test get_ℓ(Ls)[1] == ℓ₁   # simplification is a no-op here
+    end
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    @testsection "TensOrtho — tsimplify (_rebuild)" begin
+        # TensOrtho frames are always numeric; test _rebuild with Float64 data.
+        # tsimplify on a non-symbolic NTuple is a no-op, but _rebuild must still
+        # reconstruct the TensOrtho, verifying the dispatch path.
+        frame3 = CanonicalBasis{3,Float64}()
+        t = TensOrtho(10., 8., 9., 3., 2., 4., 2.5, 3., 1.5, frame3)
+        ts = tsimplify(t)
+        @test ts isa TensOrtho   # _rebuild preserves type
+        @test getdata(ts)[1] ≈ 10.0
     end
 
     # ═══════════════════════════════════════════════════════════════════════════

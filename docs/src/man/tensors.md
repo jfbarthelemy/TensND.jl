@@ -76,6 +76,31 @@ A = Tens(R * a)
 simplify(change_tens(A, ℬˢ))
 ```
 
+## Isotropic tensors (TensISO)
+
+Isotropic tensors are stored compactly: a second-order isotropic tensor ``\lambda\mathbf{1}`` is
+parametrized by one scalar, while a fourth-order isotropic tensor ``\alpha\mathbb{J} + \beta\mathbb{K}``
+is parametrized by two scalars.  All arithmetic operations (``+``, ``-``, ``\times``, ``\mathbb{A}:\mathbb{B}``,
+``\mathbb{A}^{-1}``) exploit this compact form and remain in the `TensISO` type whenever possible.
+
+The type predicates `isISO`, `isTI`, `isOrtho` allow querying the symmetry class of any tensor:
+
+```@repl tensors_iso
+using TensND, Tensors
+𝟏 = tensId2(Val(3), Val(Float64))
+𝕀, 𝕁, 𝕂 = ISO(Val(3), Val(Float64)) ;
+isISO(𝕀)
+isTI(𝕀)
+isOrtho(𝕀)
+```
+
+The compact display reflects the algebraic form directly:
+
+```@repl tensors_iso
+show(stdout, 𝕁 + 𝕂)   # prints "(1.0) 𝕁 + (1.0) 𝕂"
+show(stdout, 2.0 * 𝟏)  # prints "(2.0) 𝟏"
+```
+
 ## Transverse isotropy and orthotropy
 
 ### TensWalpole
@@ -105,13 +130,31 @@ L\colon M \equiv \left(\begin{bmatrix}\ell_1 & \ell_3\\\ell_4 & \ell_2\end{bmatr
 
 For major-symmetric tensors (``\ell_3=\ell_4``), use `N=5`; for general tensors, `N=6`.
 
+The `show` method displays the tensor in its compact Walpole form, including the symmetry axis:
+
 ```@repl tensors_walpole
 using TensND, Tensors
 n = 𝐞(3) ;
 W1, W2, W3, W4, W5, W6 = Walpole(n) ;
 L = TensWalpole(2., 1., 0.5, 0.3, 0.8, n)
+show(stdout, L)
 maximum(abs.(getarray(L ⊡ inv(L)) - getarray(tensId4(Val(3), Val(Float64)))))
 𝕀, 𝕁, 𝕂 = ISO() ; L2 = fromISO(3𝕁 + 2𝕂, n)
+isTI(L)
+isISO(L)
+isOrtho(L)
+```
+
+An isotropic tensor converted to `TensWalpole` via `fromISO` retains the `isTI` predicate, and
+symbolic manipulations via `tsimplify`, `tsubs`, `tdiff`, etc. preserve the `TensWalpole` type:
+
+```@repl tensors_walpole
+using SymPy
+ℓ₁, ℓ₂, ℓ₃ = symbols("ℓ₁ ℓ₂ ℓ₃", real = true) ;
+ns = 𝐞(Val(3), Val(3), Val(Sym)) ;
+Ls = TensWalpole(ℓ₁, ℓ₂, ℓ₃, ℓ₁ + ℓ₂, ℓ₂ + ℓ₃, ns) ;
+Ls_simp = tsimplify(Ls) ;
+Ls_simp isa TensWalpole
 ```
 
 ### TensOrtho
@@ -128,10 +171,33 @@ with ``P_m = \mathbf{e}_m\otimes\mathbf{e}_m`` has 9 independent elastic constan
 The Kelvin-Mandel matrix in the material frame (ordering ``11,22,33,23,13,12``) is block-diagonal.
 Use `KM_material(t)` to retrieve it; `KM(t)` gives the matrix in the canonical frame.
 
+The `show` method displays all 9 constants and the material frame, and `isOrtho` identifies the type:
+
 ```@repl tensors_ortho
 using TensND, Tensors
 ℬ = CanonicalBasis{3,Float64}() ;
 t = TensOrtho(10., 8., 9., 3., 2., 4., 2.5, 3., 1.5, ℬ) ;
+show(stdout, t)
 KM_material(t)
 maximum(abs.(getarray(t) ⊡ getarray(inv(t)) - getarray(tensId4(Val(3), Val(Float64)))))
+isOrtho(t)
+isTI(t)
+isISO(t)
+```
+
+### Symmetry class predicates
+
+The three predicates `isISO`, `isTI`, `isOrtho` form a consistent hierarchy across all specialized
+tensor types.  Any value that is not a recognized tensor type returns `false` for all three:
+
+```@repl tensors_preds
+using TensND, Tensors
+𝕀, 𝕁, 𝕂 = ISO(Val(3), Val(Float64)) ;
+n = 𝐞(3) ;
+L = TensWalpole(2., 1., 0.5, 3., 4., n) ;
+ℬ = CanonicalBasis{3,Float64}() ;
+t = TensOrtho(10., 8., 9., 3., 2., 4., 2.5, 3., 1.5, ℬ) ;
+(isISO(𝕀), isTI(𝕀),  isOrtho(𝕀))
+(isISO(L),  isTI(L),  isOrtho(L))
+(isISO(t),  isTI(t),  isOrtho(t))
 ```

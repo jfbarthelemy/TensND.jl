@@ -74,20 +74,20 @@ function _christoffel_from_OM(OM_func::Function, x::AbstractVector{T}) where {T}
     J = ForwardDiff.jacobian(OM_func, x)
     # Metric function g(y) = J(y)'J(y)
     g_func(y) = let Jy = ForwardDiff.jacobian(OM_func, y); Jy' * Jy end
-    # Jacobian of metric: ∂g[i,j]/∂x[k] → shape (dim*dim, dim)
-    dg_flat = ForwardDiff.jacobian(y -> vec(g_func(y)), x)
+    # Reshape flat Jacobian of metric into 3-array:
+    #   dg[a,b,c] = ∂g[a,b]/∂x[c]
+    # (column-major: vec(g)[(b-1)*dim+a] = g[a,b], so dg_flat[(b-1)*dim+a, c] = ∂g[a,b]/∂x[c])
+    dg = reshape(ForwardDiff.jacobian(y -> vec(g_func(y)), x), dim, dim, dim)
     # Metric and its inverse at x
-    g = J' * J
+    g    = J' * J
     ginv = inv(g)
     Γ = zeros(T, dim, dim, dim)
     for i in 1:dim, j in 1:dim, k in 1:dim
         # Γᵏᵢⱼ = ½ gᵏˡ (∂ᵢgⱼₗ + ∂ⱼgᵢₗ - ∂ₗgᵢⱼ)
+        #       = ½ gᵏˡ (dg[l,j,i] + dg[l,i,j] - dg[j,i,l])
         val = zero(T)
         for l in 1:dim
-            ∂ᵢgⱼₗ = dg_flat[(j-1)*dim + l, i]
-            ∂ⱼgᵢₗ = dg_flat[(i-1)*dim + l, j]
-            ∂ₗgᵢⱼ = dg_flat[(i-1)*dim + j, l]
-            val += ginv[k,l] * (∂ᵢgⱼₗ + ∂ⱼgᵢₗ - ∂ₗgᵢⱼ)
+            val += ginv[k,l] * (dg[l,j,i] + dg[l,i,j] - dg[j,i,l])
         end
         Γ[i,j,k] = val / 2
     end

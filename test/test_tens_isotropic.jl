@@ -1,4 +1,33 @@
 @testsection "Isotropic tensors" begin
+
+    # ── Type predicates ────────────────────────────────────────────────────────
+    @testsection "TensISO — type predicates" begin
+        𝟏 = tensId2(Val(3), Val(Float64))
+        𝕀, 𝕁, 𝕂 = ISO(Val(3), Val(Float64))
+        @test  isISO(𝕀)
+        @test  isISO(𝟏)
+        @test !isTI(𝕀)
+        @test !isTI(𝟏)
+        @test !isOrtho(𝕀)
+        @test !isOrtho(𝟏)
+    end
+
+    # ── Display (show) ─────────────────────────────────────────────────────────
+    @testsection "TensISO — show" begin
+        𝟏 = tensId2(Val(3), Val(Float64))
+        𝕀, 𝕁, 𝕂 = ISO(Val(3), Val(Float64))
+        # show should write to the provided IO, not to stdout
+        buf4 = IOBuffer()
+        show(buf4, 𝕁 + 𝕂)          # 4th-order
+        s4 = String(take!(buf4))
+        @test contains(s4, "𝕁") || contains(s4, "𝕂")
+
+        buf2 = IOBuffer()
+        show(buf2, 𝟏)               # 2nd-order
+        s2 = String(take!(buf2))
+        @test contains(s2, "𝟏")
+    end
+
     for T ∈ (Sym, Float64), dim ∈ (2, 3)
         @testsection "type $T, dim $dim" begin
             𝟏 = tensId2(Val(dim), Val(T))

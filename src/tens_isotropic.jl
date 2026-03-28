@@ -224,27 +224,31 @@ end
 @inline Base.transpose(A::TensISO) = A
 @inline Base.adjoint(A::TensISO) = A
 
-for OP in (:show, :print, :display)
-    @eval begin
-        function Base.$OP(A::TensISO{4})
-            println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
-        end
-        function Base.$OP(A::TensISO{2})
-            println("(", getdata(A)[1], ") 𝟏")
-        end
-    end
-end
-intrinsic(A::TensISO{4}) = println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
-intrinsic(A::TensISO{2}) = println("(", getdata(A)[1], ") 𝟏")
+# ── Display ───────────────────────────────────────────────────────────────────
 
-for OP in (:(tsimplify), :(tfactor), :(tsubs), :(tdiff), :(ttrigsimp), :(texpand_trig))
+function Base.show(io::IO, A::TensISO{4})
+    print(io, "(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
+end
+function Base.show(io::IO, A::TensISO{2})
+    print(io, "(", getdata(A)[1], ") 𝟏")
+end
+
+intrinsic(A::TensISO) = show(stdout, A)
+
+# ── Rebuild helper (used by symbolic ops) ─────────────────────────────────────
+
+_rebuild(::TensISO{order,dim}, new_data) where {order,dim} = TensISO{dim}(new_data)
+
+# ── Symbolic helpers ──────────────────────────────────────────────────────────
+
+for OP in (:tsimplify, :tfactor, :tsubs, :tdiff, :ttrigsimp, :texpand_trig)
     @eval $OP(A::TensISO{order,dim}, args...; kwargs...) where {order,dim} =
-        TensISO{dim}($OP(getdata(A), args...; kwargs...))
+        _rebuild(A, $OP(getdata(A), args...; kwargs...))
 end
-
-for OP in (:(tsimplify), :(tsubs), :(tdiff))
+# Explicit Num dispatch to avoid ambiguity with Symbolics.jl
+for OP in (:tsimplify, :tsubs, :tdiff)
     @eval $OP(A::TensISO{order,dim,Num}, args...; kwargs...) where {order,dim} =
-        TensISO{dim}($OP(getdata(A), args...; kwargs...))
+        _rebuild(A, $OP(getdata(A), args...; kwargs...))
 end
 
 
@@ -407,11 +411,13 @@ function proj_tens(::Val{:ISO}, A::AbstractArray)
     end
 end
 
-isISO(::TensISO) = true
+isISO(::TensISO)    = true
 isISO(A::AbstractArray) = isotropify(A) == A
+isTI(::TensISO)     = false
+isOrtho(::TensISO)  = false
 
 LinearAlgebra.issymmetric(::TensISO) = true
 Tensors.isminorsymmetric(::TensISO{4}) = true
 Tensors.ismajorsymmetric(::TensISO{4}) = true
 
-export TensISO, tensId2, tensId4, tensJ4, tensK4, ISO, isotropify, isISO
+export TensISO, tensId2, tensId4, tensJ4, tensK4, ISO, isotropify, isISO, isTI, isOrtho

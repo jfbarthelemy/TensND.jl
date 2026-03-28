@@ -71,6 +71,10 @@ getvar(::TensWalpole)                = (:cont, :cont, :cont, :cont)
 getvar(::TensWalpole, ::Integer)     = :cont
 getdata(t::TensWalpole) = t.data
 
+# ── Rebuild helper (used by symbolic ops) ─────────────────────────────────────
+_rebuild(t::TensWalpole, new_data) =
+    TensWalpole{eltype(new_data), length(new_data)}(new_data, getaxis(t))
+
 # ── Accessors ─────────────────────────────────────────────────────────────────
 
 """
@@ -339,16 +343,6 @@ function Tensors.dcontract(A::TensISO{4,3}, B::TensWalpole)
     Tensors.dcontract(fromISO(A, B.n), B)
 end
 
-# ── change_tens / components ──────────────────────────────────────────────────
-
-change_tens(t::TensWalpole{T}, ℬ::OrthonormalBasis{3,T}) where {T} =
-    Tens(tensor_or_array(getarray(t)), ℬ)
-
-components(t::TensWalpole{T}) where {T} = getarray(t)
-components(t::TensWalpole{T}, ::OrthonormalBasis{3,T}, ::NTuple{4,Symbol}) where {T} =
-    getarray(t)
-components(t::TensWalpole{T}, ::NTuple{4,Symbol}) where {T} = getarray(t)
-
 # ── isISO / isTI ─────────────────────────────────────────────────────────────
 
 """
@@ -356,38 +350,36 @@ components(t::TensWalpole{T}, ::NTuple{4,Symbol}) where {T} = getarray(t)
 
 Return `true` if `A` is a `TensWalpole`, indicating transverse isotropy.
 """
-isTI(::TensWalpole) = true
-isTI(::Any)         = false
-
-isISO(::TensWalpole) = false
+isTI(::TensWalpole)     = true
+isTI(::Any)             = false
+isISO(::TensWalpole)    = false
+isOrtho(::TensWalpole)  = false
 
 # ── Symbolic helpers ──────────────────────────────────────────────────────────
 
 for OP in (:tsimplify, :tfactor, :tsubs, :tdiff, :ttrigsimp, :texpand_trig)
-    @eval function $OP(A::TensWalpole{T,N}, args...; kwargs...) where {T,N}
-        new_data = $OP(getdata(A), args...; kwargs...)
-        S = eltype(new_data)
-        TensWalpole{S,N}(new_data, getaxis(A))
-    end
+    @eval $OP(A::TensWalpole, args...; kwargs...) =
+        _rebuild(A, $OP(getdata(A), args...; kwargs...))
+end
+# Explicit Num dispatch to avoid ambiguity with Symbolics.jl
+for OP in (:tsimplify, :tsubs, :tdiff)
+    @eval $OP(A::TensWalpole{Num,N}, args...; kwargs...) where {N} =
+        _rebuild(A, $OP(getdata(A), args...; kwargs...))
 end
 
 # ── Display ───────────────────────────────────────────────────────────────────
 
-for OP in (:show, :print, :display)
-    @eval begin
-        function Base.$OP(A::TensWalpole{T,5}) where {T}
-            ℓ₁, ℓ₂, ℓ₃, _, ℓ₅, ℓ₆ = get_ℓ(A)
-            println("(", ℓ₁, ") W₁ˢ + (", ℓ₂, ") W₂ˢ + (", ℓ₃,
-                    ") W₃ˢ + (", ℓ₅, ") W₄ˢ + (", ℓ₆, ") W₅ˢ")
-            println("  axis n = ", A.n)
-        end
-        function Base.$OP(A::TensWalpole{T,6}) where {T}
-            ℓ₁, ℓ₂, ℓ₃, ℓ₄, ℓ₅, ℓ₆ = get_ℓ(A)
-            println("(", ℓ₁, ") W₁ + (", ℓ₂, ") W₂ + (", ℓ₃,
-                    ") W₃ + (", ℓ₄, ") W₄ + (", ℓ₅, ") W₅ + (", ℓ₆, ") W₆")
-            println("  axis n = ", A.n)
-        end
-    end
+function Base.show(io::IO, A::TensWalpole{<:Any,5})
+    ℓ₁, ℓ₂, ℓ₃, _, ℓ₅, ℓ₆ = get_ℓ(A)
+    print(io, "(", ℓ₁, ") W₁ˢ + (", ℓ₂, ") W₂ˢ + (", ℓ₃,
+             ") W₃ˢ + (", ℓ₅, ") W₄ˢ + (", ℓ₆, ") W₅ˢ")
+    print(io, "\n  axis n = ", A.n)
+end
+function Base.show(io::IO, A::TensWalpole{<:Any,6})
+    ℓ₁, ℓ₂, ℓ₃, ℓ₄, ℓ₅, ℓ₆ = get_ℓ(A)
+    print(io, "(", ℓ₁, ") W₁ + (", ℓ₂, ") W₂ + (", ℓ₃,
+             ") W₃ + (", ℓ₄, ") W₄ + (", ℓ₅, ") W₅ + (", ℓ₆, ") W₆")
+    print(io, "\n  axis n = ", A.n)
 end
 
 ##############################################################################
@@ -448,6 +440,9 @@ getvar(::TensOrtho)                  = (:cont, :cont, :cont, :cont)
 getvar(::TensOrtho, ::Integer)       = :cont
 getdata(t::TensOrtho)               = t.data
 getframe(t::TensOrtho)              = t.frame
+
+# ── Rebuild helper (used by symbolic ops) ─────────────────────────────────────
+_rebuild(t::TensOrtho, new_data) = TensOrtho{eltype(new_data)}(new_data, getframe(t))
 
 # ── Constructors ──────────────────────────────────────────────────────────────
 
@@ -596,40 +591,49 @@ LinearAlgebra.issymmetric(::TensOrtho)    = true
 Tensors.isminorsymmetric(::TensOrtho)     = true
 Tensors.ismajorsymmetric(::TensOrtho)     = true
 
-# ── change_tens / components ──────────────────────────────────────────────────
+# ── isISO / isTI / isOrtho ───────────────────────────────────────────────────
 
-change_tens(t::TensOrtho{T}, ℬ::OrthonormalBasis{3,T}) where {T} =
-    Tens(tensor_or_array(getarray(t)), ℬ)
-
-components(t::TensOrtho{T}) where {T} = getarray(t)
-components(t::TensOrtho{T}, ::OrthonormalBasis{3,T}, ::NTuple{4,Symbol}) where {T} =
-    getarray(t)
-components(t::TensOrtho{T}, ::NTuple{4,Symbol}) where {T} = getarray(t)
+isISO(::TensOrtho)   = false
+isTI(::TensOrtho)    = false
+isOrtho(::TensOrtho) = true
+isOrtho(::Any)       = false   # universal fallback
 
 # ── Symbolic helpers ──────────────────────────────────────────────────────────
 
 for OP in (:tsimplify, :tfactor, :tsubs, :tdiff, :ttrigsimp, :texpand_trig)
-    @eval $OP(A::TensOrtho{T}, args...; kwargs...) where {T} =
-        TensOrtho{T}($OP(getdata(A), args...; kwargs...), getframe(A))
+    @eval $OP(A::TensOrtho, args...; kwargs...) =
+        _rebuild(A, $OP(getdata(A), args...; kwargs...))
 end
-
+# Explicit Num dispatch to avoid ambiguity with Symbolics.jl
 for OP in (:tsimplify, :tsubs, :tdiff)
     @eval $OP(A::TensOrtho{Num}, args...; kwargs...) =
-        TensOrtho{Num}($OP(getdata(A), args...; kwargs...), getframe(A))
+        _rebuild(A, $OP(getdata(A), args...; kwargs...))
 end
 
 # ── Display ───────────────────────────────────────────────────────────────────
 
-for OP in (:show, :print, :display)
-    @eval begin
-        function Base.$OP(A::TensOrtho{T}) where {T}
-            C11, C22, C33, C12, C13, C23, C44, C55, C66 = getdata(A)
-            println("TensOrtho: C₁₁=", C11, " C₂₂=", C22, " C₃₃=", C33,
-                    " C₁₂=", C12, " C₁₃=", C13, " C₂₃=", C23,
-                    " C₄₄=", C44, " C₅₅=", C55, " C₆₆=", C66)
-            println("  frame: ", vecbasis(A.frame, :cov))
-        end
-    end
+function Base.show(io::IO, A::TensOrtho)
+    C11, C22, C33, C12, C13, C23, C44, C55, C66 = getdata(A)
+    print(io, "TensOrtho: C₁₁=", C11, " C₂₂=", C22, " C₃₃=", C33,
+             " C₁₂=", C12, " C₁₃=", C13, " C₂₃=", C23,
+             " C₄₄=", C44, " C₅₅=", C55, " C₆₆=", C66)
+    print(io, "\n  frame: ", vecbasis(A.frame, :cov))
+end
+
+##############################################################################
+# Shared change_tens / components for TensWalpole and TensOrtho
+# (both are 3D order-4 tensors stored in the canonical frame)
+##############################################################################
+
+for TT in (:TensWalpole, :TensOrtho)
+    # T used to link tensor eltype with basis eltype:
+    @eval change_tens(t::$TT{T}, ℬ::OrthonormalBasis{3,T}) where {T} =
+        Tens(tensor_or_array(getarray(t)), ℬ)
+    @eval components(t::$TT{T}, ::OrthonormalBasis{3,T}, ::NTuple{4,Symbol}) where {T} =
+        getarray(t)
+    # T not needed for these:
+    @eval components(t::$TT) = getarray(t)
+    @eval components(t::$TT, ::NTuple{4,Symbol}) = getarray(t)
 end
 
 ##############################################################################
@@ -639,5 +643,5 @@ end
 export TensWalpole, TensOrtho
 export tensW1, tensW2, tensW3, tensW4, tensW5, tensW6, Walpole
 export get_ℓ, getaxis, getframe
-export fromISO, isTI
+export fromISO, isTI, isOrtho
 export KM_material

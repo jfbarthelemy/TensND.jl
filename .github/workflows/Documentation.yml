@@ -41,13 +41,9 @@ jobs:
         run: |
           using Documenter: DocMeta, doctest
           using TensND
-          docmeta = quote
-              import Pkg; Pkg.add("Tensors")
-              import Pkg; Pkg.add("OMEinsum")
-              import Pkg; Pkg.add("Rotations")
-              using LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations, TensND
-          end
-          DocMeta.setdocmeta!(TensND, :DocTestSetup, docmeta; recursive=true)
+          DocMeta.setdocmeta!(TensND, :DocTestSetup,
+              :(using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations);
+              recursive=true)
           doctest(TensND)
       - name: Build and deploy
         env:
