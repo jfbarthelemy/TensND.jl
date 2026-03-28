@@ -4,6 +4,7 @@ import Base: @pure, eltype
 import LinearAlgebra: normalize, dot, tr
 
 using LinearAlgebra, Tensors, OMEinsum, Rotations
+using ForwardDiff, StaticArrays
 using SymPy
 using Symbolics
 
@@ -14,6 +15,7 @@ include("tens_isotropic.jl")
 include("tens_walpole.jl")
 include("special_tens.jl")
 include("coorsystems.jl")
+include("coorsystems_num.jl")
 include("submanifold.jl")
 
 

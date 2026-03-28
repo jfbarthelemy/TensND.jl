@@ -275,7 +275,7 @@ struct RotatedBasis{dim,T} <: AbstractBasis{dim,T}
             return new{dim,T}(eᵢ, eⁱ, angles(R))
         end
     end
-    function RotatedBasis(θ::T) where {T<:Union{AbstractFloat,Complex{AbstractFloat}}}
+    function RotatedBasis(θ::T) where {T<:Number}
         dim = 2
         cθ = cos(θ)
         sθ = sin(θ)
@@ -540,4 +540,3 @@ end
 
 export Basis, CanonicalBasis, RotatedBasis, CylindricalBasis, SphericalBasis, OrthogonalBasis, AllOrthogonalBasis
 export getdim, vecbasis, metric, angles, isorthogonal, isorthonormal
-

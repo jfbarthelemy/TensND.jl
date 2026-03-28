@@ -16,7 +16,7 @@ E, k, μ = symbols("E k μ", positive = true)
 k = E / (3(1-2ν)) ; μ = E / (2(1+ν))
 λ = k -2μ/3
 
-𝐆 =tsimplify(1/(8 * PI * μ * (1-ν)) * (𝐞ʳ ⊗ 𝐞ʳ -(3-4ν) * ln(r) * 𝟏))
+𝐆 =tsimplify(1/(8 * PI * μ * (1-ν)) * (𝐞ʳ ⊗ 𝐞ʳ -(3-4ν) * log(r) * 𝟏))
 HG = -tsimplify(HESS(𝐆))
 aHG = getarray(HG)
 𝕄 = SymmetricTensor{4,2}((i,j,k,l)->(aHG[i,k,j,l]+aHG[j,k,i,l]+aHG[i,l,j,k]+aHG[j,l,i,k])/4)

@@ -28,6 +28,7 @@ include("test_tens_isotropic.jl")
 include("test_tens_walpole.jl")
 include("test_special_tens.jl")
 include("test_coorsystems.jl")
+include("test_coorsystems_num.jl")
 
 print_timer()
 println()

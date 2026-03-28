@@ -20,7 +20,7 @@ Under a uniform far-field strain $\mathbf{E}^\infty$, the displacement field dec
 
 ## Setup
 
-```julia
+```@example nlayer
 using TensND, LinearAlgebra, SymPy, Tensors, OMEinsum, Rotations
 
 Spherical = coorsys_spherical()
@@ -33,6 +33,7 @@ Spherical = coorsys_spherical()
 𝟏 = tensId2(Val(3),Val(Sym))
 k, μ = symbols("k μ", positive = true)
 λ = k - 2μ/3
+nothing  # hide
 ```
 
 ## Spherical (hydrostatic) problem
@@ -53,7 +54,7 @@ u(r) = C_1\,r + \frac{C_2}{r^2}.
 The radial traction $\hat{T}^{sph}(r) = (\boldsymbol{\sigma}\cdot\mathbf{e}_r)\cdot\mathbf{e}_r$ provides the
 interface and boundary conditions.
 
-```julia
+```@example nlayer
 u = SymFunction("u", real = true)
 𝐮ˢᵖʰ = u(r) * 𝐞ʳ
 𝛆ˢᵖʰ = SYMGRAD(𝐮ˢᵖʰ, Spherical)
@@ -61,6 +62,9 @@ u = SymFunction("u", real = true)
 𝐓ˢᵖʰ = 𝛔ˢᵖʰ ⋅ 𝐞ʳ
 div𝛔ˢᵖʰ = DIV(𝛔ˢᵖʰ, Spherical) ;
 eqˢᵖʰ = factor(simplify(div𝛔ˢᵖʰ ⋅ 𝐞ʳ))
+```
+
+```@example nlayer
 solˢᵖʰ = dsolve(eqˢᵖʰ, u(r))
 ûˢᵖʰ = solˢᵖʰ.rhs()
 T̂ˢᵖʰ = factor(simplify(subs(𝐓ˢᵖʰ ⋅ 𝐞ʳ, u(r) => ûˢᵖʰ)))
@@ -100,7 +104,7 @@ u^r(r) = \sum_{i=1}^{4} C_{i+2}\,\Lambda_i\,r^{\alpha_i}.
 The tangential and radial tractions $\hat{T}^\theta$, $\hat{T}^r$ (divided by $f^\theta$, $f^r$ respectively)
 are then expressed in terms of the four constants $C_3,\ldots,C_6$.
 
-```julia
+```@example nlayer
 𝐄 = 𝟏 - 3𝐞₃⊗𝐞₃
 fᶿ = simplify(𝐞ᶿ ⋅ 𝐄 ⋅ 𝐞ʳ)
 fʳ = simplify(𝐞ʳ ⋅ 𝐄 ⋅ 𝐞ʳ)

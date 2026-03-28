@@ -18,44 +18,10 @@ and is built by one the following constructors
 
 Depending on the property of the basis (canonical, orthonormal, orthogonal...), the most relevant type (`CanonicalBasis`, `RotatedBasis`, `OrthogonalBasis` or `Basis`) is implicitly created by calling `Basis`.
 
-```julia
-julia> ℬ = Basis(Sym[1 0 0; 0 1 0; 0 1 1])
-Basis{3, Sym}
-→ basis: 3×3 Matrix{Sym}:
- 1  0  0
- 0  1  0
- 0  1  1      
-→ dual basis: 3×3 Matrix{Sym}:
- 1  0   0
- 0  1  -1
- 0  0   1
-→ covariant metric tensor: 3×3 Symmetric{Sym, Matrix{Sym}}:
- 1  0  0
- 0  2  1
- 0  1  1
-→ contravariant metric tensor: 3×3 Symmetric{Sym, Matrix{Sym}}:
- 1   0   0
- 0   1  -1
- 0  -1   2
-
-julia> ℬ₂ = Basis(symbols("θ, ϕ, ψ", real = true)...)
-RotatedBasis{3, Sym}
-→ basis: 3×3 Matrix{Sym}:
- -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
-  sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
-                        -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
-→ dual basis: 3×3 Matrix{Sym}:
- -sin(ψ)⋅sin(ϕ) + cos(θ)⋅cos(ψ)⋅cos(ϕ)  -sin(ψ)⋅cos(θ)⋅cos(ϕ) - sin(ϕ)⋅cos(ψ)  sin(θ)⋅cos(ϕ)
-  sin(ψ)⋅cos(ϕ) + sin(ϕ)⋅cos(θ)⋅cos(ψ)  -sin(ψ)⋅sin(ϕ)⋅cos(θ) + cos(ψ)⋅cos(ϕ)  sin(θ)⋅sin(ϕ)
-                        -sin(θ)⋅cos(ψ)                          sin(θ)⋅sin(ψ)         cos(θ)
-→ covariant metric tensor: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ contravariant metric tensor: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
+```@repl bases
+using TensND, SymPy
+ℬ = Basis(Sym[1 0 0; 0 1 0; 0 1 1])
+ℬ₂ = Basis(symbols("θ, ϕ, ψ", real = true)...)
 ```
 
 Predefined symbolic or numerical coordinates and basis vectors can be obtained from
@@ -68,41 +34,14 @@ Predefined symbolic or numerical coordinates and basis vectors can be obtained f
 
 The option `canonical` specifies whether the vector is expressed as a tensor with components in the canonical basis or directly in the rotated basis. The second option (ie `canonical = false` by default) is often preferable for further calculations in the rotated basis.
 
-```julia
-julia> (x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ = init_cartesian() ;
-
-julia> (r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = init_polar() ;
-
-julia> (r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical() ;
-
-julia> display(ℬᶜ)
-RotatedBasis{3, Sym}
-→ basis: 3×3 Matrix{Sym}:
- cos(θ)  -sin(θ)  0
- sin(θ)   cos(θ)  0
-      0        0  1
-→ dual basis: 3×3 Matrix{Sym}:
- cos(θ)  -sin(θ)  0
- sin(θ)   cos(θ)  0
-      0        0  1
-→ covariant metric tensor: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-→ contravariant metric tensor: 3×3 TensND.Id2{3, Sym}:
- 1  ⋅  ⋅
- ⋅  1  ⋅
- ⋅  ⋅  1
-
-julia> (θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical() ;
-
-julia> components_canon(𝐞ʳ)
-3-element Vector{Sym}:
- sin(θ)⋅cos(ϕ)
- sin(θ)⋅sin(ϕ)
-        cos(θ)
-
-julia> (θ, ϕ, ψ), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬʳ = init_rotated() ;
+```@repl bases
+(x, y, z), (𝐞₁, 𝐞₂, 𝐞₃), ℬ = init_cartesian() ;
+(r, θ), (𝐞ʳ, 𝐞ᶿ), ℬᵖ = init_polar() ;
+(r, θ, z), (𝐞ʳ, 𝐞ᶿ, 𝐞ᶻ), ℬᶜ = init_cylindrical() ;
+ℬᶜ
+(θ, ϕ, r), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬˢ = init_spherical() ;
+components_canon(𝐞ʳ)
+(θ, ϕ, ψ), (𝐞ᶿ, 𝐞ᵠ, 𝐞ʳ), ℬʳ = init_rotated() ;
 ```
 
 **_NOTE:_**
