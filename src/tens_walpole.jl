@@ -382,6 +382,29 @@ function Base.show(io::IO, A::TensWalpole{<:Any,6})
     print(io, "\n  axis n = ", A.n)
 end
 
+function intrinsic(A::TensWalpole{<:Any,5})
+    ℓ₁, ℓ₂, ℓ₃, _, ℓ₅, ℓ₆ = get_ℓ(A)
+    println("(", ℓ₁, ") W₁ˢ + (", ℓ₂, ") W₂ˢ + (", ℓ₃,
+            ") W₃ˢ + (", ℓ₅, ") W₄ˢ + (", ℓ₆, ") W₅ˢ")
+    println("  axis n = ", A.n)
+end
+function intrinsic(A::TensWalpole{<:Any,6})
+    ℓ₁, ℓ₂, ℓ₃, ℓ₄, ℓ₅, ℓ₆ = get_ℓ(A)
+    println("(", ℓ₁, ") W₁ + (", ℓ₂, ") W₂ + (", ℓ₃,
+            ") W₃ + (", ℓ₄, ") W₄ + (", ℓ₅, ") W₅ + (", ℓ₆, ") W₆")
+    println("  axis n = ", A.n)
+end
+
+for OP in (:show, :print, :display)
+    @eval function Base.$OP(A::TensWalpole)
+        $OP(typeof(A))
+        print("→ decomposition: ")
+        intrinsic(A)
+        print("→ KM: ")
+        $OP(KM(A))
+    end
+end
+
 ##############################################################################
 # TensOrtho — orthotropic 4th-order tensor
 ##############################################################################
@@ -614,10 +637,30 @@ end
 
 function Base.show(io::IO, A::TensOrtho)
     C11, C22, C33, C12, C13, C23, C44, C55, C66 = getdata(A)
-    print(io, "TensOrtho: C₁₁=", C11, " C₂₂=", C22, " C₃₃=", C33,
-             " C₁₂=", C12, " C₁₃=", C13, " C₂₃=", C23,
-             " C₄₄=", C44, " C₅₅=", C55, " C₆₆=", C66)
+    print(io, "(", C11, ") P₁⊗P₁ + (", C22, ") P₂⊗P₂ + (", C33, ") P₃⊗P₃")
+    print(io, "\n  + (", C12, ")(P₁⊗P₂+P₂⊗P₁) + (", C13, ")(P₁⊗P₃+P₃⊗P₁) + (", C23, ")(P₂⊗P₃+P₃⊗P₂)")
+    print(io, "\n  + 2(", C44, ")(P₂⊠ˢP₃) + 2(", C55, ")(P₁⊠ˢP₃) + 2(", C66, ")(P₁⊠ˢP₂)")
     print(io, "\n  frame: ", vecbasis(A.frame, :cov))
+end
+
+function intrinsic(A::TensOrtho)
+    C11, C22, C33, C12, C13, C23, C44, C55, C66 = getdata(A)
+    println("(", C11, ") P₁⊗P₁ + (", C22, ") P₂⊗P₂ + (", C33, ") P₃⊗P₃")
+    println("  + (", C12, ")(P₁⊗P₂+P₂⊗P₁) + (", C13, ")(P₁⊗P₃+P₃⊗P₁) + (", C23, ")(P₂⊗P₃+P₃⊗P₂)")
+    println("  + 2(", C44, ")(P₂⊠ˢP₃) + 2(", C55, ")(P₁⊠ˢP₃) + 2(", C66, ")(P₁⊠ˢP₂)")
+    println("  frame: ", vecbasis(A.frame, :cov))
+end
+
+for OP in (:show, :print, :display)
+    @eval function Base.$OP(A::TensOrtho)
+        $OP(typeof(A))
+        print("→ decomposition: ")
+        intrinsic(A)
+        print("→ KM (material frame): ")
+        $OP(KM_material(A))
+        print("→ KM (canonical frame): ")
+        $OP(KM(A))
+    end
 end
 
 ##############################################################################

@@ -233,7 +233,23 @@ function Base.show(io::IO, A::TensISO{2})
     print(io, "(", getdata(A)[1], ") 𝟏")
 end
 
-intrinsic(A::TensISO) = show(stdout, A)
+for OP in (:show, :print, :display)
+    @eval function Base.$OP(A::TensISO{4})
+        $OP(typeof(A))
+        print("→ decomposition: ")
+        println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
+        print("→ KM: ")
+        $OP(KM(A))
+    end
+    @eval function Base.$OP(A::TensISO{2})
+        $OP(typeof(A))
+        print("→ decomposition: ")
+        println("(", getdata(A)[1], ") 𝟏")
+    end
+end
+
+intrinsic(A::TensISO{4}) = println("(", getdata(A)[1], ") 𝕁 + (", getdata(A)[2], ") 𝕂")
+intrinsic(A::TensISO{2}) = println("(", getdata(A)[1], ") 𝟏")
 
 # ── Rebuild helper (used by symbolic ops) ─────────────────────────────────────
 

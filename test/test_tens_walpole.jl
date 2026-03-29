@@ -202,7 +202,7 @@
         buf = IOBuffer()
         show(buf, t)
         s = String(take!(buf))
-        @test contains(s, "C₁₁") && contains(s, "frame")
+        @test contains(s, "P₁⊗P₁") && contains(s, "frame")
     end
 
     # ═══════════════════════════════════════════════════════════════════════════

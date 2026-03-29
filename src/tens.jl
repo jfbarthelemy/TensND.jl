@@ -188,8 +188,13 @@ for OP in (:show, :print, :display)
 
         function Base.$OP(t::AbstractTens)
             $OP(typeof(t))
-            print("→ array: ")
-            $OP(getarray(t))
+            if ndims(t) == 4
+                print("→ KM: ")
+                $OP(KM(t))
+            else
+                print("→ array: ")
+                $OP(getarray(t))
+            end
             print("→ basis: ")
             $OP(vecbasis(getbasis(t)))
             print("→ var: ")
@@ -197,8 +202,13 @@ for OP in (:show, :print, :display)
         end
         function Base.$OP(t::TensOrthonormal)
             $OP(typeof(t))
-            print("→ array: ")
-            $OP(getarray(t))
+            if ndims(t) == 4
+                print("→ KM: ")
+                $OP(KM(t))
+            else
+                print("→ array: ")
+                $OP(getarray(t))
+            end
             print("→ basis: ")
             $OP(vecbasis(getbasis(t)))
         end
